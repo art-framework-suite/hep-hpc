@@ -2,5 +2,5 @@
 
 ex001/output.h5:
 	@echo -n "Creating $@... "
-	@PYTHONPATH=$(PWD):$(PYTHONPATH) python ex001/testme.py $@
+	@PYTHONPATH=$(PWD):$(PYTHONPATH) python ex001/make_file.py $@
 	@echo "done"
