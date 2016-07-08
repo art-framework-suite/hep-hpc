@@ -1,6 +1,6 @@
 # README #
 
-This code is part of a Fermilab LDRD project studying the use of HDF5 for HEP event data.
+This code is part of a Fermilab LDRD project studying the use of HDF5 for HEP event data. See the [project wiki](https://bitbucket.org/mpaterno/hdffilestructurestudy/wiki).
 
 ### What is this repository for? ###
 
