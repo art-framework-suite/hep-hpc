@@ -8,20 +8,30 @@ This code is used for generating files with a variety of organizations of run/su
 
 ### How do I get set up? ###
 
-In addition to cloning the repository, you'll need to have access to the latest version of the `paterno/pyhdf` Docker image, from Docker Hub (https://hub.docker.com/r/paterno/pyhdf/).
+In addition to cloning the repository, you may want to have access to the latest version of the `paterno/pyhdf` Docker image, from Docker Hub (https://hub.docker.com/r/paterno/pyhdf/).
 
-All file generation is done from within a running Docker container, using the `makefile` provided in this repository.
+All file generation **except for use of MPI and `mpio`** can be done from within a running Docker container, using the `makefile` provided in this repository. The system has also been tested with a native installation on OSX Yosemite. This is done using:
 
+1. Python from Homebrew.
+2. MPI from Homebrew, specifically `open-mpi`.
+3. HDF5 from Homebrew, built from source with the options `--with-mpi --without-cxx`.
+4. `mpi4py` (version 2.0.0) installed using `pip`.
+5. `h5py` installed from the installation tarball, after run `python setup.py configure --mpi` to force creation of the MPI-aware version of `h5py`.
+
+To go the Docker route:
 1. Install the Docker image using `docker pull`.
 2. In the directory to which you cloned this repository, start the image using:
-
 ```
 #!bash
-
 $ docker run --rm -it --name hdfwork -v $PWD:/hdfwork -w /hdfwork paterno/pyhdf
 ```
 
-To generate files, then just run `make` from within the container.
+To generate files, then just run `make` from within the container (or, if working with native installs, just in a shell).
+
+### Active branches
+
+The *master* branch of the repository has the code that is using `mpio` to write files.
+The *no_mpio* branch of the repository has the code using the default I/O driver.
 
 ### Contribution guidelines ###
 
