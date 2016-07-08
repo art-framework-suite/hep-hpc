@@ -5,13 +5,13 @@ NSUBRUNS=5
 NEVENTS=3
 
 test: ex001/output.h5
-	@echo $$(h5ls -lr $< | egrep "^/r_\d+\s+Group$$" | wc -l) runs
-	@echo $$(h5ls -lr $< | egrep "^/r_\d+/s_\d+\s+Group$$" | wc -l) subruns
-	@echo $$(h5ls -lr $< | egrep "^/r_\d+/s_\d+/e_\d+\s+Group$$" | wc -l) events
+	@echo $$(h5ls -lr $< | egrep "^/r_[[:digit:]]+\s+Group$$" | wc -l) runs
+	@echo $$(h5ls -lr $< | egrep "^/r_[[:digit:]]+/s_[[:digit:]]+\s+Group$$" | wc -l) subruns
+	@echo $$(h5ls -lr $< | egrep "^/r_[[:digit:]]+/s_[[:digit:]]+/e_[[:digit:]]+\s+Group$$" | wc -l) events
 
 
 ex001/output.h5:
-	@echo -n "Creating $@... "
+	@printf "Creating $@... "
 	@rm -f $@
 	@PYTHONPATH=$(PWD):$(PYTHONPATH) python ex001/make_file.py $@ $(NRUNS) $(NSUBRUNS) $(NEVENTS)
 	@echo "done"
