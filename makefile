@@ -1,6 +1,7 @@
 .PHONY: ex001/output.h5 test
-NRANKS=1
-NRUNS=$$(echo $$(( 3 * $(NRANKS) )))
+NRANKS=4
+NRUNS_PER_RANK=3
+NRUNS=$$(echo $$(( $(NRUNS_PER_RANK) * $(NRANKS) )))
 NSUBRUNS=5
 
 NEVENTS=3
