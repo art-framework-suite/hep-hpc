@@ -26,7 +26,7 @@ To go the Docker route:
 $ docker run --rm -it --name hdfwork -v $PWD:/hdfwork -w /hdfwork paterno/pyhdf
 ```
 
-To generate files, then just run `make` from within the container (or, if working with native installs, just in a shell).
+To generate files, then just run `make` from within the container (or, if working with native installs, just in a shell). The `makefile` needs to be adjusted to switch between MPI usage and non-MPI usage; look for the invocation of `mpiexec` to see where this is done. In addition, it may be necessary to modify the `make_file.py` (possibly in multiple directories).
 
 ### Active branches
 
