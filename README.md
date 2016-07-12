@@ -16,7 +16,7 @@ All file generation **except for use of MPI and `mpio`** can be done from within
 2. MPI from Homebrew, specifically `open-mpi`.
 3. HDF5 from Homebrew, built from source with the options `--with-mpi --without-cxx`.
 4. `mpi4py` (version 2.0.0) installed using `pip`.
-5. `h5py` installed from the installation tarball, after run `python setup.py configure --mpi` to force creation of the MPI-aware version of `h5py`.
+5. `h5py` installed from the installation tarball, after running `python setup.py configure --mpi` to force creation of the MPI-aware version of `h5py`. Obtain installation tarballs from [The h5py project on PyPi](https://pypi.python.org/pypi/h5py).
 
 To go the Docker route:
 1. Install the Docker image using `docker pull`.
