@@ -14,18 +14,26 @@ All file generation **except for use of MPI and `mpio`** can be done from within
 
 1. Python from Homebrew.
 2. MPI from Homebrew, specifically `open-mpi`.
-3. HDF5 from Homebrew, built from source with the options `--with-mpi --without-cxx`.
+3. HDF5 1.10, see below.
 4. `mpi4py` (version 2.0.0) installed using `pip`.
 5. `h5py` installed from the installation tarball, after running `python setup.py configure --mpi` to force creation of the MPI-aware version of `h5py`. Obtain installation tarballs from [The h5py project on PyPi](https://pypi.python.org/pypi/h5py).
 
+In order to obtain a reasonable build of HDF5 1.10, one should:
+
+1. `brew tap homebrew/science`
+2. `cd $(brew --repository homebrew/science)`
+3. `git remote add chissg https://github.com/chissg/homebrew-science.git`
+4. `git pull chissg` 
+5. `brew install --build-from-source hdf5 --with-mpi --without-cxx`
+
 To go the Docker route:
+
 1. Install the Docker image using `docker pull`.
-2. In the directory to which you cloned this repository, start the image using:
+2. In the directory to which you cloned this repository, start the image using:  
 ```
 #!bash
 $ docker run --rm -it --name hdfwork -v $PWD:/hdfwork -w /hdfwork paterno/pyhdf
-```
-
+```  
 To generate files, then just run `make` from within the container (or, if working with native installs, just in a shell). The `makefile` needs to be adjusted to switch between MPI usage and non-MPI usage; look for the invocation of `mpiexec` to see where this is done. In addition, it may be necessary to modify the `make_file.py` (possibly in multiple directories).
 
 ### Active branches
