@@ -15,7 +15,7 @@ All file generation **except for use of MPI and `mpio`** can be done from within
 1. Python from Homebrew.
 2. MPI from Homebrew, specifically `open-mpi`.
 3. HDF5 1.10, see below.
-4. `mpi4py` (version 2.0.0) installed using `pip`.
+4. `mpi4py`, `numpy`, and `six`, installed using `pip`.
 5. `h5py` installed from the installation tarball, after running `python setup.py configure --mpi` to force creation of the MPI-aware version of `h5py`. Obtain installation tarballs from [The h5py project on PyPi](https://pypi.python.org/pypi/h5py).
 
 In order to obtain a reasonable build of HDF5 1.10, one should:
