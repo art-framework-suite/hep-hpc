@@ -1,0 +1,8 @@
+#!/bin/bash
+
+[[ -n "${PERF_STEM}" ]] || { echo "Required variable PERF_TEST_STEM not set." 1>&2; exit 1; }
+
+mkdir -p "/scratch/${USER}/${PERF_STEM}"
+
+exec python make_file.py --nseq ${NSEQ} --dpsize ${PRODSIZE} --szseq ${SEQSIZE} ${POISSON:+--poisson} \
+  "/scratch/${USER}/${PERF_STEM}/${PERF_STEM}.h5" ${NRUNS} ${NSUBRUNS} ${NEVENTS}
