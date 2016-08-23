@@ -13,10 +13,18 @@ In addition to cloning the repository, you may want to have access to the latest
 All file generation **except for use of MPI and `mpio`** can be done from within a running Docker container, using the `makefile` provided in this repository. The system has also been tested with a native installation on OSX Yosemite. This is done using:
 
 1. Python from Homebrew.
-2. MPI from Homebrew, specifically `open-mpi`.
+2. MPI from Homebrew, specifically `mpich`. OpenMPI causes failures in some use of parallel I/O in `h5py`.
 3. HDF5 1.10, see below.
-4. `mpi4py`, `numpy`, and `six`, installed using `pip`.
+4. `mpi4py`, `numpy`, and `six`, installed using `pip`. 
 5. `h5py` installed from the installation tarball, after running `python setup.py configure --mpi` to force creation of the MPI-aware version of `h5py`. Obtain installation tarballs from [The h5py project on PyPi](https://pypi.python.org/pypi/h5py).
+
+If you have `open_mpi` installed, to remove it and build `mpich` instead, use
+
+1. `brew rm openmpi`
+2. `brew cleanup`
+3. `brew install mpich`
+4. `pip uninstall mpi4py`
+5. `pip install --no-use-wheel --no-binary mpi4py`
 
 In order to obtain a reasonable build of HDF5 1.10, one should:
 
