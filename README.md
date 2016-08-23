@@ -25,6 +25,7 @@ If you have `open_mpi` installed, to remove it and build `mpich` instead, use
 3. `brew install mpich`
 4. `pip uninstall mpi4py`
 5. `pip install --no-binary :all: mpi4py`
+6. `brew uninstall hdf5` and re-install per below.
 
 In order to obtain a reasonable build of HDF5 1.10, one should:
 
