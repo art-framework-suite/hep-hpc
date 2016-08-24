@@ -48,11 +48,21 @@ To generate files, then just run `make` from within the container (or, if workin
 ### Active branches
 
 The *master* branch of the repository has the code that is using `mpio` to write files.
-The *no_mpio* branch of the repository has the code using the default I/O driver.
 
 ### Contribution guidelines ###
 
 Please fork the repository and send pull requests.
+
+### Repository architecture and build details ###
+
+The interested observer will notice the presence not only of a `CMakeLists.txt` file and associated `CMakeModules` directory, but also a `GNUmakefie`. The latter manages the in-place invocation of the (mainly python) tests in directories named `ex00`_n_. The `CMakeLists.txt` manages the building and testing of the mainly C and C++ code in the other directories. In order to utilize the 'CMake side' of things, you should:
+
+1. Make a build directory and `cd` into it.
+2. Invoke CMake:  
+```
+CC=<c-compiler> CXX=<c++-compiler> cmake -DCMAKE_BUILD_TYPE=<Debug|Release|RelWithDebInfo> <path-to-repository-top-dir>
+```  
+The `CMakeLists.txt` file includes a safeguard against invoking CMake from within the source directory, but you may still have to remove some debris if you do this unintentionally.
 
 ### Who do I talk to? ###
 
