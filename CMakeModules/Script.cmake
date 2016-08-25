@@ -1,3 +1,21 @@
+########################################################################
+# script(<script>+ [DEPENDENCIES <dependencies>])
+#
+# Copy the specified scripts directly to ${EXECUTABLE_OUTPUT_PATH}.
+#
+########################################################################
+# Options
+#
+# DEPENDENCIES <dependencies>
+#
+#   Specify items upon which the script or scripts depend.
+#
+########################################################################
+# Notes
+#
+# Paths are relative to ${CMAKE_CURRENT_BINARY_DIR}.
+#
+########################################################################
 include(CMakeParseArguments)
 
 function (script)
