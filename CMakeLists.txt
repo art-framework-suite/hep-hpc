@@ -55,14 +55,17 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${EXECUTABLE_OUTPUT_P
 
 # MPI
 find_package(MPI QUIET)
-if (MPI_FOUND)
-  message(STATUS "MPI_C_LIBRARIES: ${MPI_C_LIBRARIES}")
-else()
+if (NOT MPI_FOUND)
   message(FATAL_ERROR "Unable to find a suitable MPI distribution.")
 endif()
 include_directories(${MPI_C_INCLUDE_PATH})
 
 # HDF5
+find_package(HDF5 COMPONENTS C)
+if (NOT HDF5_FOUND)
+  message(FATAL_ERROR "Unable to find a suitable HDF5 distribution")
+endif()
+include_directories(${HDF5_INCLUDE_DIRS})
 
 # Subdirectories.
 add_subdirectory(hep_hpc)
