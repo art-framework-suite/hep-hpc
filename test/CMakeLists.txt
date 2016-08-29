@@ -49,3 +49,10 @@ add_mpi_test(basic_hdf5_mpi_t ${EXECUTABLE_OUTPUT_PATH}/basic_hdf5_mpi_t)
 # Test of heritability of communicator error handlers.
 add_executable(CommErrorsReturn_t CommErrorsReturn_t.cpp)
 target_link_libraries(CommErrorsReturn_t hep_hpc ${MPI_C_LIBRARIES})
+####################################
+
+####################################
+# Test of SimpleRAII.
+add_executable(SimpleRAII_t SimpleRAII_t.cpp)
+add_test(SimpleRAII_t ${EXECUTABLE_OUTPUT_PATH}/SimpleRAII_t)
+####################################
