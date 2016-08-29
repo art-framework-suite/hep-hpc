@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////
-// MPI_t
+// MPIInstance_t
 //
 // Demonstrate safe shutdown of MPI under normal conditions.
 //
 ////////////////////////////////////////////////////////////////////////
-#include "hep_hpc/MPI.hpp"
+#include "hep_hpc/MPIInstance.hpp"
 
 #include <stdexcept>
 
@@ -12,5 +12,5 @@ using namespace hep_hpc;
 
 int main(int argc, char **argv)
 {
-  MPI theMPI(argc, argv); 
+  MPIInstance theMPI(argc, argv);
 }

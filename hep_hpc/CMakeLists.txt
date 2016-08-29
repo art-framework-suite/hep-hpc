@@ -1,5 +1,6 @@
 set (source_files
-  MPI.cpp
+  MPIInstance.cpp
+  detail/throwOnMPIError.cpp
   )
 
 add_library(hep_hpc SHARED ${source_files})
