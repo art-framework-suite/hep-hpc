@@ -1,7 +1,7 @@
 set (source_files
+  H5File.cpp
   MPICommunicator.cpp
   MPIGroup.cpp
-  H5File.cpp
   MPIInstance.cpp
   detail/throwOnMPIError.cpp
   )
