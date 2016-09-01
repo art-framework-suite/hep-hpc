@@ -69,5 +69,6 @@ include_directories(${HDF5_INCLUDE_DIRS})
 
 # Subdirectories.
 add_subdirectory(hep_hpc)
+add_subdirectory(gtest)
 add_subdirectory(test)
 #add_subdirectory(doc)
