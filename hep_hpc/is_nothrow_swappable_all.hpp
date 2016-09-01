@@ -17,7 +17,7 @@ namespace hep_hpc {
   template<typename... T>
   struct is_nothrow_swappable_all
   {
-    static constexpr std::tuple<T...> *t = 0;
+    static constexpr std::tuple<T...> *t = nullptr;
     enum { value = noexcept(t->swap(*t)) };
   };
 }
