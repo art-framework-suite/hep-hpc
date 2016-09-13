@@ -31,9 +31,8 @@ In order to obtain a reasonable build of HDF5 1.10, one should:
 
 1. `brew tap homebrew/science`
 2. `cd $(brew --repository homebrew/science)`
-3. `git remote add chissg https://github.com/chissg/homebrew-science.git`
-4. `git pull chissg master` (You may need to merge results).
-5. `brew install --build-from-source hdf5 --with-mpi --without-cxx`
+3. download https://bitbucket.org/mpaterno/hdffilestructurestudy/downloads/hdf5fnal.rb and put it into the current directory
+4. `brew install --build-from-source hdf5fnal --with-mpi --without-cxx`
 
 To go the Docker route:
 
