@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == 0) {
-      throwOnMPIError("MPI_Error_string", &MPI_Error_string, -1, nullptr, nullptr);
+      throwOnMPIError(&MPI_Error_string, -1, nullptr, nullptr);
     }
   } catch (std::exception & e) {
     std::cerr << "MPI application caught exception at the top level and will exit:\n"

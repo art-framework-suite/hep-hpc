@@ -27,7 +27,7 @@ create(MPICommunicator const & communicator,
 ->MPICommunicator
 {
   MPI_Comm c;
-  throwOnMPIError("MPI_Comm_create", &MPI_Comm_create,
+  throwOnMPIError(&MPI_Comm_create,
                   communicator.comm(),
                   group.group(),
                   &c);
@@ -40,7 +40,7 @@ group() const
 -> MPIGroup
 {
   MPI_Group g;
-  throwOnMPIError("MPI_Comm_group", &MPI_Comm_group,
+  throwOnMPIError(&MPI_Comm_group,
                   *theCommunicator_, &g);
   return MPIGroup(g);
 }

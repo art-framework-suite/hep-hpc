@@ -57,7 +57,7 @@ hep_hpc::MPICommunicator::
 size() const
 {
   int result;
-  throwOnMPIError("MPI_Comm_size", &MPI_Comm_size, *theCommunicator_, &result);
+  throwOnMPIError(&MPI_Comm_size, *theCommunicator_, &result);
   return result;
 }
 
@@ -67,7 +67,7 @@ hep_hpc::MPICommunicator::
 rank() const
 {
   int result;
-  throwOnMPIError("MPI_Comm_rank", &MPI_Comm_rank, *theCommunicator_, &result);
+  throwOnMPIError(&MPI_Comm_rank, *theCommunicator_, &result);
   return result;
 }
 
@@ -78,7 +78,7 @@ duplicate() const
 ->MPICommunicator
 {
   MPI_Comm c;
-  throwOnMPIError("MPI_Comm_dup", &MPI_Comm_dup,
+  throwOnMPIError(&MPI_Comm_dup,
                   *theCommunicator_, &c);
   return MPICommunicator(c);
 }
@@ -90,7 +90,7 @@ split(int color, int key) const
 ->MPICommunicator
 {
   MPI_Comm c;
-  throwOnMPIError("MPI_Comm_split", &MPI_Comm_split,
+  throwOnMPIError(&MPI_Comm_split,
                   *theCommunicator_, color, key, &c);
   return MPICommunicator(c);
 }
