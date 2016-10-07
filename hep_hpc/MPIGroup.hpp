@@ -27,8 +27,9 @@ public:
   int size() const;
   int rank() const;
 
-  // Use with caution: do not call MPI_Group_free()!
-  MPI_Group group() const noexcept;
+  // Provide access to the underlying group while retaining resource
+  // control.
+  operator MPI_Group() const noexcept;
   
 private:
   SimpleRAII<MPI_Group> theGroup_;
@@ -55,9 +56,8 @@ rank() const
 }
 
 inline
-MPI_Group
 hep_hpc::MPIGroup::
-group() const noexcept
+operator MPI_Group() const noexcept
 {
   return *theGroup_;
 }
