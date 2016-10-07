@@ -41,11 +41,12 @@ public:
   MPICommunicator duplicate() const;
   MPICommunicator split(int color, int key) const;
 
-  // Other useful functions.
+  // Obtain the group corresponding to this communicator.
   MPIGroup group() const;
 
-  // Use with caution: do not call MPI_Comm_free()!
-  MPI_Comm comm() const noexcept;
+  // Provide acccess to the underlying communicator while retaining
+  // resource control.
+  operator MPI_Comm() const noexcept;
 
 private:
   SimpleRAII<MPI_Comm> theCommunicator_;
@@ -78,8 +79,7 @@ duplicate() const
 ->MPICommunicator
 {
   MPI_Comm c;
-  throwOnMPIError(&MPI_Comm_dup,
-                  *theCommunicator_, &c);
+  throwOnMPIError(&MPI_Comm_dup, *theCommunicator_, &c);
   return MPICommunicator(c);
 }
 
@@ -90,15 +90,14 @@ split(int color, int key) const
 ->MPICommunicator
 {
   MPI_Comm c;
-  throwOnMPIError(&MPI_Comm_split,
-                  *theCommunicator_, color, key, &c);
+  throwOnMPIError(&MPI_Comm_split, *theCommunicator_, color, key, &c);
   return MPICommunicator(c);
 }
 
 inline
-MPI_Comm
 hep_hpc::MPICommunicator::
-comm() const noexcept
+operator
+MPI_Comm() const noexcept
 {
   return *theCommunicator_;
 }
