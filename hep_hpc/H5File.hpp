@@ -19,7 +19,16 @@ public:
   H5File(std::string const & filename,
          unsigned int flags = H5F_ACC_TRUNC);
 
+  operator hid_t() const noexcept;
+
 private:
   SimpleRAII<hid_t> h5file_;
 };
+
+inline
+hep_hpc::H5File::
+operator hid_t() const noexcept
+{
+  return *h5file_;
+}
 #endif /* HDFSTUDY_H5FILE_HPP */
