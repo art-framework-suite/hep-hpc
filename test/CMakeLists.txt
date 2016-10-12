@@ -68,6 +68,13 @@ add_library(mpitest_main STATIC MPITestMain.cpp)
 target_link_libraries(mpitest_main hep_hpc gtest)
 
 ####################################
+# MPIGroup test.
+add_executable(MPIGroup_t MPIGroup_t.cpp)
+target_link_libraries(MPIGroup_t mpitest_main hep_hpc gtest)
+add_mpi_test(MPIGroup_t NP 5 ${EXECUTABLE_OUTPUT_PATH}/MPIGroup_t)
+####################################
+
+####################################
 # MPICommunicator test.
 add_executable(MPICommunicator_t MPICommunicator_t.cpp)
 target_link_libraries(MPICommunicator_t mpitest_main hep_hpc gtest)
