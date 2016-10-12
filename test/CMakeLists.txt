@@ -61,3 +61,8 @@ target_link_libraries(CommErrorsReturn_t hep_hpc ${MPI_C_LIBRARIES})
 add_executable(SimpleRAII_t SimpleRAII_t.cpp)
 add_test(SimpleRAII_t ${EXECUTABLE_OUTPUT_PATH}/SimpleRAII_t)
 ####################################
+
+####################################
+# Static library containing MPI-aware main.
+add_library(mpitest_main STATIC MPITestMain.cpp)
+target_link_libraries(mpitest_main hep_hpc gtest)

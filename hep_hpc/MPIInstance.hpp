@@ -34,10 +34,10 @@ public:
   ~MPIInstance();
 
   static constexpr WORLD_ERRORS_RETURN_t world_errors_return_tag { };
-  
+
   // Call this abort() function to trigger safe shutdown of MPI
-  // operations.
-  void abort(int exit_code = 1);
+  // operations (short-cut for calling MPI_Abort()).
+  static void abort(int exit_code = 1);
 };
 
 #endif /* HDFSTUDY_MPI_HPP */

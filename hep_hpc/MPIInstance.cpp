@@ -13,7 +13,7 @@ hep_hpc::MPIInstance::MPIInstance(int & argc, char **& argv)
   if (provided != required) {
     std::cerr << "hep_hpc::MPIInstance::MPIInstance() unable to obtain requested thread operation level ("
               << required << "): received thread level " << provided << ".\n";
-    this->abort();
+    abort();
   }
 }
 
