@@ -67,6 +67,8 @@ if (NOT HDF5_FOUND)
 endif()
 include_directories(${HDF5_INCLUDE_DIRS})
 
+include (CTest)
+
 # Subdirectories.
 add_subdirectory(hep_hpc)
 add_subdirectory(gtest)

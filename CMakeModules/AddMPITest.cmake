@@ -52,7 +52,7 @@ function (add_mpi_test TARGET_STEM)
     message(FATAL_ERROR "add_mpi_test requires that find_package(MPI) has been executed successfully on this system.")
   endif()
 
-  cmake_parse_arguments(amt "" "NP" "WRAP_COMMAND;COMMAND" ${ARGN})
+  cmake_parse_arguments(amt "VALGRIND" "NP" "WRAP_COMMAND;COMMAND" ${ARGN})
   if (NOT amt_NP)
     set(amt_NP ${NCORES})
   endif()
@@ -64,5 +64,13 @@ function (add_mpi_test TARGET_STEM)
     ${MPIEXEC_PREFLAGS} ${MPIEXEC_POSTFLAGS}
     ${amt_COMMAND}
     )
+  if (amt_VALGRIND)
+    add_test(NAME ${TARGET_STEM}_${amt_NP}_MEMCHECK COMMAND
+      ${amt_WRAP_COMMAND} ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${amt_NP}
+      ${MPIEXEC_PREFLAGS} ${MPIEXEC_POSTFLAGS}
+      ${MEMORYCHECK_COMMAND} --error-exitcode=1 --leak-check=no ${amt_COMMAND}
+      )
+  endif()
+
   set_tests_properties(${TARGET_STEM}_${amt_NP} PROPERTIES PROCESSORS ${amt_NP})
 endfunction()
