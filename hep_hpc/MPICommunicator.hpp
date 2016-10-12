@@ -16,6 +16,7 @@
 //   MPICommunicator initialized with same.
 //
 ////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/MPIComparison_t.hpp"
 #include "hep_hpc/SimpleRAII.hpp"
 #include "hep_hpc/throwOnMPIError.hpp"
 
@@ -25,6 +26,12 @@ namespace hep_hpc {
   class MPICommunicator;
 
   class MPIGroup;
+
+  // Comparison operator.
+  bool operator == (MPICommunicator const & left,
+                    MPICommunicator const & right);
+  bool operator != (MPICommunicator const & left,
+                    MPICommunicator const & right);
 }
 
 class hep_hpc::MPICommunicator {
@@ -34,6 +41,9 @@ public:
   // Basic information.
   int size() const;
   int rank() const;
+
+  // Compare with another communicator (answers are symmetric).
+  MPIComparison_t compare(MPICommunicator const & other) const;
 
   // Make new communicators.
   MPICommunicator create(MPICommunicator const & communicator,
@@ -60,6 +70,17 @@ size() const
   int result;
   throwOnMPIError("MPI_Comm_size()", &MPI_Comm_size, *theCommunicator_, &result);
   return result;
+}
+
+inline
+auto
+hep_hpc::MPICommunicator::
+compare(MPICommunicator const & other) const
+-> MPIComparison_t
+{
+  int result;
+  throwOnMPIError("MPI_Comm_compare()", &MPI_Comm_compare, *theCommunicator_, other, &result);
+  return MPIComparison_t(result);
 }
 
 inline
@@ -100,5 +121,22 @@ operator
 MPI_Comm() const noexcept
 {
   return *theCommunicator_;
+}
+
+inline
+bool
+hep_hpc::operator == (MPICommunicator const & left,
+                       MPICommunicator const & right)
+{
+  return left.compare(right) == MPIComparison_t::IDENTICAL;
+}
+
+inline
+bool
+hep_hpc::
+operator != (MPICommunicator const & left,
+             MPICommunicator const & right)
+{
+  return !(left == right);
 }
 #endif /* HDFSTUDY_MPICOMMUNICATOR_HPP */
