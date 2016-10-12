@@ -36,7 +36,7 @@ int main(int argc, char **argv)
                                  to_string(splitHandler));
       }
       MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_ARE_FATAL);
-      throwOnMPIError(&MPI_Comm_call_errhandler,
+      throwOnMPIError("MPI_Comm_call_errhandler()", &MPI_Comm_call_errhandler,
                       splitComm,
                       MPI_ERR_OP);
     }

@@ -9,7 +9,7 @@ hep_hpc::MPIInstance::MPIInstance(int & argc, char **& argv)
 {
   int provided;
   auto const required = MPI_THREAD_FUNNELED;
-  throwOnMPIError(&MPI_Init_thread, &argc, &argv, required, &provided);
+  throwOnMPIError("MPI_Init_thread()", &MPI_Init_thread, &argc, &argv, required, &provided);
   if (provided != required) {
     std::cerr << "hep_hpc::MPIInstance::MPIInstance() unable to obtain requested thread operation level ("
               << required << "): received thread level " << provided << ".\n";

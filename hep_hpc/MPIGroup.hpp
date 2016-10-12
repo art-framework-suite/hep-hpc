@@ -41,7 +41,7 @@ hep_hpc::MPIGroup::
 size() const
 {
   int result;
-  throwOnMPIError(&MPI_Group_size, *theGroup_, &result);
+  throwOnMPIError("MPI_Group_size()", &MPI_Group_size, *theGroup_, &result);
   return result;
 }
 
@@ -51,7 +51,7 @@ hep_hpc::MPIGroup::
 rank() const
 {
   int result;
-  throwOnMPIError(&MPI_Group_rank, *theGroup_, &result);
+  throwOnMPIError("MPI_Group_rank()", &MPI_Group_rank, *theGroup_, &result);
   return result;
 }
 
