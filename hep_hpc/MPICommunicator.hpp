@@ -16,6 +16,7 @@
 //   MPICommunicator initialized with same.
 //
 ////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/MPIComparison_t.hpp"
 #include "hep_hpc/SimpleRAII.hpp"
 #include "hep_hpc/throwOnMPIError.hpp"
 
@@ -25,6 +26,12 @@ namespace hep_hpc {
   class MPICommunicator;
 
   class MPIGroup;
+
+  // Comparison operator.
+  bool operator == (MPICommunicator const & left,
+                    MPICommunicator const & right);
+  bool operator != (MPICommunicator const & left,
+                    MPICommunicator const & right);
 }
 
 class hep_hpc::MPICommunicator {
@@ -35,17 +42,21 @@ public:
   int size() const;
   int rank() const;
 
+  // Compare with another communicator (answers are symmetric).
+  MPIComparison_t compare(MPICommunicator const & other) const;
+
   // Make new communicators.
   MPICommunicator create(MPICommunicator const & communicator,
                          MPIGroup const & group) const;
   MPICommunicator duplicate() const;
   MPICommunicator split(int color, int key) const;
 
-  // Other useful functions.
+  // Obtain the group corresponding to this communicator.
   MPIGroup group() const;
 
-  // Use with caution: do not call MPI_Comm_free()!
-  MPI_Comm comm() const noexcept;
+  // Provide acccess to the underlying communicator while retaining
+  // resource control.
+  operator MPI_Comm() const noexcept;
 
 private:
   SimpleRAII<MPI_Comm> theCommunicator_;
@@ -57,8 +68,19 @@ hep_hpc::MPICommunicator::
 size() const
 {
   int result;
-  throwOnMPIError("MPI_Comm_size", &MPI_Comm_size, *theCommunicator_, &result);
+  throwOnMPIError("MPI_Comm_size()", &MPI_Comm_size, *theCommunicator_, &result);
   return result;
+}
+
+inline
+auto
+hep_hpc::MPICommunicator::
+compare(MPICommunicator const & other) const
+-> MPIComparison_t
+{
+  int result;
+  throwOnMPIError("MPI_Comm_compare()", &MPI_Comm_compare, *theCommunicator_, other, &result);
+  return MPIComparison_t(result);
 }
 
 inline
@@ -67,7 +89,7 @@ hep_hpc::MPICommunicator::
 rank() const
 {
   int result;
-  throwOnMPIError("MPI_Comm_rank", &MPI_Comm_rank, *theCommunicator_, &result);
+  throwOnMPIError("MPI_Comm_rank()", &MPI_Comm_rank, *theCommunicator_, &result);
   return result;
 }
 
@@ -78,8 +100,7 @@ duplicate() const
 ->MPICommunicator
 {
   MPI_Comm c;
-  throwOnMPIError("MPI_Comm_dup", &MPI_Comm_dup,
-                  *theCommunicator_, &c);
+  throwOnMPIError("MPI_Comm_dup()", &MPI_Comm_dup, *theCommunicator_, &c);
   return MPICommunicator(c);
 }
 
@@ -90,16 +111,32 @@ split(int color, int key) const
 ->MPICommunicator
 {
   MPI_Comm c;
-  throwOnMPIError("MPI_Comm_split", &MPI_Comm_split,
-                  *theCommunicator_, color, key, &c);
+  throwOnMPIError("MPI_Comm_split()", &MPI_Comm_split, *theCommunicator_, color, key, &c);
   return MPICommunicator(c);
 }
 
 inline
-MPI_Comm
 hep_hpc::MPICommunicator::
-comm() const noexcept
+operator
+MPI_Comm() const noexcept
 {
   return *theCommunicator_;
+}
+
+inline
+bool
+hep_hpc::operator == (MPICommunicator const & left,
+                       MPICommunicator const & right)
+{
+  return left.compare(right) == MPIComparison_t::IDENTICAL;
+}
+
+inline
+bool
+hep_hpc::
+operator != (MPICommunicator const & left,
+             MPICommunicator const & right)
+{
+  return !(left == right);
 }
 #endif /* HDFSTUDY_MPICOMMUNICATOR_HPP */

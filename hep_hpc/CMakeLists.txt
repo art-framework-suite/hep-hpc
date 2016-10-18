@@ -3,6 +3,7 @@ set (source_files
   MPICommunicator.cpp
   MPIGroup.cpp
   MPIInstance.cpp
+  detail/demangle_symbol.cpp
   detail/throwOnMPIError.cpp
   )
 

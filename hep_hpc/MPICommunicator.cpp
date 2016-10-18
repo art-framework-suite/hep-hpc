@@ -24,12 +24,12 @@ auto
 hep_hpc::MPICommunicator::
 create(MPICommunicator const & communicator,
        MPIGroup const & group) const
-->MPICommunicator
+-> MPICommunicator
 {
   MPI_Comm c;
-  throwOnMPIError("MPI_Comm_create", &MPI_Comm_create,
-                  communicator.comm(),
-                  group.group(),
+  throwOnMPIError("MPI_Comm_create()", &MPI_Comm_create,
+                  communicator,
+                  group,
                   &c);
   return MPICommunicator(c);
 }
@@ -40,7 +40,6 @@ group() const
 -> MPIGroup
 {
   MPI_Group g;
-  throwOnMPIError("MPI_Comm_group", &MPI_Comm_group,
-                  *theCommunicator_, &g);
+  throwOnMPIError("MPI_Comm_group()", &MPI_Comm_group, *theCommunicator_, &g);
   return MPIGroup(g);
 }

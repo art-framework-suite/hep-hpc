@@ -1,12 +1,17 @@
-########################################################################
+####################################
+# Set up CTest
+enable_testing()
+
+####################################
+# Set up Google Test.
+include_directories(gtest/googletest/include)
+
+####################################
 # Make sure we can use assert() in tests.
-#
-########################################################################
 remove_definitions("-DNDEBUG")
 
 ########################################################################
 # Put functionality tests here.
-#
 ########################################################################
 include(Script)
 include(AddMPITest)
@@ -55,4 +60,23 @@ target_link_libraries(CommErrorsReturn_t hep_hpc ${MPI_C_LIBRARIES})
 # Test of SimpleRAII.
 add_executable(SimpleRAII_t SimpleRAII_t.cpp)
 add_test(SimpleRAII_t ${EXECUTABLE_OUTPUT_PATH}/SimpleRAII_t)
+####################################
+
+####################################
+# Static library containing MPI-aware main.
+add_library(mpitest_main STATIC MPITestMain.cpp)
+target_link_libraries(mpitest_main hep_hpc gtest)
+
+####################################
+# MPIGroup test.
+add_executable(MPIGroup_t MPIGroup_t.cpp)
+target_link_libraries(MPIGroup_t mpitest_main hep_hpc gtest)
+add_mpi_test(MPIGroup_t NP 5 ${EXECUTABLE_OUTPUT_PATH}/MPIGroup_t)
+####################################
+
+####################################
+# MPICommunicator test.
+add_executable(MPICommunicator_t MPICommunicator_t.cpp)
+target_link_libraries(MPICommunicator_t mpitest_main hep_hpc gtest)
+add_mpi_test(MPICommunicator_t NP 5 ${EXECUTABLE_OUTPUT_PATH}/MPICommunicator_t)
 ####################################

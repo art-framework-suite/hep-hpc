@@ -4,12 +4,14 @@
 // hep_hpc::throwOnMPIError()
 //
 // Throw an exception upon non-successful return from an MPI function.
-//
 ////////////////////////////////////////////////////////////////////////
 
+#include "hep_hpc/detail/demangle_symbol.hpp"
 #include "hep_hpc/detail/throwOnMPIError.hpp"
 
 #include <string>
+#include <type_traits>
+#include <typeinfo>
 
 namespace hep_hpc {
   template <typename MPI_FUNC, typename ... ARGS>
