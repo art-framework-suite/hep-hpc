@@ -46,7 +46,7 @@ public:
   MPIGroup incl(ITER begin, ITER end) const;
   MPIGroup incl(std::size_t sz, int const arr[]) const;
   MPIGroup incl(int const * begin, int const * end) const;
-  MPIGroup incl(int ex_rank) const;
+  MPIGroup incl(int inc_rank) const;
 
   // Return a new group whose members are those in this group *not*
   // mentioned in the specified rank or ranks.
@@ -194,10 +194,10 @@ excl(int const * begin,
 inline
 auto
 hep_hpc::MPIGroup::
-excl(int const ex_rank) const
+excl(int const inc_rank) const
 -> MPIGroup
 {
-  return excl(1ul, &ex_rank);
+  return excl(1ul, &inc_rank);
 }
 
 inline
