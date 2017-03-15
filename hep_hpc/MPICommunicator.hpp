@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_MPICOMMUNICATOR_HPP
-#define HDFSTUDY_MPICOMMUNICATOR_HPP
+#ifndef hep_hpc_MPICommunicator_hpp
+#define hep_hpc_MPICommunicator_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::MPIComm
 //
@@ -139,4 +139,4 @@ operator != (MPICommunicator const & left,
 {
   return !(left == right);
 }
-#endif /* HDFSTUDY_MPICOMMUNICATOR_HPP */
+#endif /* hep_hpc_MPICommunicator_hpp */

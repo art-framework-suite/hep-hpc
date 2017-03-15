@@ -80,3 +80,16 @@ add_executable(MPICommunicator_t MPICommunicator_t.cpp)
 target_link_libraries(MPICommunicator_t mpitest_main hep_hpc gtest)
 add_mpi_test(MPICommunicator_t NP 5 ${EXECUTABLE_OUTPUT_PATH}/MPICommunicator_t)
 ####################################
+
+####################################
+# H5File test.
+add_executable(H5File_t H5File_t.cpp)
+target_link_libraries(H5File_t hep_hpc gtest)
+add_test(NAME H5File_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/H5File_t)
+
+####################################
+# Ntuple test.
+add_executable(Ntuple_t Ntuple_t.cpp)
+add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)
+target_link_libraries(Ntuple_t hep_hpc)
+####################################

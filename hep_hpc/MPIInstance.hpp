@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_MPIINSTANCE_HPP
-#define HDFSTUDY_MPIINSTANCE_HPP
+#ifndef hep_hpc_MPIInstance_hpp
+#define hep_hpc_MPIInstance_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::MPIInstance
 //
@@ -40,4 +40,4 @@ public:
   static void abort(int exit_code = 1);
 };
 
-#endif /* HDFSTUDY_MPI_HPP */
+#endif /* hep_hpc_MPIInstance_hpp */

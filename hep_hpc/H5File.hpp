@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_H5FILE_HPP
-#define HDFSTUDY_H5FILE_HPP
+#ifndef hep_hpc_H5File_hpp
+#define hep_hpc_H5File_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::H5File
 //
@@ -7,7 +7,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/SimpleRAII.hpp"
-
+#include "hep_hpc/detail/DefaultedSimpleType.hpp"
 #include "hdf5.h"
 
 namespace hep_hpc {
@@ -16,13 +16,18 @@ namespace hep_hpc {
 
 class hep_hpc::H5File {
 public:
+  H5File() = default;
+
   H5File(std::string const & filename,
          unsigned int flags = H5F_ACC_TRUNC);
 
   operator hid_t() const noexcept;
 
+  explicit operator bool () const noexcept;
+
 private:
-  SimpleRAII<hid_t> h5file_;
+  static constexpr const hid_t INVALID_FILE = -1;
+  SimpleRAII<detail::DefaultedSimpleType<hid_t, INVALID_FILE>> h5file_;
 };
 
 inline
@@ -31,4 +36,11 @@ operator hid_t() const noexcept
 {
   return *h5file_;
 }
-#endif /* HDFSTUDY_H5FILE_HPP */
+
+inline
+hep_hpc::H5File::
+operator bool () const noexcept
+{
+  return *h5file_ != INVALID_FILE;
+}
+#endif /* hep_hpc_H5File_hpp */

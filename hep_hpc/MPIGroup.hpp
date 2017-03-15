@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_MPIGROUP_HPP
-#define HDFSTUDY_MPIGROUP_HPP
+#ifndef hep_hpc_MPIGroup_hpp
+#define hep_hpc_MPIGroup_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::MPIGroup
 //
@@ -244,4 +244,4 @@ operator != (MPIGroup const & left, MPIGroup const & right)
 {
   return !(left == right);
 }
-#endif /* HDFSTUDY_MPIGROUP_HPP */
+#endif /* hep_hpc_MPIGroup_hpp */

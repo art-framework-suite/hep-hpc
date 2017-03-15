@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_IS_NOTHROW_SWAPPABLE_ALL
-#define HDFSTUDY_IS_NOTHROW_SWAPPABLE_ALL
+#ifndef hep_hpc_is_nothrow_swappable_all_hpp
+#define hep_hpc_is_nothrow_swappable_all_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::is_nothrow_swappable_all
 //
@@ -21,4 +21,4 @@ namespace hep_hpc {
     enum { value = noexcept(t->swap(*t)) };
   };
 }
-#endif /* HDFSTUDY_IS_NOTHROW_SWAPPABLE_ALL */
+#endif /* hep_hpc_is_nothrow_swappable_all_hpp */

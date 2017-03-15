@@ -5,6 +5,7 @@ set (source_files
   MPIInstance.cpp
   detail/demangle_symbol.cpp
   detail/throwOnMPIError.cpp
+  initH5ErrorHandling.cpp
   )
 
 add_library(hep_hpc SHARED ${source_files})

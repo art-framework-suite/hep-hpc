@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_THROWONMPIERROR_HPP
-#define HDFSTUDY_THROWONMPIERROR_HPP
+#ifndef hep_hpc_throwOnMPIError_hpp
+#define hep_hpc_throwOnMPIError_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::throwOnMPIError()
 //
@@ -40,4 +40,4 @@ hep_hpc::throwOnMPIError(std::string const & funcString,
     detail::throwOnMPIError(funcString, status);
   }
 }
-#endif /* HDFSTUDY_THROWONMPIERROR_HPP */
+#endif /* hep_hpc_throwOnMPIError_hpp */

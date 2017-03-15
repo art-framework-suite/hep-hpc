@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_SIMPLERAII_HPP
-#define HDFSTUDY_SIMPLERAII_HPP
+#ifndef hep_hpc_SimpleRAII_hpp
+#define hep_hpc_SimpleRAII_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::SimpleRAII
 //
@@ -44,49 +44,63 @@
 #include <utility>
 
 namespace hep_hpc {
+  // SimpleRAII template.
   template <typename RESOURCE_HANDLE>
   class SimpleRAII;
-  // Specialization for no handle.
+
+  // Specialization for no resource handle.
   template <>
   class SimpleRAII<void>;
+
+  // Free swap functions.
+  template <typename RH>
+  void swap(SimpleRAII<RH> & left, SimpleRAII<RH> & right);
+
+  void swap(SimpleRAII<void> & left, SimpleRAII<void> & right);
 }
 
 // Class template definition.
 template <typename RESOURCE_HANDLE>
 class hep_hpc::SimpleRAII {
 public:
+  // Default constructor.
   SimpleRAII() = default;
 
+  // Constructor with arguments.
   template <typename SETUP_FUNC, typename TEARDOWN_FUNC, typename ... ARGS>
-  SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args)
-  noexcept(noexcept(setup(std::forward<ARGS>(args)...)) &&
-           noexcept(TEARDOWN_FUNC(teardown)));
+  SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args);
 
-  template <typename T>
-  friend
-  void swap(SimpleRAII<T> & left, SimpleRAII<T> & right)
-noexcept(is_nothrow_swappable_all<decltype(left.resourceHandle_),
-         decltype(left.teardown_)>::value)
-    {
-      using std::swap;
-      swap(left.resourceHandle_, right.resourceHandle_);
-      swap(left.teardown_, right.teardown_);
-    }
+  // Free swap function.
+  template <typename RH>
+  friend void swap(SimpleRAII<RH> & left, SimpleRAII<RH> & right);
 
-  SimpleRAII(SimpleRAII<RESOURCE_HANDLE> && other)
- noexcept(std::is_nothrow_constructible<SimpleRAII<RESOURCE_HANDLE>>::value &&
-          noexcept(swap(other, other))) = default;
-  SimpleRAII<RESOURCE_HANDLE> & operator = (SimpleRAII<RESOURCE_HANDLE> && other)
-          noexcept(is_nothrow_swappable_all<decltype(other.resourceHandle_),
-                   decltype(other.teardown_)>::value) = default;
+  // Move constructor.
+  SimpleRAII(SimpleRAII<RESOURCE_HANDLE> && other);
+
+  // Move assignment.
+  SimpleRAII<RESOURCE_HANDLE> &
+  operator = (SimpleRAII<RESOURCE_HANDLE> && other);
+
+  // No copy constructor.
   SimpleRAII(SimpleRAII<RESOURCE_HANDLE> const &) = delete;
+
+  // No move constructor.
   SimpleRAII<RESOURCE_HANDLE> &
   operator = (SimpleRAII<RESOURCE_HANDLE> const &) = delete;
 
-  RESOURCE_HANDLE const & operator * () const noexcept;
-  RESOURCE_HANDLE & operator * () noexcept;
+  // Dereference operators.
+  RESOURCE_HANDLE const & operator * () const;
+  RESOURCE_HANDLE & operator * ();
 
-  ~SimpleRAII() noexcept;
+  // Access teardown function.
+  std::function<void(RESOURCE_HANDLE) &&> teardownFunc() const;
+
+  // Release (teardown function will be neutralized).
+  RESOURCE_HANDLE release();
+
+  // Destructor.
+  ~SimpleRAII();
+
 private:
   RESOURCE_HANDLE resourceHandle_;
   std::function<void(RESOURCE_HANDLE &&)> teardown_;
@@ -96,72 +110,128 @@ private:
 template <>
 class hep_hpc::SimpleRAII<void> {
 public:
+  // Default constructor.
   SimpleRAII() noexcept = default;
 
+  // Constructor with arguments.
   template <typename SETUP_FUNC, typename TEARDOWN_FUNC, typename ... ARGS>
-  SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args)
-noexcept(noexcept(setup(std::forward<ARGS>(args)...)) &&
-         noexcept(TEARDOWN_FUNC(teardown)));
+  SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args);
 
-  friend void swap(SimpleRAII<void> & left, SimpleRAII<void> & right)
-noexcept(is_nothrow_swappable_all<std::function<void()>>::value)
-    {
-      using std::swap;
-      swap(left.teardown_, right.teardown_);
-    }
+  // Free swap function
+  friend
+  void swap(SimpleRAII<void> & left, SimpleRAII<void> & right);
 
-  SimpleRAII(SimpleRAII<void> && other)
-  noexcept(std::is_nothrow_constructible<SimpleRAII<void>>::value &&
-           noexcept(swap(other, other))) = default;
-  SimpleRAII<void> & operator = (SimpleRAII<void> && other)
- noexcept(is_nothrow_swappable_all<std::function<void()>>::value) = default;
+  // Move constructor.
+  SimpleRAII(SimpleRAII<void> && other);
+
+  // Move assignment.
+  SimpleRAII<void> &
+  operator = (SimpleRAII<void> && other);
+
+  // No copy constructor.
   SimpleRAII(SimpleRAII<void> const &) = delete;
-  SimpleRAII<void> & operator = (SimpleRAII<void> const &) = delete;
 
-  ~SimpleRAII() noexcept;
+  // No copy assignment.
+  SimpleRAII<void> &
+  operator = (SimpleRAII<void> const &) = delete;
+
+  // Access teardown function.
+  std::function<void()> teardownFunc() const;
+
+  // Release (teardown function will be neutralized).
+  void release();
+
+  // Destructor.
+  ~SimpleRAII();
+
 private:
   std::function<void()> teardown_;
 };
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of class template.
+
+// Constructor with arguments.
 template <typename RESOURCE_HANDLE>
 template <typename SETUP_FUNC, typename TEARDOWN_FUNC, typename ... ARGS>
 inline
 hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
 SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args)
-  noexcept(noexcept(setup(std::forward<ARGS>(args)...)) &&
-           noexcept(TEARDOWN_FUNC(teardown)))
   :
   resourceHandle_(setup(std::forward<ARGS>(args)...)),
-  teardown_(std::move(teardown))
+  teardown_(teardown)
 {
 }
 
+// Move constructor.
 template <typename RESOURCE_HANDLE>
 inline
-auto
 hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
-operator * () const noexcept
--> RESOURCE_HANDLE const &
+SimpleRAII(SimpleRAII<RESOURCE_HANDLE> && other)
+  :
+  resourceHandle_(other.resourceHandle_),
+  teardown_(other.teardown_)
+{
+  (void) other.release();
+}
+
+// Move assignment.
+template <typename RESOURCE_HANDLE>
+inline
+hep_hpc::SimpleRAII<RESOURCE_HANDLE> &
+hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
+operator = (SimpleRAII<RESOURCE_HANDLE> && other) {
+  swap(*this, other);
+  return *this;
+}
+
+// Dereference operators.
+template <typename RESOURCE_HANDLE>
+inline
+RESOURCE_HANDLE const &
+hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
+operator * () const
 {
   return resourceHandle_;
 }
 
 template <typename RESOURCE_HANDLE>
 inline
-auto
+RESOURCE_HANDLE &
 hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
-operator * () noexcept
--> RESOURCE_HANDLE &
+operator * ()
 {
   return resourceHandle_;
 }
 
+// Access teardown function.
+template <typename RESOURCE_HANDLE>
+inline
+std::function<void(RESOURCE_HANDLE) &&>
+hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
+teardownFunc() const
+{
+  return teardown_;
+}
+
+// Release (teardown function will be neutralized).
+template <typename RESOURCE_HANDLE>
+RESOURCE_HANDLE
+inline
+hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
+release()
+{
+  RESOURCE_HANDLE tmp(std::move(resourceHandle_));
+  resourceHandle_ = {};
+  teardown_ = {};
+  return tmp;
+}
+
+// Destructor.
 template <typename RESOURCE_HANDLE>
 inline
 hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
-~SimpleRAII() noexcept
+~SimpleRAII()
 {
   if (teardown_) {
     teardown_(std::move(resourceHandle_));
@@ -171,26 +241,83 @@ hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
 
 ////////////////////////////////////////////////////////////////////////
 // Implementation of specialization.
+
+// Constructor with arguments.
 template <typename SETUP_FUNC, typename TEARDOWN_FUNC, typename ... ARGS>
 inline
 hep_hpc::SimpleRAII<void>::
 SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args)
-noexcept(noexcept(setup(std::forward<ARGS>(args)...)) &&
-         noexcept(TEARDOWN_FUNC(teardown)))
   :
   teardown_(teardown)
 {
   setup(std::forward<ARGS>(args)...);
 }
 
+// Move constructor.
 inline
 hep_hpc::SimpleRAII<void>::
-~SimpleRAII() noexcept
+SimpleRAII(SimpleRAII<void> && other)
+  :
+  teardown_(other.teardown_)
+{
+  other.release();
+}
+
+// Move assignment.
+inline
+hep_hpc::SimpleRAII<void> &
+hep_hpc::SimpleRAII<void>::
+operator = (SimpleRAII<void> && other) {
+  swap(*this, other);
+  return *this;
+}
+
+// Access teardown function.
+inline
+std::function<void()>
+hep_hpc::SimpleRAII<void>::
+teardownFunc() const
+{
+  return teardown_;
+}
+
+// Release (teardown function will be neutralized).
+inline
+void
+hep_hpc::SimpleRAII<void>::
+release()
+{
+  teardown_ = {};
+}
+
+// Destructor.
+inline
+hep_hpc::SimpleRAII<void>::
+~SimpleRAII()
 {
   if (teardown_) {
     teardown_();
   }
 }
-////////////////////////////////////////////////////////////////////////
 
-#endif /* HDFSTUDY_SIMPLERAII_HPP */
+////////////////////////////////////////////////////////////////////////
+// Implementation of free swap functions.
+template <typename RH>
+inline
+void
+hep_hpc::swap(SimpleRAII<RH> & left, SimpleRAII<RH> & right)
+{
+  using std::swap;
+  swap(left.resourceHandle_, right.resourceHandle_);
+  swap(left.teardown_, right.teardown_);
+}
+
+inline
+void
+hep_hpc::swap(SimpleRAII<void> & left, SimpleRAII<void> & right)
+{
+  using std::swap;
+  swap(left.teardown_, right.teardown_);
+}
+
+#endif /* hep_hpc_SimpleRAII_hpp */

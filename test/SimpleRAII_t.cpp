@@ -4,6 +4,8 @@
 #include <string>
 #include <utility>
 
+using namespace hep_hpc;
+
 int main()
 {
   using std::swap;
@@ -14,8 +16,9 @@ int main()
                           << "Cleanup of item with handle "
                           << x
                           << std::endl; };
+
   // Saved resource handle is an int.
-  hep_hpc::SimpleRAII<int>
+  SimpleRAII<int>
     raii_a(setup_a, teardown_ab, "Antidisestablishmentarianism"),
     raii_a2,
     raii_a3(setup_a, teardown_ab, "Internationalization");
@@ -30,11 +33,11 @@ int main()
   *raii_a = 17; // Shouldn't see this being cleaned up!
   swap(raii_a2, raii_a3);
   // Setup function takes void.
-  hep_hpc::SimpleRAII<int>
+  SimpleRAII<int>
     raii_b([]() noexcept { return 21; }, teardown_ab);
   // Setup and cleanup functions return void.
   auto setup_c = []() noexcept { std::cout << "Set up stuff." << std::endl; };
-  hep_hpc::SimpleRAII<void>
+  SimpleRAII<void>
     raii_c(setup_c,
            []() noexcept { std::cout << "Tear down stuff." << std::endl; }),
     raii_c2,

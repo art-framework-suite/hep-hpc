@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_MPICOMPARISON_T_HPP
-#define HDFSTUDY_MPICOMPARISON_T_HPP
+#ifndef hep_hpc_MPIComparison_t_hpp
+#define hep_hpc_MPIComparison_t_hpp
 ////////////////////////////////////////////////////////////////////////
 // MPIComparison.
 //
@@ -19,4 +19,4 @@ namespace hep_hpc {
   }
   using detail::MPIComparison_t;
 }
-#endif /* HDFSTUDY_MPICOMPARISON_T_HPP */
+#endif /* hep_hpc_MPIComparison_t_hpp */

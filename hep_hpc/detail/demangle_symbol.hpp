@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_DEMANGLE_SYMBOL_HPP
-#define HDFSTUDY_DEMANGLE_SYMBOL_HPP
+#ifndef hep_hpc_detail_demangle_symbol_hpp
+#define hep_hpc_detail_demangle_symbol_hpp
 
 // ======================================================================
 //
@@ -16,4 +16,4 @@ namespace hep_hpc {
   }
 }
 
-#endif /* HDFSTUDY_DEMANGLE_SYMBOL_HPP */
+#endif /* hep_hpc_detail_demangle_symbol_hpp */

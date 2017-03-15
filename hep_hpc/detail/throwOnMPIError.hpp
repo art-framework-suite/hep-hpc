@@ -1,5 +1,5 @@
-#ifndef HDFSTUDY_DETAIL_THROWONMPIERROR_HPP
-#define HDFSTUDY_DETAIL_THROWONMPIERROR_HPP
+#ifndef hep_hpc_detail_throwOnMPIError_hpp
+#define hep_hpc_detail_throwOnMPIError_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::detail::throwOnMPIError()
 //
@@ -14,4 +14,4 @@ namespace hep_hpc {
   }
 }
 
-#endif /* HDFSTUDY_DETAIL_THROWONMPIERROR_HPP */
+#endif /* hep_hpc_detail_throwOnMPIError_hpp */
