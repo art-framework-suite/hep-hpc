@@ -28,7 +28,8 @@ namespace {
              msgBuf);
     // This RAII allocates both its managed FILE resource and msgBuf
     // during setup, but only cleans up its own resource on
-    // destruction. See above for cleanup of msgBuf.
+    // destruction. See above for cleanup of msgBuf, which must take
+    // place *after* FILE closure.
     hep_hpc::SimpleRAII<FILE *>
       fileMgr([](char * & msgBuf, size_t & msgSize)
               {
