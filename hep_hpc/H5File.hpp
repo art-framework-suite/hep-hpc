@@ -6,8 +6,9 @@
 // Simple (not yet full-featured) class managing an HDF5 file resource.
 //
 ////////////////////////////////////////////////////////////////////////
-#include "hep_hpc/SimpleRAII.hpp"
+#include "hep_hpc/H5PropertyList.hpp"
 #include "hep_hpc/HID_t.hpp"
+#include "hep_hpc/SimpleRAII.hpp"
 
 #include "hdf5.h"
 
@@ -21,17 +22,22 @@ public:
 
   explicit H5File(std::string const & filename,
                   unsigned int flags = H5F_ACC_TRUNC,
-                  hid_t fcpl_id = H5P_DEFAULT,
-                  hid_t fapl_id = H5P_DEFAULT);
+                  H5PropertyList && fileCreationProperties = {},
+                  H5PropertyList && fileAccessProperties = {});
 
   operator hid_t() const noexcept;
 
   explicit operator bool () const noexcept;
 
+  // Flush the file contents.
+  void flush(H5F_scope_t scope = H5F_SCOPE_GLOBAL);
+
   // Explicitly close the file.
   void close();
 
 private:
+  H5PropertyList fileCreationProperties_;
+  H5PropertyList fileAccessProperties_;
   SimpleRAII<HID_t> h5file_;
 };
 
@@ -48,6 +54,14 @@ operator bool () const noexcept
 {
   static const HID_t INVALID_FILE;
   return *h5file_ != INVALID_FILE;
+}
+
+inline
+void
+hep_hpc::H5File::
+flush(H5F_scope_t scope)
+{
+  (void) H5Fflush(*h5file_, scope);
 }
 
 inline

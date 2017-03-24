@@ -2,14 +2,16 @@
 
 hep_hpc::H5File::H5File(std::string const & filename,
                          unsigned int flags,
-                         hid_t fcpl_id,
-                         hid_t fapl_id)
+                         H5PropertyList && fileCreationProperties,
+                         H5PropertyList && fileAccessProperties)
   :
+  fileCreationProperties_(std::move(fileCreationProperties)),
+  fileAccessProperties_(std::move(fileAccessProperties)),
   h5file_([&]()
           { return H5Fcreate(filename.c_str(),
                              static_cast<unsigned>(flags),
-                             fcpl_id,
-                             fapl_id); },
+                             fileCreationProperties_,
+                             fileAccessProperties_); },
           &H5Fclose)
 {
 }
