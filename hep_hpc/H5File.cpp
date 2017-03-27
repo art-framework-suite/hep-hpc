@@ -1,5 +1,5 @@
 #include "hep_hpc/H5File.hpp"
-#include "H5Exception.hpp"
+#include "hep_hpc/H5Exception.hpp"
 
 hep_hpc::H5File::H5File(std::string const & filename,
                          unsigned int flag,
