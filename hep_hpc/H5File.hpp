@@ -20,11 +20,11 @@ class hep_hpc::H5File {
 public:
   H5File() = default;
 
-  // Open an HDF5 file. Note that the H5PropertyList objects (if
-  // specified) may be moved in or copied by value, but anyway do not
-  // need to live beyond this call.
+  // Open or create an HDF5 file, as appropriate. Note that the
+  // H5PropertyList objects (if specified) may be moved in or copied by
+  // value, but anyway do not need to live beyond this call.
   explicit H5File(std::string const & filename,
-                  unsigned int flags = H5F_ACC_TRUNC,
+                  unsigned int flag = H5F_ACC_RDONLY,
                   H5PropertyList fileCreationProperties = {},
                   H5PropertyList fileAccessProperties = {});
 

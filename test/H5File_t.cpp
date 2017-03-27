@@ -14,13 +14,13 @@ TEST(H5File, def)
 
 TEST(H5File, construct)
 {
-  H5File const h("empty.hdf5");
+  H5File const h("empty.hdf5", H5F_ACC_TRUNC);
   ASSERT_TRUE(h);
 }
 
 TEST(H5File, move_construction)
 {
-  H5File h("empty.hdf5");
+  H5File h("empty.hdf5", H5F_ACC_TRUNC);
   H5File const h2(std::move(h));
   ASSERT_FALSE(h);
   ASSERT_TRUE(h2);
@@ -28,16 +28,29 @@ TEST(H5File, move_construction)
 
 TEST(H5File, move_assignment)
 {
-  H5File h("empty.hdf5");
+  H5File h("empty.hdf5", H5F_ACC_TRUNC);
   H5File h2;
   h2 = std::move(h);
   ASSERT_FALSE(h);
   ASSERT_TRUE(h2);
 }
 
-TEST(H5File, explicit_close)
+TEST(H5File, open1)
 {
   H5File h("empty.hdf5");
+  ASSERT_TRUE(h);
+}
+
+TEST(H5File, open2)
+{
+  ScopedErrorHandler seh;
+  H5File h("noFile.hdf5");
+  ASSERT_FALSE(h);
+}
+
+TEST(H5File, explicit_close)
+{
+  H5File h("empty.hdf5", H5F_ACC_TRUNC);
   ASSERT_TRUE(h);
   h.close();
   ASSERT_FALSE(h);
