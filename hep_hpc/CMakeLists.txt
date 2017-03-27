@@ -1,5 +1,6 @@
 set (source_files
   H5File.cpp
+  H5Group.cpp
   H5PropertyList.cpp
   MPICommunicator.cpp
   MPIGroup.cpp

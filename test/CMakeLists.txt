@@ -95,6 +95,12 @@ target_link_libraries(H5PropertyList_t hep_hpc gtest)
 add_test(NAME H5PropertyList_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/H5PropertyList_t)
 
 ####################################
+# H5Group test.
+add_executable(H5Group_t H5Group_t.cpp)
+target_link_libraries(H5Group_t hep_hpc gtest)
+add_test(NAME H5Group_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/H5Group_t)
+
+####################################
 # Ntuple test.
 add_executable(Ntuple_t Ntuple_t.cpp)
 add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)
