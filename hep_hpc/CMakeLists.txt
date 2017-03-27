@@ -1,4 +1,5 @@
 set (source_files
+  H5Dataspace.cpp
   H5File.cpp
   H5Group.cpp
   H5PropertyList.cpp
