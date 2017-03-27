@@ -54,7 +54,7 @@ hep_hpc::H5File::
 operator bool () const noexcept
 {
   static const HID_t INVALID_FILE;
-  return *h5file_ != INVALID_FILE;
+  return *h5file_ > INVALID_FILE;
 }
 
 inline

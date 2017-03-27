@@ -1,5 +1,5 @@
 #include "hep_hpc/H5PropertyList.hpp"
-#include "hep_hpc/initH5ErrorHandling.hpp"
+#include "hep_hpc/errorHandling.hpp"
 
 #include "gtest/gtest.h"
 

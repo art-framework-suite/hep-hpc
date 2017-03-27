@@ -1,6 +1,9 @@
 #ifndef hep_hpc_initH5ErrorHandling_hpp
 #define hep_hpc_initH5ErrorHandling_hpp
 ////////////////////////////////////////////////////////////////////////
+// HDF5 Error handling functions.
+//
+////////////////////////////////////
 // initH5ErrorHandling()
 //
 // This will cause HDF5 functions in the current thread to throw an
@@ -17,10 +20,35 @@
 // HDF5 function. See
 // https://support.hdfgroup.org/HDF5/doc1.8/RM/RM_H5E.html#Error-SetAuto
 // for more details.
+//
+////////////////////////////////////
+// resetErrorHandler().
+//
+// Reset the HDF5 error handler to the system defaults.
+//
+////////////////////////////////////
+// setAndSaveErrorHandler()
+//
+// Set the HDF5 error handler for the current error stack, saving the
+// existing settings.
+//
+////////////////////////////////////
+// restoreErrorHandler()
+//
+// Restore this thread's previously-saved HDF5 error handler. If nothing
+// was saved, use the system default (&H5Eprint2, stderr).
 ////////////////////////////////////////////////////////////////////////
+
+#include "hdf5.h"
 
 namespace hep_hpc {
   void initH5ErrorHandling();
+
+  void resetErrorHandler();
+
+  void setAndSaveErrorHandler(H5E_auto2_t func = NULL, void * clientData = NULL);
+
+  void restoreErrorHandler();
 }
 
 

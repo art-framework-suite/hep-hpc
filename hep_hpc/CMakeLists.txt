@@ -4,9 +4,10 @@ set (source_files
   MPICommunicator.cpp
   MPIGroup.cpp
   MPIInstance.cpp
+  ScopedErrorHandler.cpp
   detail/demangle_symbol.cpp
   detail/throwOnMPIError.cpp
-  initH5ErrorHandling.cpp
+  errorHandling.cpp
   )
 
 add_library(hep_hpc SHARED ${source_files})

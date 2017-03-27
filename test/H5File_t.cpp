@@ -1,5 +1,6 @@
 #include "hep_hpc/H5File.hpp"
-#include "hep_hpc/initH5ErrorHandling.hpp"
+#include "hep_hpc/errorHandling.hpp"
+#include "hep_hpc/ScopedErrorHandler.hpp"
 
 #include "gtest/gtest.h"
 
