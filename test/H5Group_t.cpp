@@ -106,12 +106,12 @@ TEST(H5Group, refresh)
   ASSERT_TRUE(g);
 }
 
-TEST(H5Group, explicit_close)
+TEST(H5Group, reset)
 {
   H5File const h("h5group_t.hdf5", H5F_ACC_RDWR);
   H5Group g(h, "/G1"s, H5Group::OPEN_MODE);
   ASSERT_TRUE(g);
-  g.close();
+  g.reset();
   ASSERT_FALSE(g);
 }
 

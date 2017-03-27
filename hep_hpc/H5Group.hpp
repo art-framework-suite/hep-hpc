@@ -41,8 +41,8 @@ public:
   // Refresh the group from disk.
   void refresh();
 
-  // Explicitly close the group.
-  void close();
+  // Reset the group.
+  void reset();
 
 private:
   static HID_t const INVALID_GROUP_;
@@ -92,7 +92,7 @@ refresh()
 inline
 void
 hep_hpc::H5Group::
-close() {
+reset() {
   h5group_.reset();
 }
 
