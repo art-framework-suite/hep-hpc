@@ -1,5 +1,5 @@
-#ifndef NNNHYEDTHFUI
-#define NNNHYEDTHFUI
+#ifndef hep_hpc_ScopedErrorHandler_hpp
+#define hep_hpc_ScopedErrorHandler_hpp
 ////////////////////////////////////////////////////////////////////////
 // ScopedErrorHandler
 //
@@ -31,4 +31,4 @@ public:
 private:
   SimpleRAII<void> errHandler_;
 };
-#endif
+#endif /* hep_hpc_ScopedErrorHandler_hpp */

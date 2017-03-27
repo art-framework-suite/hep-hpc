@@ -1,5 +1,5 @@
-#ifndef hep_hpc_initH5ErrorHandling_hpp
-#define hep_hpc_initH5ErrorHandling_hpp
+#ifndef hep_hpc_errorHandling_hpp
+#define hep_hpc_errorHandling_hpp
 ////////////////////////////////////////////////////////////////////////
 // HDF5 Error handling functions.
 //
@@ -52,4 +52,4 @@ namespace hep_hpc {
 }
 
 
-#endif /* hep_hpc_initH5ErrorHandling_hpp */
+#endif /* hep_hpc_errorHandling_hpp */
