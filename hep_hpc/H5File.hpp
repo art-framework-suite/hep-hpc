@@ -33,7 +33,7 @@ public:
   explicit operator bool () const noexcept;
 
   // Flush the file contents.
-  void flush(H5F_scope_t scope = H5F_SCOPE_GLOBAL);
+  herr_t flush(H5F_scope_t scope = H5F_SCOPE_GLOBAL);
 
   // Explicitly close the file.
   void close();
@@ -58,11 +58,11 @@ operator bool () const noexcept
 }
 
 inline
-void
+herr_t
 hep_hpc::H5File::
 flush(H5F_scope_t scope)
 {
-  (void) H5Fflush(*h5file_, scope);
+  return H5Fflush(*h5file_, scope);
 }
 
 inline

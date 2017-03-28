@@ -62,7 +62,7 @@ TEST(H5File, open_missing)
 TEST(H5File, flush)
 {
   H5File h("h5file_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
-  h.flush();
+  ASSERT_EQ(h.flush(), herr_t(0));
 }
 
 TEST(H5File, explicit_close)
