@@ -1,7 +1,6 @@
-#ifndef LLLOSLSKFJJJFHSGA
-#define LLLOSLSKFJJJFHSGA
+#ifndef hep_hpc_H5Dataspace_hpp
+#define hep_hpc_H5Dataspace_hpp
 
-#include "hep_hpc/HID_t.hpp"
 #include "hep_hpc/SimpleRAII.hpp"
 
 #include "hdf5.h"
@@ -44,7 +43,7 @@ public:
   H5Dataspace(H5Dataspace &&) = default;
   H5Dataspace & operator = (H5Dataspace &&) = default;
 
-  // Validity.
+  // Is this a valid, non-default dataspace?
   explicit operator bool () const noexcept;
 
   // Access to the underlying resource handle.
@@ -54,8 +53,9 @@ public:
   void reset();
 
 private:
-  static HID_t const INVALID_DSPACE_;
-  SimpleRAII<HID_t> h5dspace_;
+  // Note we are using a plain hid_t here rather than HID_t, because 0
+  // (H5S_ALL) is a reasonable default;
+  SimpleRAII<hid_t> h5dspace_;
 };
 
 template <typename IN_ITER_1, typename IN_ITER_2>
@@ -89,7 +89,7 @@ inline
 hep_hpc::H5Dataspace::
 operator bool () const noexcept
 {
-  return *h5dspace_ > INVALID_DSPACE_;
+  return *h5dspace_ > H5S_ALL;
 }
 
 inline
@@ -106,4 +106,4 @@ reset()
 {
   h5dspace_.reset();
 }
-#endif
+#endif /* hep_hpc_H5Dataspace_hpp */

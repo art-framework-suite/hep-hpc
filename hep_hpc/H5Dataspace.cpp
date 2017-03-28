@@ -28,5 +28,3 @@ operator = (H5Dataspace const & other)
   h5dspace_ = {[](hid_t id){return H5Scopy(id);}, &H5Sclose, *other.h5dspace_};
   return *this;
 }
-
-hep_hpc::HID_t const hep_hpc::H5Dataspace::INVALID_DSPACE_;
