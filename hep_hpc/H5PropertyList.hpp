@@ -23,7 +23,7 @@ public:
   H5PropertyList(H5PropertyList &&) = default;
   H5PropertyList & operator = (H5PropertyList &&) = default;
 
-  // Is this a valid (non-default) property list?
+  // Is this a valid, non-default property list?
   explicit operator bool () const noexcept;
 
   // Access to the underlying resource handle.
@@ -48,7 +48,7 @@ inline
 hep_hpc::H5PropertyList::
 operator bool () const noexcept
 {
-  return *h5plist_ != H5P_DEFAULT;
+  return *h5plist_ > H5P_DEFAULT;
 }
 
 inline
