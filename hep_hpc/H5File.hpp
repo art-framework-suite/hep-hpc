@@ -60,7 +60,7 @@ operator bool () const noexcept
 inline
 herr_t
 hep_hpc::H5File::
-flush(H5F_scope_t scope)
+flush(H5F_scope_t const scope)
 {
   return H5Fflush(*h5file_, scope);
 }

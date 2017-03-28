@@ -70,7 +70,7 @@ getClassName() const {
 inline
 bool
 hep_hpc::H5PropertyList::
-isClass(hid_t propClassID) const
+isClass(hid_t const propClassID) const
 {
   return H5Pequal(H5Pget_class(*h5plist_), propClassID);
 }

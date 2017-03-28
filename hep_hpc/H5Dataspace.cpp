@@ -1,14 +1,14 @@
 #include "hep_hpc/H5Dataspace.hpp"
 
 hep_hpc::H5Dataspace::
-H5Dataspace(H5S_class_t classID)
+H5Dataspace(H5S_class_t const classID)
   :
   h5dspace_([&]() { return H5Screate(classID); }, &H5Sclose)
 {
 }
 
 hep_hpc::H5Dataspace::
-H5Dataspace(int rank, hsize_t const * dims, hsize_t const * maxdims)
+H5Dataspace(int const rank, hsize_t const * const dims, hsize_t const * const maxdims)
   :
   h5dspace_([&](){return H5Screate_simple(rank, dims, maxdims);}, &H5Sclose)
 {

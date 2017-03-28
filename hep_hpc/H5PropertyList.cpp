@@ -1,7 +1,7 @@
 #include "hep_hpc/H5PropertyList.hpp"
 
 hep_hpc::H5PropertyList::
-H5PropertyList(hid_t propClassID)
+H5PropertyList(hid_t const propClassID)
   :
   h5plist_([propClassID](){ return H5Pcreate(propClassID); }, &H5Pclose)
 {

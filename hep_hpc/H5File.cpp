@@ -2,9 +2,9 @@
 #include "hep_hpc/H5Exception.hpp"
 
 hep_hpc::H5File::H5File(std::string const & filename,
-                         unsigned int flag,
-                         H5PropertyList fileCreationProperties,
-                         H5PropertyList fileAccessProperties)
+                         unsigned int const flag,
+                         H5PropertyList const fileCreationProperties,
+                         H5PropertyList const fileAccessProperties)
   :
   h5file_([&]()
           { HID_t result;
