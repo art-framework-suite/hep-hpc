@@ -230,13 +230,24 @@ hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
   Ntuple{std::move(file), name, cnames, overwriteContents, bufsize, false, iSequence}
 {}
 
+namespace {
+  hep_hpc::H5PropertyList fileAccessProperties()
+  {
+    // Ensure we are using the latest available HDF5 file format to write our data.
+    hep_hpc::H5PropertyList plist(H5P_FILE_ACCESS);
+    H5Pset_libver_bounds(plist, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST);
+    return plist;
+  }
+}
+
 template <typename... Args>
 hep_hpc::Ntuple<Args...>::Ntuple(std::string const& filename,
                                   std::string const& name,
                                   name_array const& cnames,
                                   bool const overwriteContents,
                                   std::size_t const bufsize) :
-  Ntuple{H5File(filename), name, cnames, overwriteContents, bufsize, true, iSequence}
+  Ntuple{H5File(filename, H5F_ACC_TRUNC, {}, fileAccessProperties()),
+    name, cnames, overwriteContents, bufsize, true, iSequence}
 {}
 
 template <typename... Args>
