@@ -1,9 +1,28 @@
 #ifndef hep_hpc_Ntuple_hpp
 #define hep_hpc_Ntuple_hpp
-
-
+////////////////////////////////////////////////////////////////////////
+// Ntuple.hpp
+//
+// An implementation of an Ntuple with an HDF5 backend.
+//
+////////////////////////////////////
+// Overview.
+//
+// * This is a variadic template (takes an arbitrary number of template
+//   arguments).
+// * Each template argument represents a column of the Ntuple.
+// * Insertions are row-wise, storage is column-wise.
+//
+////////////////////////////////////
+// Interface
+//
+// Template arguments are specified as basic types (double, int, etc.)
+// or of type hep_hpc::Column (see hep_hpc/Column.hpp for details).
+//
+// Construction
+// FIXME.
 #include "hep_hpc/H5File.hpp"
-#include "hep_hpc/detail/column.hpp"
+#include "hep_hpc/Column.hpp"
 #include "hep_hpc/detail/NtupleDataStructure.hpp"
 
 #include "hdf5.h"
@@ -19,64 +38,72 @@
 
 namespace hep_hpc {
   template <typename... Args>
-  class Ntuple {
+  class Ntuple;
+
+} // Namespace hep_hpc.
+
+template <typename... Args>
+class hep_hpc::Ntuple {
 public:
-    template <typename T> using column = detail::column<T>;
-    template <typename T> using permissive_column = detail::permissive_column<T>;
+  static constexpr auto nColumns() { return sizeof...(Args); }
 
-    static constexpr auto nColumns = sizeof...(Args);
-    static_assert(nColumns > 0, "Ntuple with zero types is meaningless");
+  using name_array = detail::name_array<nColumns()>;
 
-    using name_array = detail::name_array<nColumns>;
+  Ntuple(hid_t file,
+         std::string tablename,
+         name_array const & columns,
+         bool overwriteContents = false,
+         std::size_t bufsize = 1000ull);
 
-    Ntuple(H5File && file,
-           std::string tablename,
-           name_array const & columns,
-           bool overwriteContents = false,
-           std::size_t bufsize = 1000ull);
+  Ntuple(std::string filename,
+         std::string tablename,
+         name_array const & columns,
+         std::size_t bufsiz = 1000ull);
 
-    Ntuple(std::string filename,
-           std::string tablename,
-           name_array const & columns,
-           std::size_t bufsiz = 1000ull);
+  ~Ntuple() noexcept;
 
-    ~Ntuple() noexcept;
+  std::string const& name() const { return name_; }
 
-    std::string const& name() const { return name_; }
+  void insert(Args const & ...);
+  void flush();
 
-    void insert(Args const & ...);
-    void flush();
-
-    // Disable copying
-    Ntuple(Ntuple const&) = delete;
-    Ntuple& operator=(Ntuple const&) = delete;
+  // Disable copying
+  Ntuple(Ntuple const&) = delete;
+  Ntuple& operator=(Ntuple const&) = delete;
 
 private:
+  static_assert(nColumns() > 0, "Ntuple with zero types is meaningless");
 
-    static constexpr auto iSequence() { return std::make_index_sequence<nColumns>(); }
+  static constexpr auto iSequence()
+    { return std::make_index_sequence<nColumns()>(); }
 
-    // This is the c'tor that does all of the work.  It exists so that
-    // the Args... and column-names array can be expanded in parallel.
-    template <std::size_t... I>
-    Ntuple(H5File && file,
-           std::string name,
-           name_array const& columns,
-           bool overwriteContents,
-           std::size_t bufsize,
-           std::index_sequence<I...>);
+  // This is the c'tor that does all of the work. It exists so that the
+  // Args... and column-names array can be expanded in parallel.
+  template <std::size_t... I>
+  Ntuple(H5File file,
+         std::string tablename,
+         name_array const& columns,
+         bool overwriteContents,
+         std::size_t bufsize,
+         std::index_sequence<I...>);
 
-    template <size_t... I>
-    int flush_no_throw_(std::index_sequence<I...>);
+  template <size_t... I>
+  int flush_no_throw_(std::index_sequence<I...>);
 
-    std::tuple<std::vector<Args>...> buffers_;
+  std::tuple<std::vector<Args>...> buffers_;
     
-    H5File file_;
-    std::string name_;
-    std::size_t max_;
-    std::recursive_mutex mutex_ {};
-    detail::NtupleDataStructure<Args...> dd_;
-  };
+  H5File file_;
+  std::string name_;
+  std::size_t max_;
+  std::recursive_mutex mutex_ {};
+  detail::NtupleDataStructure<Args...> dd_;
+};
 
+////////////////////////////////////////////////////////////////////////
+// Implementation details below.
+////////////////////////////////////
+
+namespace hep_hpc {
   namespace NtupleDetail {
     H5File verifiedFile(H5File file);
 
@@ -94,17 +121,16 @@ private:
 } // Namespace hep_hpc.
 
 template <typename... Args>
-hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
+hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
                                   std::string name,
                                   name_array const & cnames,
                                   bool const overwriteContents,
                                   std::size_t const bufsize) :
-  Ntuple{std::move(file),
+  Ntuple{H5File(file),
     std::move(name),
     cnames,
     overwriteContents,
-    bufsize,
-    iSequence()}
+    bufsize}
 {}
 
 namespace {
@@ -128,7 +154,7 @@ hep_hpc::Ntuple<Args...>::Ntuple(std::string filename,
 
 template <typename... Args>
 template <std::size_t... I>
-hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
+hep_hpc::Ntuple<Args...>::Ntuple(H5File file,
                                   std::string name,
                                   name_array const & cnames,
                                   bool const overwriteContents,
@@ -137,7 +163,7 @@ hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
   file_{NtupleDetail::verifiedFile(std::move(file))},
   name_{std::move(name)},
   max_{bufsize},
-  dd_(file_, name_, overwriteContents, permissive_column<Args>{cnames[I]}...)
+  dd_(file_, name_, overwriteContents, detail::permissive_column<Args>{cnames[I]}...)
 {
   // Reserve buffer space.
   using std::get;
