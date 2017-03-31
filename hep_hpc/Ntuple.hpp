@@ -169,9 +169,9 @@ hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
   std::lock_guard<decltype(mutex_)> lock {mutex_};
   ScopedErrorHandler seh;
   auto const results =
-    {NtupleDetail::flush_no_throw_one(get<I>(buffers_),
-                                      get<I>(dd_.dsets),
-                                      get<I>(dd_.columns))...};
+    {0, NtupleDetail::flush_no_throw_one(get<I>(buffers_),
+                                         get<I>(dd_.dsets),
+                                         get<I>(dd_.columns))...};
   return std::any_of(std::cbegin(results), std::cend(results), [](auto const res) { return res != 0; });
 }
 
