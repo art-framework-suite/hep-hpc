@@ -182,13 +182,8 @@ hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
 {
   std::cerr << "> Called flush_no_throw_().\n";
   using std::get;
-  auto const results = {0, flush_no_throw_one_<I>()...};
-  auto const result = std::any_of(std::cbegin(results), std::cend(results), [](auto const res) { return res != 0; });
-  if (!result) { // Successful
-    using swallow = int[];
-    swallow { 0, (get<I>(buffers_).clear(), 0)...};
-  }
-  return result;
+  auto const results = {flush_no_throw_one_<I>()...};
+  return std::any_of(std::cbegin(results), std::cend(results), [](auto const res) { return res != 0; });
 }
 
 template <typename... Args>
@@ -235,6 +230,9 @@ flush_no_throw_one_()
   std::cerr << "    > Writing dataset.\n";
   // Write the data.
   rc = H5Dwrite(dset, std::tuple_element<I, decltype(dd_.columns)>::type::engine_type(), memspace, dspace, H5P_DEFAULT, buf.data());
+  if (rc == 0) {
+    buf.clear(); // Clear the buffer.
+  }
   return rc;
 }
 
