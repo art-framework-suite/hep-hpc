@@ -32,6 +32,13 @@ TEST(H5File, construct)
   ASSERT_TRUE(h);
 }
 
+TEST(H5File, construct_non_owning)
+{
+  // Going out of scope should not throw.
+  H5File const h((hid_t) 27);
+  ASSERT_TRUE(h);
+}
+
 TEST(H5File, move_construction)
 {
   H5File h("h5file_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());

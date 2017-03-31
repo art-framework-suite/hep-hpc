@@ -7,7 +7,7 @@ hep_hpc::H5File::H5File(hid_t file)
 {
 }
 
-hep_hpc::H5File::H5File(std::string const & filename,
+hep_hpc::H5File::H5File(std::string const filename,
                          unsigned int const flag,
                          H5PropertyList const fileCreationProperties,
                          H5PropertyList const fileAccessProperties)

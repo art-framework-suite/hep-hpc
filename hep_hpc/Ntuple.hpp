@@ -30,14 +30,14 @@ public:
     using name_array = detail::name_array<nColumns>;
 
     Ntuple(H5File && file,
-           std::string const& tablename,
-           name_array const& columns,
+           std::string tablename,
+           name_array const & columns,
            bool overwriteContents = false,
            std::size_t bufsize = 1000ull);
 
-    Ntuple(std::string const& filename,
-           std::string const& tablename,
-           name_array const& columns,
+    Ntuple(std::string filename,
+           std::string tablename,
+           name_array const & columns,
            std::size_t bufsiz = 1000ull);
 
     ~Ntuple() noexcept;
@@ -59,7 +59,7 @@ private:
     // the Args... and column-names array can be expanded in parallel.
     template <std::size_t... I>
     Ntuple(H5File && file,
-           std::string const& name,
+           std::string name,
            name_array const& columns,
            bool overwriteContents,
            std::size_t bufsize,
@@ -95,11 +95,16 @@ private:
 
 template <typename... Args>
 hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
-                                  std::string const& name,
-                                  name_array const& cnames,
+                                  std::string name,
+                                  name_array const & cnames,
                                   bool const overwriteContents,
                                   std::size_t const bufsize) :
-  Ntuple{std::move(file), name, cnames, overwriteContents, bufsize, iSequence()}
+  Ntuple{std::move(file),
+    std::move(name),
+    cnames,
+    overwriteContents,
+    bufsize,
+    iSequence()}
 {}
 
 namespace {
@@ -113,26 +118,26 @@ namespace {
 }
 
 template <typename... Args>
-hep_hpc::Ntuple<Args...>::Ntuple(std::string const& filename,
-                                  std::string const& name,
-                                  name_array const& cnames,
+hep_hpc::Ntuple<Args...>::Ntuple(std::string filename,
+                                  std::string name,
+                                  name_array const & cnames,
                                   std::size_t const bufsize) :
-  Ntuple{H5File(filename, H5F_ACC_TRUNC, {}, fileAccessProperties()),
-    name, cnames, false, bufsize, iSequence()}
+  Ntuple{H5File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
+    std::move(name), cnames, false, bufsize, iSequence()}
 {}
 
 template <typename... Args>
 template <std::size_t... I>
 hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
-                                  std::string const& name,
-                                  name_array const& cnames,
+                                  std::string name,
+                                  name_array const & cnames,
                                   bool const overwriteContents,
                                   std::size_t const bufsize,
                                   std::index_sequence<I...>) :
   file_{NtupleDetail::verifiedFile(std::move(file))},
-  name_{name},
+  name_{std::move(name)},
   max_{bufsize},
-  dd_(file_, name, overwriteContents, permissive_column<Args>{cnames[I]}...)
+  dd_(file_, name_, overwriteContents, permissive_column<Args>{cnames[I]}...)
 {
   // Reserve buffer space.
   using std::get;
@@ -172,7 +177,9 @@ hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
     {0, NtupleDetail::flush_no_throw_one(get<I>(buffers_),
                                          get<I>(dd_.dsets),
                                          get<I>(dd_.columns))...};
-  return std::any_of(std::cbegin(results), std::cend(results), [](auto const res) { return res != 0; });
+  return std::any_of(std::cbegin(results),
+                     std::cend(results),
+                     [](auto const res) { return res != 0; });
 }
 
 template <typename BUFFER, typename COL>
@@ -204,7 +211,13 @@ flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
   }
   dspace = H5Dataspace{H5Dget_space(dset)};
   // Data selection for write.
-  rc = H5Sselect_hyperslab(dspace, H5S_SELECT_SET, &offset, NULL, &nElements, NULL);
+  rc =
+    H5Sselect_hyperslab(dspace,
+                        H5S_SELECT_SET,
+                        &offset,
+                        NULL,
+                        &nElements,
+                        NULL);
   if (rc != 0) {
     return rc;
   }
@@ -236,7 +249,9 @@ hep_hpc::Ntuple<Args...>::flush()
 template <size_t I, typename TUPLE, typename Head, typename... Tail>
 inline
 void
-hep_hpc::NtupleDetail::insert(TUPLE & buffers, Head const & head, Tail const & ... tail)
+hep_hpc::NtupleDetail::insert(TUPLE & buffers,
+                               Head const & head,
+                               Tail const & ... tail)
 {
   using std::get;
   get<I>(buffers).emplace_back(head);

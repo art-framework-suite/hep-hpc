@@ -22,13 +22,14 @@ public:
 
   // Non-owning.
   //
-  // Caller is responsible for ensuring file is a valid HDF5 file handle.
+  // Caller is responsible for ensuring file is a valid HDF5 file
+  // handle, and for ensuring that it is closed afterwards.
   explicit H5File(hid_t file);
 
   // Open or create an HDF5 file, as appropriate. Note that the
   // H5PropertyList objects (if specified) may be moved in or copied by
   // value, but anyway do not need to live beyond this call.
-  explicit H5File(std::string const & filename,
+  explicit H5File(std::string filename,
                   unsigned int flag = H5F_ACC_RDONLY,
                   H5PropertyList fileCreationProperties = {},
                   H5PropertyList fileAccessProperties = {});
