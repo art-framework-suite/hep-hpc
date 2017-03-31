@@ -15,15 +15,12 @@ namespace hep_hpc {
     template <typename... Args>
     class NtupleDataStructure;
 
-    template <int I, typename DSETS, typename T, typename... Args>
-    void
-    makeDataset(hid_t group,
-                DSETS & dsets,
-                permissive_column<T> const & col,
-                permissive_column<Args> const & ... columns);
+    H5Group makeGroup(hid_t file,
+                      std::string const & name,
+                      bool overwriteContents);
 
-    template <int I, typename DSETS>
-    void makeDataset(hid_t, DSETS &) { }
+    template <typename COL>
+    H5Dataset makeDataset(hid_t const group, COL const & col);
   }
 }
 
@@ -40,16 +37,20 @@ struct hep_hpc::detail::NtupleDataStructure {
   std::array<H5Dataset, nColumns> dsets;
 };
 
-namespace hep_hpc {
-  namespace NtupleDataStructureDetail {
-    H5Group makeGroup(hid_t file,
-                      std::string const & name,
-                      bool overwriteContents);
-  }
+template <typename... Args>
+hep_hpc::detail::NtupleDataStructure<Args...>::
+NtupleDataStructure(hid_t const file, std::string const & name,
+                    bool const overwriteContents,
+                    permissive_column<Args> const & ... cols)
+  :
+  columns(cols...),
+  group(detail::makeGroup(file, name, overwriteContents)),
+  dsets({detail::makeDataset(group, cols)...})
+{
 }
 
 hep_hpc::H5Group
-hep_hpc::NtupleDataStructureDetail::
+hep_hpc::detail::
 makeGroup(hid_t file, std::string const & name, bool overwriteContents)
 {
   using namespace std::string_literals;
@@ -71,27 +72,11 @@ makeGroup(hid_t file, std::string const & name, bool overwriteContents)
   return group;
 }
 
-template <typename... Args>
-hep_hpc::detail::NtupleDataStructure<Args...>::
-NtupleDataStructure(hid_t const file, std::string const & name,
-                    bool const overwriteContents,
-                    permissive_column<Args> const & ... cols)
-  :
-  columns(cols...),
-  group(NtupleDataStructureDetail::makeGroup(file, name, overwriteContents))
-{
-  makeDataset<0>(group, dsets, cols...);
-}
-
-template <int I, typename DSETS, typename T, typename... Args>
-void
+template <typename COL>
+hep_hpc::H5Dataset
 hep_hpc::detail::
-makeDataset(hid_t const group,
-            DSETS & dsets,
-            permissive_column<T> const & col,
-            permissive_column<Args> const & ... columns)
+makeDataset(hid_t const group, COL const & col)
 {
-  using std::get;
   // FIXME: Should be 1 infinite dim + dims from columns spec when they appear.
   hsize_t const dim = 0ull;
   hsize_t maxdim = H5S_UNLIMITED;
@@ -101,10 +86,7 @@ makeDataset(hid_t const group,
   hsize_t const chunking = 128;
   H5Pset_chunk(cprops, 1, &chunking);
   H5Pset_deflate(cprops, 6);
-  get<I>(dsets) = H5Dataset(group, col.name(), col.engine_type(), dspace, {}, cprops);
-
-  // Recurse.
-  makeDataset<I + 1>(group, dsets, columns...);
+  return H5Dataset(group, col.name(), col.engine_type(), dspace, {}, cprops);
 }
 
 
