@@ -38,7 +38,6 @@ public:
     Ntuple(std::string const& filename,
            std::string const& tablename,
            name_array const& columns,
-           bool overwriteContents = false,
            std::size_t bufsiz = 1000ull);
 
     ~Ntuple() noexcept;
@@ -54,7 +53,7 @@ public:
 
 private:
 
-    static constexpr auto iSequence = std::make_index_sequence<nColumns>();
+    static constexpr auto iSequence() { return std::make_index_sequence<nColumns>(); }
 
     // This is the c'tor that does all of the work.  It exists so that
     // the Args... and column-names array can be expanded in parallel.
@@ -65,8 +64,6 @@ private:
            bool overwriteContents,
            std::size_t bufsize,
            std::index_sequence<I...>);
-
-    int flush_no_throw();
 
     template <size_t... I>
     int flush_no_throw_(std::index_sequence<I...>);
@@ -102,7 +99,7 @@ hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
                                   name_array const& cnames,
                                   bool const overwriteContents,
                                   std::size_t const bufsize) :
-  Ntuple{std::move(file), name, cnames, overwriteContents, bufsize, iSequence}
+  Ntuple{std::move(file), name, cnames, overwriteContents, bufsize, iSequence()}
 {}
 
 namespace {
@@ -119,10 +116,9 @@ template <typename... Args>
 hep_hpc::Ntuple<Args...>::Ntuple(std::string const& filename,
                                   std::string const& name,
                                   name_array const& cnames,
-                                  bool const overwriteContents,
                                   std::size_t const bufsize) :
   Ntuple{H5File(filename, H5F_ACC_TRUNC, {}, fileAccessProperties()),
-    name, cnames, overwriteContents, bufsize, iSequence}
+    name, cnames, false, bufsize, iSequence()}
 {}
 
 template <typename... Args>
@@ -147,7 +143,7 @@ hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
 template <typename... Args>
 hep_hpc::Ntuple<Args...>::~Ntuple() noexcept
 {
-  if (flush_no_throw() != 0) {
+  if (flush_no_throw_(iSequence()) != 0) {
     std::cerr << "HDF5 failure while flushing.\n";
   }
 }
@@ -165,21 +161,13 @@ hep_hpc::Ntuple<Args...>::insert(Args const & ... args)
 }
 
 template <typename... Args>
-inline
-int
-hep_hpc::Ntuple<Args...>::flush_no_throw()
-{
-  std::lock_guard<decltype(mutex_)> lock {mutex_};
-  ScopedErrorHandler seh;
-  return flush_no_throw_(iSequence);
-}
-
-template <typename... Args>
 template <size_t... I>
 int
 hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
 {
   using std::get;
+  std::lock_guard<decltype(mutex_)> lock {mutex_};
+  ScopedErrorHandler seh;
   auto const results = {flush_no_throw_one_<I>()...};
   return std::any_of(std::cbegin(results), std::cend(results), [](auto const res) { return res != 0; });
 }
@@ -240,7 +228,7 @@ void
 hep_hpc::Ntuple<Args...>::flush()
 {
   // No lock here -- lock held by flush_no_throw;
-  if (flush_no_throw() != 0) {
+  if (flush_no_throw_(iSequence()) != 0) {
     throw std::runtime_error("HDF5 write failure.");
   }
 }
