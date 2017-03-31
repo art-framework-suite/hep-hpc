@@ -40,15 +40,20 @@ struct hep_hpc::detail::NtupleDataStructure {
   std::array<H5Dataset, nColumns> dsets;
 };
 
-template <typename... Args>
-hep_hpc::detail::NtupleDataStructure<Args...>::
-NtupleDataStructure(hid_t const file, std::string const & name,
-                    bool const overwriteContents,
-                    permissive_column<Args> const & ... cols)
-  :
-  columns(cols...)
+namespace hep_hpc {
+  namespace NtupleDataStructureDetail {
+    H5Group makeGroup(hid_t file,
+                      std::string const & name,
+                      bool overwriteContents);
+  }
+}
+
+hep_hpc::H5Group
+hep_hpc::NtupleDataStructureDetail::
+makeGroup(hid_t file, std::string const & name, bool overwriteContents)
 {
   using namespace std::string_literals;
+  H5Group group;
   {
     ScopedErrorHandler seh;
     group = H5Group(file, name);
@@ -63,6 +68,18 @@ NtupleDataStructure(hid_t const file, std::string const & name,
     }
     group = H5Group(file, name);
   }
+  return group;
+}
+
+template <typename... Args>
+hep_hpc::detail::NtupleDataStructure<Args...>::
+NtupleDataStructure(hid_t const file, std::string const & name,
+                    bool const overwriteContents,
+                    permissive_column<Args> const & ... cols)
+  :
+  columns(cols...),
+  group(NtupleDataStructureDetail::makeGroup(file, name, overwriteContents))
+{
   makeDataset<0>(group, dsets, cols...);
 }
 
