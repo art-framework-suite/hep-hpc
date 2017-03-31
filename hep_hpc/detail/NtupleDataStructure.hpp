@@ -15,16 +15,15 @@ namespace hep_hpc {
     template <typename... Args>
     class NtupleDataStructure;
 
-    template <int I, typename DSPACES, typename DSETS,
-              typename T, typename... Args>
+    template <int I, typename DSETS, typename T, typename... Args>
     void
     makeDataset(hid_t group,
-                DSPACES & dspaces, DSETS & dsets,
+                DSETS & dsets,
                 permissive_column<T> const & col,
                 permissive_column<Args> const & ... columns);
 
-    template <int I, typename DSPACES, typename DSETS>
-    void makeDataset(hid_t, DSPACES &, DSETS &) { }
+    template <int I, typename DSETS>
+    void makeDataset(hid_t, DSETS &) { }
   }
 }
 
@@ -38,7 +37,6 @@ struct hep_hpc::detail::NtupleDataStructure {
 
   std::tuple<permissive_column<Args>...> columns;
   H5Group group;
-  std::array<H5Dataspace, nColumns> dspaces;
   std::array<H5Dataset, nColumns> dsets;
 };
 
@@ -65,15 +63,14 @@ NtupleDataStructure(hid_t const file, std::string const & name,
     }
     group = H5Group(file, name);
   }
-  makeDataset<0>(group, dspaces, dsets, cols...);
+  makeDataset<0>(group, dsets, cols...);
 }
 
-template <int I, typename DSPACES, typename DSETS,
-          typename T, typename... Args>
+template <int I, typename DSETS, typename T, typename... Args>
 void
 hep_hpc::detail::
 makeDataset(hid_t const group,
-            DSPACES & dspaces, DSETS & dsets,
+            DSETS & dsets,
             permissive_column<T> const & col,
             permissive_column<Args> const & ... columns)
 {
@@ -81,15 +78,16 @@ makeDataset(hid_t const group,
   // FIXME: Should be 1 infinite dim + dims from columns spec when they appear.
   hsize_t const dim = 0ull;
   hsize_t maxdim = H5S_UNLIMITED;
-  get<I>(dspaces) = {1, &dim, &maxdim};
+  H5Dataspace dspace{1, &dim, &maxdim};
   // Set up creation properties of the dataset.
   H5PropertyList cprops(H5P_DATASET_CREATE);
   hsize_t const chunking = 128;
   H5Pset_chunk(cprops, 1, &chunking);
   H5Pset_deflate(cprops, 6);
-  get<I>(dsets) = H5Dataset(group, col.name(), col.engine_type(), get<I>(dspaces), {}, cprops);
+  get<I>(dsets) = H5Dataset(group, col.name(), col.engine_type(), dspace, {}, cprops);
 
-  makeDataset<I + 1>(group, dspaces, dsets, columns...);
+  // Recurse.
+  makeDataset<I + 1>(group, dsets, columns...);
 }
 
 

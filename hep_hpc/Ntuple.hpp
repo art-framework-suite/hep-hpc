@@ -197,10 +197,11 @@ int
 hep_hpc::Ntuple<Args...>::
 flush_no_throw_one_()
 {
-  std::cerr << "  > Called flush_no_throw_one_<" << I << ">().\n";
   using std::get;
+  std::cerr << "  > Called flush_no_throw_one_<" << I << ">().\n";
+  auto & dset = get<I>(dd_.dsets);
   auto & buf = get<I>(buffers_);
-  auto & dspace = get<I>(dd_.dspaces);
+  auto dspace = H5Dataspace{H5Dget_space(dset)};
   // How many dimensions?
   auto const ndims = H5Sget_simple_extent_ndims(dspace);
   std::cerr << "    > ndims = " << ndims << ".\n";
@@ -219,7 +220,6 @@ flush_no_throw_one_()
   dims[0] += nElements;
   std::cerr << "    > Bumping dims[0] from " << offset << " to " << dims[0] << ".\n";
   // Update dataset.
-  auto & dset = get<I>(dd_.dsets);
   rc = H5Dset_extent(dset, dims.data());
   if (rc != 0) {
     return rc;
