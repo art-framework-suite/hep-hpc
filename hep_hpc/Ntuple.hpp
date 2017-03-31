@@ -84,7 +84,7 @@ private:
   };
 
   namespace NtupleDetail {
-    void throwIfNotValid(H5File & file);
+    H5File verifiedFile(H5File file);
 
     template <size_t I, typename TUPLE, typename Head, typename... Tail>
     void
@@ -133,7 +133,7 @@ hep_hpc::Ntuple<Args...>::Ntuple(H5File && file,
                                   bool const overwriteContents,
                                   std::size_t const bufsize,
                                   std::index_sequence<I...>) :
-  file_{(NtupleDetail::throwIfNotValid(file), std::move(file))},
+  file_{NtupleDetail::verifiedFile(std::move(file))},
   name_{name},
   max_{bufsize},
   dd_(file_, name, overwriteContents, permissive_column<Args>{cnames[I]}...)
@@ -159,7 +159,6 @@ hep_hpc::Ntuple<Args...>::insert(Args const & ... args)
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
   if (get<0>(buffers_).size() == max_) {
-    std::cerr << "Flushing with buffers at size: " << max_ << ".\n";
     flush();
   }
   NtupleDetail::insert<0>(buffers_, args...);
@@ -180,7 +179,6 @@ template <size_t... I>
 int
 hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
 {
-  std::cerr << "> Called flush_no_throw_().\n";
   using std::get;
   auto const results = {flush_no_throw_one_<I>()...};
   return std::any_of(std::cbegin(results), std::cend(results), [](auto const res) { return res != 0; });
@@ -193,13 +191,11 @@ hep_hpc::Ntuple<Args...>::
 flush_no_throw_one_()
 {
   using std::get;
-  std::cerr << "  > Called flush_no_throw_one_<" << I << ">().\n";
   auto & dset = get<I>(dd_.dsets);
   auto & buf = get<I>(buffers_);
   auto dspace = H5Dataspace{H5Dget_space(dset)};
   // How many dimensions?
   auto const ndims = H5Sget_simple_extent_ndims(dspace);
-  std::cerr << "    > ndims = " << ndims << ".\n";
   // Obtain current and max dimensions.
   std::vector<hsize_t> dims(ndims), maxdims(ndims);
   int rc = H5Sget_simple_extent_dims(dspace, dims.data(), maxdims.data());
@@ -213,23 +209,26 @@ flush_no_throw_one_()
   auto const offset = dims[0];
   // Extend long dimension.
   dims[0] += nElements;
-  std::cerr << "    > Bumping dims[0] from " << offset << " to " << dims[0] << ".\n";
   // Update dataset.
   rc = H5Dset_extent(dset, dims.data());
   if (rc != 0) {
     return rc;
   }
   dspace = H5Dataspace{H5Dget_space(dset)};
-  std::cerr << "    > Setting selection hyperslab.\n";
   // Data selection for write.
   rc = H5Sselect_hyperslab(dspace, H5S_SELECT_SET, &offset, NULL, &nElements, NULL);
   if (rc != 0) {
     return rc;
   }
   H5Dataspace memspace{ndims, dimsext.data(), dimsext.data()};
-  std::cerr << "    > Writing dataset.\n";
   // Write the data.
-  rc = H5Dwrite(dset, std::tuple_element<I, decltype(dd_.columns)>::type::engine_type(), memspace, dspace, H5P_DEFAULT, buf.data());
+  rc =
+    H5Dwrite(dset,
+             std::tuple_element<I, decltype(dd_.columns)>::type::engine_type(),
+             memspace,
+             dspace,
+             H5P_DEFAULT,
+             buf.data());
   if (rc == 0) {
     buf.clear(); // Clear the buffer.
   }
@@ -252,9 +251,7 @@ void
 hep_hpc::NtupleDetail::insert(TUPLE & buffers, Head const & head, Tail const & ... tail)
 {
   using std::get;
-  std::cerr << "> Writing to column " << I << " -- before: " <<  get<I>(buffers).size();
   get<I>(buffers).emplace_back(head);
-  std::cerr << ", after: " <<  get<I>(buffers).size() << ".\n";
   insert<I + 1>(buffers, tail...);
 }
 

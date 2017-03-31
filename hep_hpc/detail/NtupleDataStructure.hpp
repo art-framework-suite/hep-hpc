@@ -1,5 +1,5 @@
-#ifndef HHHHSGSHSHJSHGSJ
-#define HHHHSGSHSHJSHGSJ
+#ifndef hep_hpc_detail_NtupleDataStructure_hpp
+#define hep_hpc_detail_NtupleDataStructure_hpp
 
 #include "hep_hpc/H5Group.hpp"
 #include "hep_hpc/H5Dataset.hpp"
@@ -7,7 +7,6 @@
 #include "hep_hpc/H5PropertyList.hpp"
 #include "hep_hpc/ScopedErrorHandler.hpp"
 
-#include <iostream>
 #include <string>
 
 namespace hep_hpc {
@@ -90,4 +89,4 @@ makeDataset(hid_t const group, COL const & col)
 }
 
 
-#endif
+#endif /* hep_hpc_detail_NtupleDataStructure_hpp */
