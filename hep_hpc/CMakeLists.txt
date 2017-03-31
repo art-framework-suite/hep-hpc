@@ -1,4 +1,5 @@
 set (source_files
+  H5Dataset.cpp
   H5Dataspace.cpp
   H5File.cpp
   H5Group.cpp
@@ -6,6 +7,7 @@ set (source_files
   MPICommunicator.cpp
   MPIGroup.cpp
   MPIInstance.cpp
+  Ntuple.cpp
   ScopedErrorHandler.cpp
   detail/demangle_symbol.cpp
   detail/throwOnMPIError.cpp

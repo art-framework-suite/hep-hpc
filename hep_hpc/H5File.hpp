@@ -20,10 +20,16 @@ class hep_hpc::H5File {
 public:
   H5File() = default;
 
+  // Non-owning.
+  //
+  // Caller is responsible for ensuring file is a valid HDF5 file
+  // handle, and for ensuring that it is closed afterwards.
+  explicit H5File(hid_t file);
+
   // Open or create an HDF5 file, as appropriate. Note that the
   // H5PropertyList objects (if specified) may be moved in or copied by
   // value, but anyway do not need to live beyond this call.
-  explicit H5File(std::string const & filename,
+  explicit H5File(std::string filename,
                   unsigned int flag = H5F_ACC_RDONLY,
                   H5PropertyList fileCreationProperties = {},
                   H5PropertyList fileAccessProperties = {});
@@ -33,7 +39,7 @@ public:
   explicit operator bool () const noexcept;
 
   // Flush the file contents.
-  void flush(H5F_scope_t scope = H5F_SCOPE_GLOBAL);
+  herr_t flush(H5F_scope_t scope = H5F_SCOPE_GLOBAL);
 
   // Explicitly close the file.
   void close();
@@ -58,11 +64,11 @@ operator bool () const noexcept
 }
 
 inline
-void
+herr_t
 hep_hpc::H5File::
-flush(H5F_scope_t scope)
+flush(H5F_scope_t const scope)
 {
-  (void) H5Fflush(*h5file_, scope);
+  return H5Fflush(*h5file_, scope);
 }
 
 inline

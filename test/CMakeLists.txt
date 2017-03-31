@@ -107,6 +107,12 @@ target_link_libraries(H5Dataspace_t hep_hpc gtest)
 add_test(NAME H5Dataspace_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/H5Dataspace_t)
 
 ####################################
+# H5Dataset test.
+add_executable(H5Dataset_t H5Dataset_t.cpp)
+target_link_libraries(H5Dataset_t hep_hpc gtest)
+add_test(NAME H5Dataset_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/H5Dataset_t)
+
+####################################
 # Ntuple test.
 add_executable(Ntuple_t Ntuple_t.cpp)
 add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)

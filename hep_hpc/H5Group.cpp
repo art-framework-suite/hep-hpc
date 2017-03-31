@@ -3,12 +3,12 @@
 #include "hep_hpc/ScopedErrorHandler.hpp"
 
 hep_hpc::H5Group::
-H5Group(hid_t fileOrGroup,
+H5Group(hid_t const fileOrGroup,
         std::string const & fullPathName,
-        group_mode_t mode,
-        H5PropertyList linkCreationProperties,
-        H5PropertyList groupCreationProperties,
-        H5PropertyList groupAccessProperties)
+        group_mode_t const mode,
+        H5PropertyList const linkCreationProperties,
+        H5PropertyList const groupCreationProperties,
+        H5PropertyList const groupAccessProperties)
   :
   h5group_([&]()
            { HID_t result;

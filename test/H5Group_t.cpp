@@ -7,9 +7,8 @@
 
 #include <string>
 
-using namespace std::string_literals;
-
 using namespace hep_hpc;
+using namespace std::string_literals;
 
 namespace {
   hep_hpc::H5PropertyList fileAccessProperties()
@@ -29,14 +28,14 @@ TEST(H5Group, def)
 
 TEST(H5Group, construct)
 {
-  H5File const h("h5group_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
+  H5File const h("h5group_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
   H5Group g(h, "/G1"s);
   ASSERT_TRUE(g);
 }
 
 TEST(H5Group, move_construction)
 {
-  H5File const h("h5group_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
+  H5File const h("h5group_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
   H5Group g(h, "/G1"s);
   ASSERT_TRUE(g);
   H5Group const g2(std::move(g));
@@ -46,7 +45,7 @@ TEST(H5Group, move_construction)
 
 TEST(H5Group, move_assignment)
 {
-  H5File const h("h5group_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
+  H5File const h("h5group_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
   H5Group g(h, "/G1"s);
   ASSERT_TRUE(g);
   H5Group g2;
@@ -57,14 +56,14 @@ TEST(H5Group, move_assignment)
 
 TEST(H5Group, open_success)
 {
-  H5File h("h5group_t.hdf5");
+  H5File h("h5group_t.hdf5"s);
   H5Group g(h, "/G1"s, H5Group::OPEN_MODE);
   ASSERT_TRUE(g);
 }
 
 TEST(H5Group, open_missing)
 {
-  H5File h("h5group_t.hdf5");
+  H5File h("h5group_t.hdf5"s);
   ScopedErrorHandler seh;
   H5Group g(h, "/G2"s, H5Group::OPEN_MODE);
   ASSERT_FALSE(g);
@@ -72,14 +71,14 @@ TEST(H5Group, open_missing)
 
 TEST(H5Group, open_or_create)
 {
-  H5File h("h5group_t.hdf5", H5F_ACC_RDWR);
+  H5File h("h5group_t.hdf5"s, H5F_ACC_RDWR);
   H5Group g(h, "/G2"s, H5Group::OPEN_OR_CREATE_MODE);
   ASSERT_TRUE(g);
 }
 
 TEST(H5Group, info)
 {
-  H5File h("h5group_t.hdf5", H5F_ACC_RDWR);
+  H5File h("h5group_t.hdf5"s, H5F_ACC_RDWR);
   H5Group g(h, "/G1"s, H5Group::OPEN_MODE);
   ASSERT_TRUE(g);
   ASSERT_EQ(g.info().nlinks, 0ull);
@@ -90,25 +89,25 @@ TEST(H5Group, info)
 
 TEST(H5Group, flush)
 {
-  H5File const h("h5group_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
+  H5File const h("h5group_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
   H5Group g(h, "/G1"s);
   ASSERT_TRUE(g);
-  g.flush();
+  ASSERT_EQ(g.flush(), (herr_t)0);
   ASSERT_TRUE(g);
 }
 
 TEST(H5Group, refresh)
 {
-  H5File const h("h5group_t.hdf5", H5F_ACC_RDWR);
+  H5File const h("h5group_t.hdf5"s, H5F_ACC_RDWR);
   H5Group g(h, "/G1"s, H5Group::OPEN_MODE);
   ASSERT_TRUE(g);
-  g.refresh();
+  ASSERT_EQ(g.refresh(), (herr_t)0);
   ASSERT_TRUE(g);
 }
 
 TEST(H5Group, reset)
 {
-  H5File const h("h5group_t.hdf5", H5F_ACC_RDWR);
+  H5File const h("h5group_t.hdf5"s, H5F_ACC_RDWR);
   H5Group g(h, "/G1"s, H5Group::OPEN_MODE);
   ASSERT_TRUE(g);
   g.reset();

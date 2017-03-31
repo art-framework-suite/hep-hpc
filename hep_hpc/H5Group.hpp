@@ -36,10 +36,10 @@ public:
   H5G_info_t info() const;
 
   // Flush the group to disk.
-  void flush();
+  herr_t flush();
 
   // Refresh the group from disk.
-  void refresh();
+  herr_t refresh();
 
   // Reset the group.
   void reset();
@@ -74,19 +74,19 @@ info() const
 }
 
 inline
-void
+herr_t
 hep_hpc::H5Group::
 flush()
 {
-  (void) H5Gflush(*h5group_);
+  return H5Gflush(*h5group_);
 }
 
 inline
-void
+herr_t
 hep_hpc::H5Group::
 refresh()
 {
-  (void) H5Grefresh(*h5group_);
+  return H5Grefresh(*h5group_);
 }
 
 inline

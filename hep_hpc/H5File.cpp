@@ -1,10 +1,16 @@
 #include "hep_hpc/H5File.hpp"
 #include "hep_hpc/H5Exception.hpp"
 
-hep_hpc::H5File::H5File(std::string const & filename,
-                         unsigned int flag,
-                         H5PropertyList fileCreationProperties,
-                         H5PropertyList fileAccessProperties)
+hep_hpc::H5File::H5File(hid_t file)
+  :
+  h5file_([file](){return file;}, [](hid_t){})
+{
+}
+
+hep_hpc::H5File::H5File(std::string const filename,
+                         unsigned int const flag,
+                         H5PropertyList const fileCreationProperties,
+                         H5PropertyList const fileAccessProperties)
   :
   h5file_([&]()
           { HID_t result;
