@@ -68,9 +68,6 @@ private:
     template <size_t... I>
     int flush_no_throw_(std::index_sequence<I...>);
 
-    template <size_t I>
-    int flush_no_throw_one_();
-
     std::tuple<std::vector<Args>...> buffers_;
     
     H5File file_;
@@ -90,6 +87,9 @@ private:
     template <size_t I, typename TUPLE>
     void
     insert(TUPLE &) { }
+
+    template <typename BUFFER, typename COL>
+    int flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col);
   } // Namespace NtupleDetail.
 } // Namespace hep_hpc.
 
@@ -168,19 +168,19 @@ hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
   ScopedErrorHandler seh;
-  auto const results = {flush_no_throw_one_<I>()...};
+  auto const results =
+    {NtupleDetail::flush_no_throw_one(get<I>(buffers_),
+                                      get<I>(dd_.dsets),
+                                      get<I>(dd_.columns))...};
   return std::any_of(std::cbegin(results), std::cend(results), [](auto const res) { return res != 0; });
 }
 
-template <typename... Args>
-template <size_t I>
+template <typename BUFFER, typename COL>
 int
-hep_hpc::Ntuple<Args...>::
-flush_no_throw_one_()
+hep_hpc::NtupleDetail::
+flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
 {
   using std::get;
-  auto & dset = get<I>(dd_.dsets);
-  auto & buf = get<I>(buffers_);
   auto dspace = H5Dataspace{H5Dget_space(dset)};
   // How many dimensions?
   auto const ndims = H5Sget_simple_extent_ndims(dspace);
@@ -212,7 +212,7 @@ flush_no_throw_one_()
   // Write the data.
   rc =
     H5Dwrite(dset,
-             std::tuple_element<I, decltype(dd_.columns)>::type::engine_type(),
+             col.engine_type(),
              memspace,
              dspace,
              H5P_DEFAULT,
