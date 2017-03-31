@@ -7,6 +7,7 @@ set (source_files
   MPICommunicator.cpp
   MPIGroup.cpp
   MPIInstance.cpp
+  Ntuple.cpp
   ScopedErrorHandler.cpp
   detail/demangle_symbol.cpp
   detail/throwOnMPIError.cpp

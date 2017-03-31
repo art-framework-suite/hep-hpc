@@ -20,6 +20,11 @@ class hep_hpc::H5File {
 public:
   H5File() = default;
 
+  // Non-owning.
+  //
+  // Caller is responsible for ensuring file is a valid HDF5 file handle.
+  explicit H5File(hid_t file);
+
   // Open or create an HDF5 file, as appropriate. Note that the
   // H5PropertyList objects (if specified) may be moved in or copied by
   // value, but anyway do not need to live beyond this call.

@@ -26,8 +26,20 @@ public:
   H5Dataspace() = default;
   explicit H5Dataspace(H5S_class_t classID);
 
-  H5Dataspace(int rank, hsize_t const * dims, hsize_t const * maxdims);
+  // Take ownership.
+  explicit H5Dataspace(hid_t dspace);
 
+  // Basic
+  H5Dataspace(int rank, hsize_t const * dims, hsize_t const * maxdims = nullptr);
+
+  // No max dims.
+  template <typename IN_ITER_1>
+  H5Dataspace(int rank, IN_ITER_1 dim_begin);
+
+  template <typename IN_ITER_1>
+  H5Dataspace(IN_ITER_1 dim_begin, IN_ITER_1 dim_end);
+
+  // With max dims.
   template <typename IN_ITER_1, typename IN_ITER_2>
   H5Dataspace(int rank, IN_ITER_1 dim_begin, IN_ITER_2 maxdim_begin);
 
@@ -57,6 +69,26 @@ private:
   // (H5S_ALL) is a reasonable default;
   SimpleRAII<hid_t> h5dspace_;
 };
+
+template <typename IN_ITER_1>
+hep_hpc::H5Dataspace::
+H5Dataspace(int const rank,
+            IN_ITER_1 const dim_begin)
+  :
+  H5Dataspace(dim_begin, H5Dataspace_detail::copy_advance(dim_begin, rank))
+{
+}
+
+template <typename IN_ITER_1>
+hep_hpc::H5Dataspace::
+H5Dataspace(IN_ITER_1 const dim_begin, IN_ITER_1 const dim_end)
+  :
+  h5dspace_([](std::vector<hsize_t> const dims)
+            { return H5Screate_simple(dims.size(), dims.data(), nullptr);
+            }, &H5Sclose,
+            std::vector<hsize_t> {dim_begin, dim_end})
+{
+}
 
 template <typename IN_ITER_1, typename IN_ITER_2>
 hep_hpc::H5Dataspace::
