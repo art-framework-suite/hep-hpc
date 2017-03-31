@@ -84,7 +84,8 @@ makeDataset(hid_t const group, COL const & col)
   H5PropertyList cprops(H5P_DATASET_CREATE);
   hsize_t const chunking = 128;
   H5Pset_chunk(cprops, 1, &chunking);
-  H5Pset_deflate(cprops, 6);
+  unsigned int const compressionLevel = 6;
+  H5Pset_deflate(cprops, compressionLevel);
   return H5Dataset(group, col.name(), col.engine_type(), dspace, {}, cprops);
 }
 
