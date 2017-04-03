@@ -1,7 +1,5 @@
 #include "hep_hpc/ScopedErrorHandler.hpp"
 
-#include "hep_hpc/errorHandling.hpp"
-
 hep_hpc::ScopedErrorHandler::ScopedErrorHandler()
   :
   ScopedErrorHandler(NULL, NULL)
@@ -11,6 +9,14 @@ hep_hpc::ScopedErrorHandler::ScopedErrorHandler()
 hep_hpc::ScopedErrorHandler::
 ScopedErrorHandler(H5E_auto2_t func, void * clientData)
   :
-  errHandler_(&setAndSaveErrorHandler, &restoreErrorHandler, func, clientData)
+  errHandler_(static_cast<herr_t(*)(H5E_auto2_t, void *)>(&setAndSaveErrorHandler),
+              &restoreErrorHandler, func, clientData)
+{
+}
+
+hep_hpc::ScopedErrorHandler::
+ScopedErrorHandler(ErrorMode mode)
+  :
+  errHandler_(static_cast<herr_t(*)(ErrorMode)>(&setAndSaveErrorHandler), &restoreErrorHandler, mode)
 {
 }

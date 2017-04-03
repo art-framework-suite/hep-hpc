@@ -8,16 +8,24 @@
 // SimpleRAII has one template argument RESOURCE_HANDLE, that describes
 // the type of a handle to the resource to be managed.
 //
-// The single constructor template takes:
+// Construct:
 //
-// 1. A setup function which will return an instance of a type that may
-//    be stored as a RESOURCE_HANDLE.
+// A: Default (resource handle is default-constructed, no teardown
+//    function).
 //
-// 2. A teardown function with void return type taking a (possibly
-//    movable) RESOURCE_HANDLE as argument.
+// B: 1) A movable RESOURCE_HANDLE.
 //
-// 3. Optionally, any number of arguments to forward to the setup
-//    function when invoked.
+//    2) A teardown function with void return type taking a (possibly
+//       movable) RESOURCE_HANDLE as argument.
+//
+// C: 1) A setup function which will return an instance of a type that
+//       may be stored as a RESOURCE_HANDLE.
+//
+//    2) A teardown function with void return type taking a (possibly
+//       movable) RESOURCE_HANDLE as argument.
+//
+//    3) Optionally, any number of arguments to forward to the setup
+//       function when invoked.
 //
 ////////////////////////////////////
 // NOTES
@@ -33,11 +41,22 @@
 //   setup / teardown operations which do not provide a handle to a
 //   resource (an example would be MPI initialization / finalization).
 //
-// * In order to help assure the exception safety of classes using this
-//   template, efforts have been made to ensure the correctness of
-//   noexcept declarations. Therefore the code below is not pretty.
+// * Move construction and move assignment are supported.
+//
+// * Dereferencing (operator *()) is supported where appropriate.
+//
+// * release() will cause the resource to be managed no longer (no
+//   clean up).
+//
+// * reset() will clean up the resource. Optionally take on management
+//   of a new resource with a new teardown function (c.f. constructor B,
+//   above).
+//
+// * nothrow-correctness is problematic due to the fact that currently
+//   (C++14) nothrow is not part of a function signature, and
+//   std::function is not nothrow-correct.
+//
 ////////////////////////////////////////////////////////////////////////
-#include "hep_hpc/is_nothrow_swappable_all.hpp"
 
 #include <functional>
 #include <type_traits>
@@ -201,8 +220,8 @@ inline
 hep_hpc::SimpleRAII<RESOURCE_HANDLE>::
 SimpleRAII(SimpleRAII<RESOURCE_HANDLE> && other)
   :
-  resourceHandle_(other.resourceHandle_),
-  teardown_(other.teardown_)
+  resourceHandle_(std::move(other.resourceHandle_)),
+  teardown_(std::move(other.teardown_))
 {
   (void) other.release();
 }

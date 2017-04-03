@@ -116,6 +116,6 @@ TEST(H5Group, reset)
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  initH5ErrorHandling();
+  setErrorHandler(ErrorMode::EXCEPTIONS);
   return RUN_ALL_TESTS();
 }

@@ -56,31 +56,62 @@ namespace {
   StoredErrorHandler const SYSTEM_ERROR_HANDLER;
 }
 
-void
-hep_hpc::initH5ErrorHandling()
+herr_t
+hep_hpc::setErrorHandler(ErrorMode mode)
 {
-  H5Eset_auto2(H5E_DEFAULT, &throwH5Error, NULL);
-}
-
-void hep_hpc::resetErrorHandler()
-{
-  H5Eset_auto2(H5E_DEFAULT,
-               SYSTEM_ERROR_HANDLER.func,
-               SYSTEM_ERROR_HANDLER.clientData);
+  herr_t result = -1;
+  switch (mode) {
+  case ErrorMode::HDF5_DEFAULT:
+    result = setErrorHandler((H5E_auto2_t)&H5Eprint2, stderr);
+    break;
+  case ErrorMode::EXCEPTIONS:
+    result = setErrorHandler(&throwH5Error, nullptr);
+    break;
+  case ErrorMode::NONE:
+    result = setErrorHandler();
+    break;
+  default:
+    throw std::runtime_error("INTERNAL ERROR: setErrorHandler encountered unknown mode.");
+  }
+  return result;
 }
 
 namespace {
   thread_local StoredErrorHandler savedErrorHandler;
 }
 
-void hep_hpc::setAndSaveErrorHandler(H5E_auto2_t func, void * clientData)
+herr_t
+hep_hpc::setAndSaveErrorHandler(H5E_auto2_t func, void * clientData)
 {
-  H5Eget_auto2(H5E_DEFAULT, &savedErrorHandler.func, &savedErrorHandler.clientData);
-  H5Eset_auto2(H5E_DEFAULT, func, clientData);
+  herr_t result = -1;
+  result = H5Eget_auto2(H5E_DEFAULT, &savedErrorHandler.func, &savedErrorHandler.clientData);
+  if (result == 0) {
+    result = setErrorHandler(func, clientData);
+  }
+  return result;
 }
 
-void hep_hpc::restoreErrorHandler()
+herr_t hep_hpc::setAndSaveErrorHandler(ErrorMode mode)
 {
-  H5Eset_auto2(H5E_DEFAULT, savedErrorHandler.func, savedErrorHandler.clientData);
-  savedErrorHandler = SYSTEM_ERROR_HANDLER;
+  herr_t result = -1;
+  result = H5Eget_auto2(H5E_DEFAULT, &savedErrorHandler.func, &savedErrorHandler.clientData);
+  if (result == 0) {
+    result = setErrorHandler(mode);
+  }
+  return result;
+}
+
+herr_t hep_hpc::resetErrorHandler()
+{
+ return setErrorHandler(ErrorMode::HDF5_DEFAULT);
+}
+
+herr_t hep_hpc::restoreErrorHandler()
+{
+  herr_t result = -1;
+  result = setErrorHandler(savedErrorHandler.func, savedErrorHandler.clientData);
+  if (result == 0) {
+    savedErrorHandler = SYSTEM_ERROR_HANDLER;
+  }
+  return result;
 }
