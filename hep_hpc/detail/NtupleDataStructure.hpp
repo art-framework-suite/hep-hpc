@@ -60,11 +60,11 @@ makeGroup(hid_t file, std::string const & name, bool overwriteContents)
   }
   if (!group) { // Already exists.
     if (!overwriteContents) {
-      std::runtime_error("Group "s + name +
-                         " already exists and overwriting is not specified."s);
+      throw std::runtime_error("Group "s + name +
+                               " already exists and overwriting is not specified."s);
     }
     if (H5Ldelete(file, name.c_str(), H5P_DEFAULT) != (herr_t)0) {
-      std::runtime_error("Group "s + name + " cannot be deleted!"s);
+      throw std::runtime_error("Group "s + name + " cannot be deleted!"s);
     }
     group = hdf5::Group(file, name);
   }
