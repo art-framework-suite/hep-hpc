@@ -1,17 +1,14 @@
-#ifndef hep_hpc_detail_column_hpp
-#define hep_hpc_detail_column_hpp
+#ifndef hep_hpc_Column_hpp
+#define hep_hpc_Column_hpp
 
 #include "hdf5.h"
 
 #include <array>
 #include <string>
-#include <utility>
-#include <tuple>
 
 namespace hep_hpc {
   template<typename T>
   struct Column;
-
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -120,7 +117,7 @@ namespace hep_hpc {
 
 } // Namespace hep_hpc.
 
-#endif /* hep_hpc_detail_column_hpp */
+#endif /* hep_hpc_Column_hpp */
 
 // Local Variables:
 // mode: c++

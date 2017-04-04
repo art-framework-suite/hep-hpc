@@ -17,11 +17,55 @@
 // Interface
 //
 // Template arguments are specified as basic types (double, int, etc.)
-// or of type hep_hpc::Column (see hep_hpc/Column.hpp for details).
+// or of type hep_hpc::Column (see hep_hpc/Column.hpp for
+// details). Currently only scalar basic types are supported (not
+// strings).
 //
-// Construction
-// FIXME.
-#include "hep_hpc/H5File.hpp"
+////////////////////////////////////
+//
+// Ntuple<Args...>(filename_or_hid_t,
+//                 std::string tablename,
+//                 name_array const & column_names,
+//                 bool overwriteContents,
+//                 std::size_t bufsize)
+//
+//   Create an Ntuple tied to an HDF5 file with column types specified
+//   by Args and column names specified by column_names.
+//
+//   If hid_t is provided, caller is responsible for file resource
+//   management. If filename is provided and file exists, it is
+//   truncated.
+//
+//   Buffer size defaults to 1000 if not specified.
+//
+//   Insertion is row-wise; storage is column-wise.
+//
+//   overwriteContents controls whether an existing entity of name
+//   <tablename> would be overwritten or not (if not, an exception is
+//   thrown currently).
+//
+////////////////////////////////////
+//
+// std::string name() const;
+//
+//   Return the name of the group containing the Ntuple data.
+//
+////////////////////////////////////
+//
+// void insert(Args const &...);
+//
+//   Insert a row of data.
+//
+//   If the buffer is full, flush it first.
+//
+////////////////////////////////////
+//
+// void flush()
+//
+//   Flush the currently-buffered data to file.
+//
+////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/hdf5/File.hpp"
 #include "hep_hpc/Column.hpp"
 #include "hep_hpc/detail/NtupleDataStructure.hpp"
 
@@ -80,7 +124,7 @@ private:
   // This is the c'tor that does all of the work. It exists so that the
   // Args... and column-names array can be expanded in parallel.
   template <std::size_t... I>
-  Ntuple(H5File file,
+  Ntuple(hdf5::File file,
          std::string tablename,
          name_array const& columns,
          bool overwriteContents,
@@ -92,7 +136,7 @@ private:
 
   std::tuple<std::vector<Args>...> buffers_;
     
-  H5File file_;
+  hdf5::File file_;
   std::string name_;
   std::size_t max_;
   std::recursive_mutex mutex_ {};
@@ -105,7 +149,7 @@ private:
 
 namespace hep_hpc {
   namespace NtupleDetail {
-    H5File verifiedFile(H5File file);
+    hdf5::File verifiedFile(hdf5::File file);
 
     template <size_t I, typename TUPLE, typename Head, typename... Tail>
     void
@@ -126,7 +170,7 @@ hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
                                   name_array const & cnames,
                                   bool const overwriteContents,
                                   std::size_t const bufsize) :
-  Ntuple{H5File(file),
+  Ntuple{hdf5::File(file),
     std::move(name),
     cnames,
     overwriteContents,
@@ -134,10 +178,10 @@ hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
 {}
 
 namespace {
-  hep_hpc::H5PropertyList fileAccessProperties()
+  hep_hpc::hdf5::PropertyList fileAccessProperties()
   {
     // Ensure we are using the latest available HDF5 file format to write our data.
-    hep_hpc::H5PropertyList plist(H5P_FILE_ACCESS);
+    hep_hpc::hdf5::PropertyList plist(H5P_FILE_ACCESS);
     H5Pset_libver_bounds(plist, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST);
     return plist;
   }
@@ -148,13 +192,13 @@ hep_hpc::Ntuple<Args...>::Ntuple(std::string filename,
                                   std::string name,
                                   name_array const & cnames,
                                   std::size_t const bufsize) :
-  Ntuple{H5File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
+  Ntuple{hdf5::File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
     std::move(name), cnames, false, bufsize, iSequence()}
 {}
 
 template <typename... Args>
 template <std::size_t... I>
-hep_hpc::Ntuple<Args...>::Ntuple(H5File file,
+hep_hpc::Ntuple<Args...>::Ntuple(hdf5::File file,
                                   std::string name,
                                   name_array const & cnames,
                                   bool const overwriteContents,
@@ -198,7 +242,7 @@ hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
 {
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
-  ScopedErrorHandler seh;
+  hdf5::ScopedErrorHandler seh;
   auto const results =
     {0, NtupleDetail::flush_no_throw_one(get<I>(buffers_),
                                          get<I>(dd_.dsets),
@@ -214,7 +258,7 @@ hep_hpc::NtupleDetail::
 flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
 {
   using std::get;
-  auto dspace = H5Dataspace{H5Dget_space(dset)};
+  auto dspace = hdf5::Dataspace{H5Dget_space(dset)};
   // How many dimensions?
   auto const ndims = H5Sget_simple_extent_ndims(dspace);
   // Obtain current and max dimensions.
@@ -235,7 +279,7 @@ flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
   if (rc != 0) {
     return rc;
   }
-  dspace = H5Dataspace{H5Dget_space(dset)};
+  dspace = hdf5::Dataspace{H5Dget_space(dset)};
   // Data selection for write.
   rc =
     H5Sselect_hyperslab(dspace,
@@ -247,7 +291,7 @@ flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
   if (rc != 0) {
     return rc;
   }
-  H5Dataspace memspace{ndims, dimsext.data(), dimsext.data()};
+  hdf5::Dataspace memspace{ndims, dimsext.data(), dimsext.data()};
   // Write the data.
   rc =
     H5Dwrite(dset,

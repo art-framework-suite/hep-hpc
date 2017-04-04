@@ -1,1 +1,0 @@
-../ex005/basic_mpi.c
