@@ -17,10 +17,54 @@
 // Interface
 //
 // Template arguments are specified as basic types (double, int, etc.)
-// or of type hep_hpc::Column (see hep_hpc/Column.hpp for details).
+// or of type hep_hpc::Column (see hep_hpc/Column.hpp for
+// details). Currently only scalar basic types are supported (not
+// strings).
 //
-// Construction
-// FIXME.
+////////////////////////////////////
+//
+// Ntuple<Args...>(filename_or_hid_t,
+//                 std::string tablename,
+//                 name_array const & column_names,
+//                 bool overwriteContents,
+//                 std::size_t bufsize)
+//
+//   Create an Ntuple tied to an HDF5 file with column types specified
+//   by Args and column names specified by column_names.
+//
+//   If hid_t is provided, caller is responsible for file resource
+//   management. If filename is provided and file exists, it is
+//   truncated.
+//
+//   Buffer size defaults to 1000 if not specified.
+//
+//   Insertion is row-wise; storage is column-wise.
+//
+//   overwriteContents controls whether an existing entity of name
+//   <tablename> would be overwritten or not (if not, an exception is
+//   thrown currently).
+//
+////////////////////////////////////
+//
+// std::string name() const;
+//
+//   Return the name of the group containing the Ntuple data.
+//
+////////////////////////////////////
+//
+// void insert(Args const &...);
+//
+//   Insert a row of data.
+//
+//   If the buffer is full, flush it first.
+//
+////////////////////////////////////
+//
+// void flush()
+//
+//   Flush the currently-buffered data to file.
+//
+////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/File.hpp"
 #include "hep_hpc/Column.hpp"
 #include "hep_hpc/detail/NtupleDataStructure.hpp"

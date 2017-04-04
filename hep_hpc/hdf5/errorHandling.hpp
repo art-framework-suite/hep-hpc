@@ -4,7 +4,9 @@
 // HDF5 Error handling functions.
 //
 ////////////////////////////////////
+// hep_hpc::hdf5::
 // setErrorHandler(H5E_auto2_t func = nullptr, void* clientData = nullptr)
+// hep_hpc::hdf5::
 // setErrorHandler(ErrorMode::(HDF5_DEFAULT|EXCEPTIONS|NONE))
 //
 // Unconditionally initialize the HDF5 error handling system to the
@@ -32,20 +34,22 @@
 // for more details.
 //
 ////////////////////////////////////
+// hep_hpc::hdf5::
 // setAndSaveErrorHandler(H5E_auto2_t func = nullptr, void* clientData = nullptr)
+// hep_hpc::hdf5::
 // setAndSaveErrorHandler(ErrorMode::(HDF5_DEFAULT|EXCEPTIONS|NONE))
 //
 // Set the HDF5 error handler for the current error stack, saving the
 // existing settings.
 //
 ////////////////////////////////////
-// resetErrorHandler().
+// hep_hpc::hdf5::resetErrorHandler().
 //
 // Unconditionally reset the HDF5 error handler to the system defaults
 // (equivalent to setErrorHandler(ErrorMode::HDF5_DEFAULT)).
 //
 ////////////////////////////////////
-// restoreErrorHandler()
+// hep_hpc::hdf5::restoreErrorHandler()
 //
 // Restore this thread's previously-saved HDF5 error handler. If nothing
 // was saved, this is equivalent to resetErrorHandler().

@@ -1,6 +1,11 @@
 #ifndef hep_hpc_hdf5_Dataset_hpp
 #define hep_hpc_hdf5_Dataset_hpp
-
+////////////////////////////////////////////////////////////////////////
+// hep_hpc::hdf5::Dataset
+//
+// Class representing an HDF5 dataset, with resource management.
+//
+////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/HID_t.hpp"
 #include "hep_hpc/hdf5/Dataspace.hpp"
 #include "hep_hpc/hdf5/PropertyList.hpp"

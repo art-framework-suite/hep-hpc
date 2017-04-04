@@ -1,6 +1,14 @@
 #ifndef hep_hpc_hdf5_Dataspace_hpp
 #define hep_hpc_hdf5_Dataspace_hpp
-
+////////////////////////////////////////////////////////////////////////
+// hep_hpc::hdf5::Dataspace
+//
+// Class representing an HDF5 dataspace, with resource management.
+//
+// N.B. Dataspaces do not generally need to last beyond the call
+//      passing them to an HDF5 function.
+//
+////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/Utilities/SimpleRAII.hpp"
 
 #include "hdf5.h"

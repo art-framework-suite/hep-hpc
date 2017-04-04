@@ -1,10 +1,10 @@
 #ifndef hep_hpc_hdf5_HID_t_hpp
 #define hep_hpc_hdf5_HID_t_hpp
 ////////////////////////////////////////////////////////////////////////
-// HID_t
+// hep_hpc::hdf5::HID_t
 //
 // Wrapped hid_t which has the value -1 when default-constructed. Useful
-// in resource management (see SimpleRAII.hpp).
+// in resource management (see hep_hpc/Utilities/SimpleRAII.hpp).
 //
 ////////////////////////////////////////////////////////////////////////
 

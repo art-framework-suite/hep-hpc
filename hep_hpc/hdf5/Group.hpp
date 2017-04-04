@@ -1,6 +1,13 @@
 #ifndef hep_hpc_hdf5_Group_hpp
 #define hep_hpc_hdf5_Group_hpp
-
+////////////////////////////////////////////////////////////////////////
+// hep_hpc::hdf5::Group
+//
+//   Simple class managing an HDF5 group resource.
+//
+//   Group will be created by default, but open mode may be specified.
+//
+////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/PropertyList.hpp"
 #include "hep_hpc/hdf5/HID_t.hpp"
 #include "hep_hpc/Utilities/SimpleRAII.hpp"
