@@ -1,7 +1,7 @@
 #ifndef hep_hpc_Utilities_is_nothrow_swappable_all_hpp
 #define hep_hpc_Utilities_is_nothrow_swappable_all_hpp
 ////////////////////////////////////////////////////////////////////////
-// hep_hpc::is_nothrow_swappable_all
+// hep_hpc::detail::is_nothrow_swappable_all
 //
 // Class template type trait to determine whether the swap operations
 // for a series of types are all noexcept.

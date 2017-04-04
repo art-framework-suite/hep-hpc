@@ -1,5 +1,12 @@
 #ifndef hep_hpc_Utilities_DefaultedSimpleType_hpp
 #define hep_hpc_Utilities_DefaultedSimpleType_hpp
+/////////////////////////////////////////////////////////////////////////
+// hep_hpc::detail::DefaultedSimpleType
+//
+// For types eligible as non-type templates (e.g. integers, pointers): a
+// wrapper type which has the specified default value.
+//
+/////////////////////////////////////////////////////////////////////////
 
 namespace hep_hpc {
   namespace detail {

@@ -1,12 +1,11 @@
 #ifndef hep_hpc_Utilities_demangle_symbol_hpp
 #define hep_hpc_Utilities_demangle_symbol_hpp
-
-// ======================================================================
+////////////////////////////////////////////////////////////////////////
+// hep_hpc::detail::demangle_symbol()
 //
-// demangle: Call the cross-vendor API to demangle symbols
-//           (eg for ROOT dictionary errors).
+// Call the cross-vendor API to demangle symbols.
 //
-// ======================================================================
+////////////////////////////////////////////////////////////////////////
 
 #include <string>
 
