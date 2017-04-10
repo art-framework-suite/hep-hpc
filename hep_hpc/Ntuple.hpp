@@ -65,9 +65,10 @@
 //   Flush the currently-buffered data to file.
 //
 ////////////////////////////////////////////////////////////////////////
-#include "hep_hpc/hdf5/File.hpp"
 #include "hep_hpc/Column.hpp"
 #include "hep_hpc/detail/NtupleDataStructure.hpp"
+#include "hep_hpc/hdf5/File.hpp"
+#include "hep_hpc/hdf5/errorHandling.hpp"
 
 #include "hdf5.h"
 
@@ -291,13 +292,12 @@ flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
   if (rc != 0) {
     return rc;
   }
-  hdf5::Dataspace memspace{ndims, dimsext.data(), dimsext.data()};
   // Write the data.
   rc =
     H5Dwrite(dset,
              col.engine_type(),
-             memspace,
-             dspace,
+             hdf5::Dataspace{ndims, dimsext.data(), dimsext.data()},
+             std::move(dspace),
              H5P_DEFAULT,
              buf.data());
   if (rc == 0) {

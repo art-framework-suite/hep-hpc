@@ -3,8 +3,6 @@
 
 #include "gtest/gtest.h"
 
-#include <iostream>
-
 using namespace hep_hpc::hdf5;
 using namespace std::string_literals;
 
@@ -106,6 +104,6 @@ TEST(PropertyList, getClassName)
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  setErrorHandler(ErrorMode::EXCEPTIONS);
+  ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
   return RUN_ALL_TESTS();
 }

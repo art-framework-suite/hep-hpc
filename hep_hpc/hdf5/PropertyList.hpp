@@ -10,8 +10,11 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/Utilities/SimpleRAII.hpp"
+#include "hep_hpc/hdf5/Resource.hpp"
 
 #include "hdf5.h"
+
+#include <string>
 
 namespace hep_hpc {
   namespace hdf5 {
@@ -51,8 +54,33 @@ public:
 private:
   // Note we are using a plain hid_t here rather than HID_t, because 0
   // (H5P_DEFAULT) is a reasonable default;
-  detail::SimpleRAII<hid_t> h5plist_;
+  Resource<hid_t> h5plist_;
 };
+
+inline
+hep_hpc::hdf5::PropertyList::
+PropertyList(hid_t const propClassID)
+  :
+  h5plist_(&H5Pcreate, &H5Pclose, propClassID)
+{
+}
+
+inline
+hep_hpc::hdf5::PropertyList::
+PropertyList(PropertyList const & other)
+  :
+  h5plist_(&H5Pcopy, &H5Pclose, *other.h5plist_)
+{
+}
+
+inline
+hep_hpc::hdf5::PropertyList &
+hep_hpc::hdf5::PropertyList::
+operator = (PropertyList const & other)
+{
+  h5plist_ = { &H5Pcopy, &H5Pclose, *other.h5plist_ };
+  return *this;
+}
 
 inline
 hep_hpc::hdf5::PropertyList::
@@ -73,7 +101,8 @@ std::string
 hep_hpc::hdf5::PropertyList::
 getClassName() const {
   // Return from H5Pget_class_name() must be memory-managed.
-  detail::SimpleRAII<char *> cname(&H5Pget_class_name, &free, H5Pget_class(*h5plist_));
+  hep_hpc::detail::SimpleRAII<char *>
+    cname(&H5Pget_class_name, &free, ErrorController::call(&H5Pget_class, *h5plist_));
   return *cname;
 }
 
@@ -82,7 +111,7 @@ bool
 hep_hpc::hdf5::PropertyList::
 isClass(hid_t const propClassID) const
 {
-  return H5Pequal(H5Pget_class(*h5plist_), propClassID);
+  return H5Pequal(ErrorController::call(&H5Pget_class,*h5plist_), propClassID);
 }
 
 inline

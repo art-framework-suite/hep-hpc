@@ -1,33 +1,13 @@
 #include "hep_hpc/hdf5/PropertyList.hpp"
 
-hep_hpc::hdf5::PropertyList::
-PropertyList(hid_t const propClassID)
-  :
-  h5plist_([propClassID](){ return H5Pcreate(propClassID); }, &H5Pclose)
-{
-}
-
-hep_hpc::hdf5::PropertyList::
-PropertyList(PropertyList const & other)
-  :
-  h5plist_([&other](){ return H5Pcopy(*other.h5plist_); }, &H5Pclose)
-{
-}
-
-hep_hpc::hdf5::PropertyList &
-hep_hpc::hdf5::PropertyList::
-operator = (PropertyList const & other)
-{
-  h5plist_ = { [&other](){ return H5Pcopy(*other.h5plist_); }, &H5Pclose };
-  return *this;
-}
+#include <stdexcept>
 
 hid_t
 hep_hpc::hdf5::PropertyList::
 getClass() const
 {
-  hid_t result = -1;
-  hid_t classID = H5Pget_class(*h5plist_);
+  HID_t result;
+  hid_t classID = ErrorController::call(&H5Pget_class, *h5plist_);
   if (H5Pequal(classID, H5P_ATTRIBUTE_CREATE)) {
     result = H5P_ATTRIBUTE_CREATE;
   } else if (H5Pequal(classID, H5P_DATASET_ACCESS)) {

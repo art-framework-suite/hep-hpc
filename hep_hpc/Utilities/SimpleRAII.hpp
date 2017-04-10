@@ -5,24 +5,23 @@
 //
 // Simple generic RAII class template.
 //
-// SimpleRAII has one template argument RESOURCE_HANDLE, that describes
+// SimpleRAII has one template argument RH, that describes
 // the type of a handle to the resource to be managed.
 //
 // Construct:
 //
-// A: Default (resource handle is default-constructed, no teardown
-//    function).
+// A: An optional, movable RH (non-owning, no teardown).
 //
-// B: 1) A movable RESOURCE_HANDLE.
+// B: 1) A movable RH.
 //
 //    2) A teardown function with void return type taking a (possibly
-//       movable) RESOURCE_HANDLE as argument.
+//       movable) RH as argument.
 //
 // C: 1) A setup function which will return an instance of a type that
-//       may be stored as a RESOURCE_HANDLE.
+//       may be stored as a RH.
 //
 //    2) A teardown function with void return type taking a (possibly
-//       movable) RESOURCE_HANDLE as argument.
+//       movable) RH as argument.
 //
 //    3) Optionally, any number of arguments to forward to the setup
 //       function when invoked.
@@ -30,12 +29,12 @@
 ////////////////////////////////////
 // NOTES
 //
-// * At construction time, the setup function is invoked with the
-//   provided arguments (if any) and the returned RESOURCE_HANDLE is
-//   stored.
+// * At construction time, the setup function (when provided) is invoked
+//   with the provided arguments (if any) and the returned
+//   RH is stored.
 //
 // * At destruction time, the teardown function is invoked with the
-//   stored RESOURCE_HANDLE as its only argument.
+//   stored RH as its only argument.
 //
 // * A specialization is provided for the (rare) case of required paired
 //   setup / teardown operations which do not provide a handle to a
@@ -59,13 +58,12 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include <functional>
-#include <type_traits>
 #include <utility>
 
 namespace hep_hpc {
   namespace detail {
     // SimpleRAII template.
-    template <typename RESOURCE_HANDLE>
+    template <typename RH>
     class SimpleRAII;
 
     // Specialization for no resource handle.
@@ -81,60 +79,59 @@ namespace hep_hpc {
 }
 
 // Class template definition.
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 class hep_hpc::detail::SimpleRAII {
 public:
-  // Default constructor.
-  SimpleRAII() = default;
+  // Simple constructor (non-owning, no teardown).
+  explicit SimpleRAII(RH rh = {});
 
   // Construct with resource handle and teardown function.
   template <typename TEARDOWN_FUNC>
-  SimpleRAII(RESOURCE_HANDLE && rh, TEARDOWN_FUNC teardown);
+  SimpleRAII(RH rh, TEARDOWN_FUNC teardown);
 
   // Construct with setup function and args, teardown function.
   template <typename SETUP_FUNC, typename TEARDOWN_FUNC, typename ... ARGS>
   SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args);
 
   // Free swap function.
-  template <typename RH>
-  friend void swap(SimpleRAII<RH> & left, SimpleRAII<RH> & right);
+  friend void swap<>(SimpleRAII<RH> & left, SimpleRAII<RH> & right);
 
   // Move constructor.
-  SimpleRAII(SimpleRAII<RESOURCE_HANDLE> && other);
+  SimpleRAII(SimpleRAII<RH> && other);
 
   // Move assignment.
-  SimpleRAII<RESOURCE_HANDLE> &
-  operator = (SimpleRAII<RESOURCE_HANDLE> && other);
+  SimpleRAII<RH> &
+  operator = (SimpleRAII<RH> && other);
 
   // No copy constructor.
-  SimpleRAII(SimpleRAII<RESOURCE_HANDLE> const &) = delete;
+  SimpleRAII(SimpleRAII<RH> const &) = delete;
 
   // No copy assignment.
-  SimpleRAII<RESOURCE_HANDLE> &
-  operator = (SimpleRAII<RESOURCE_HANDLE> const &) = delete;
+  SimpleRAII<RH> &
+  operator = (SimpleRAII<RH> const &) = delete;
 
   // Dereference operators.
-  RESOURCE_HANDLE const & operator * () const;
-  RESOURCE_HANDLE & operator * ();
+  RH const & operator * () const;
+  RH & operator * ();
 
   // Access teardown function.
-  std::function<void(RESOURCE_HANDLE &&)> teardownFunc() const;
+  std::function<void(RH)> teardownFunc() const;
 
   // Release (teardown function will be neutralized).
-  RESOURCE_HANDLE release();
+  RH release();
 
   // Reset (existing resource is cleaned up).
   void reset();
 
   template <typename TEARDOWN_FUNC>
-  void reset(RESOURCE_HANDLE && handle, TEARDOWN_FUNC teardown);
+  void reset(RH rh, TEARDOWN_FUNC teardown);
 
   // Destructor.
   ~SimpleRAII();
 
 private:
-  RESOURCE_HANDLE resourceHandle_ {};
-  std::function<void(RESOURCE_HANDLE &&)> teardown_ {};
+  RH resourceHandle_ {};
+  std::function<void(RH)> teardown_ {};
 };
 
 // Class template specialization definition.
@@ -146,6 +143,7 @@ public:
 
   // Construct with teardown function.
   template <typename TEARDOWN_FUNC>
+  explicit 
   SimpleRAII(TEARDOWN_FUNC teardown);
 
   // Construct with setup function and args, teardown function.
@@ -192,12 +190,23 @@ private:
 ////////////////////////////////////////////////////////////////////////
 // Implementation of class template.
 
+// Simple constructor (non-owning, no teardown).
+template <typename RH>
+inline
+hep_hpc::detail::SimpleRAII<RH>::
+SimpleRAII(RH rh)
+  :
+  resourceHandle_{std::move(rh)},
+  teardown_{}
+{
+}
+
 // Construct with resource handle and teardown function.
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 template <typename TEARDOWN_FUNC>
 inline
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
-SimpleRAII(RESOURCE_HANDLE && rh, TEARDOWN_FUNC teardown)
+hep_hpc::detail::SimpleRAII<RH>::
+SimpleRAII(RH rh, TEARDOWN_FUNC teardown)
   :
   resourceHandle_(std::move(rh)),
   teardown_(teardown)
@@ -205,10 +214,10 @@ SimpleRAII(RESOURCE_HANDLE && rh, TEARDOWN_FUNC teardown)
 }
 
 // Construct with setup function and args, teardown function.
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 template <typename SETUP_FUNC, typename TEARDOWN_FUNC, typename ... ARGS>
 inline
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
+hep_hpc::detail::SimpleRAII<RH>::
 SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args)
   :
   resourceHandle_(setup(std::forward<ARGS>(args)...)),
@@ -217,10 +226,10 @@ SimpleRAII(SETUP_FUNC setup, TEARDOWN_FUNC teardown, ARGS && ... args)
 }
 
 // Move constructor.
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 inline
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
-SimpleRAII(SimpleRAII<RESOURCE_HANDLE> && other)
+hep_hpc::detail::SimpleRAII<RH>::
+SimpleRAII(SimpleRAII<RH> && other)
   :
   resourceHandle_(std::move(other.resourceHandle_)),
   teardown_(std::move(other.teardown_))
@@ -229,87 +238,87 @@ SimpleRAII(SimpleRAII<RESOURCE_HANDLE> && other)
 }
 
 // Move assignment.
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 inline
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE> &
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
-operator = (SimpleRAII<RESOURCE_HANDLE> && other) {
+hep_hpc::detail::SimpleRAII<RH> &
+hep_hpc::detail::SimpleRAII<RH>::
+operator = (SimpleRAII<RH> && other) {
   swap(*this, other);
   return *this;
 }
 
 // Dereference operators.
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 inline
-RESOURCE_HANDLE const &
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
+RH const &
+hep_hpc::detail::SimpleRAII<RH>::
 operator * () const
 {
   return resourceHandle_;
 }
 
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 inline
-RESOURCE_HANDLE &
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
+RH &
+hep_hpc::detail::SimpleRAII<RH>::
 operator * ()
 {
   return resourceHandle_;
 }
 
 // Access teardown function.
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 inline
-std::function<void(RESOURCE_HANDLE &&)>
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
+std::function<void(RH)>
+hep_hpc::detail::SimpleRAII<RH>::
 teardownFunc() const
 {
   return teardown_;
 }
 
 // Release (teardown function will be neutralized).
-template <typename RESOURCE_HANDLE>
-RESOURCE_HANDLE
+template <typename RH>
+RH
 inline
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
+hep_hpc::detail::SimpleRAII<RH>::
 release()
 {
-  RESOURCE_HANDLE tmp(std::move(resourceHandle_));
+  RH tmp(std::move(resourceHandle_));
+  // Avoid cleanup.
   resourceHandle_ = {};
   teardown_ = {};
   return tmp;
 }
 
 // Reset (resource will be cleaned up).
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 inline
 void
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
+hep_hpc::detail::SimpleRAII<RH>::
 reset()
 {
   using std::swap;
-  SimpleRAII<RESOURCE_HANDLE> tmp;
+  SimpleRAII<RH> tmp;
   swap(*this, tmp);
 }
 
 // Reset (resource will be cleaned up).
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 template <typename TEARDOWN_FUNC>
 inline
 void
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
-reset(RESOURCE_HANDLE && handle, TEARDOWN_FUNC teardown)
+hep_hpc::detail::SimpleRAII<RH>::
+reset(RH rh, TEARDOWN_FUNC teardown)
 {
   using std::swap;
-  SimpleRAII<RESOURCE_HANDLE>
-    tmp([](RESOURCE_HANDLE && rh) { return std::move(rh); }, teardown, std::move(handle));
+  SimpleRAII<RH> tmp(rh, teardown);
   swap(*this, tmp);
 }
 
 // Destructor.
-template <typename RESOURCE_HANDLE>
+template <typename RH>
 inline
-hep_hpc::detail::SimpleRAII<RESOURCE_HANDLE>::
+hep_hpc::detail::SimpleRAII<RH>::
 ~SimpleRAII()
 {
   if (teardown_) {

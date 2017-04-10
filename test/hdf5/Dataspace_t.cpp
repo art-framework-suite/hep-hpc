@@ -4,7 +4,6 @@
 #include "gtest/gtest.h"
 
 #include <array>
-#include <iostream>
 #include <list>
 
 using namespace hep_hpc::hdf5;
@@ -88,6 +87,6 @@ TEST(Dataspace, reset)
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  setErrorHandler(ErrorMode::EXCEPTIONS);
+  ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
   return RUN_ALL_TESTS();
 }

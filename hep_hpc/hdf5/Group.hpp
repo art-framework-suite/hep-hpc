@@ -10,9 +10,12 @@
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/PropertyList.hpp"
 #include "hep_hpc/hdf5/HID_t.hpp"
-#include "hep_hpc/Utilities/SimpleRAII.hpp"
+#include "hep_hpc/hdf5/Resource.hpp"
+#include "hep_hpc/hdf5/errorHandling.hpp"
 
 #include "hdf5.h"
+
+#include <string>
 
 namespace hep_hpc {
   namespace hdf5 {
@@ -28,14 +31,13 @@ public:
   Group() = default;
 
   // Create or open a group. Note that the PropertyList objects (if specified)
-  // may be moved in or copied by value, but anyway do not need to live
-  // beyond this call.
+  // will be consumed.
   Group(hid_t fileOrGroup,
-          std::string const & fullPathName,
-          group_mode_t mode = CREATE_MODE,
-          PropertyList linkCreationProperties = {},
-          PropertyList GroupCreationProperties = {},
-          PropertyList GroupAccessProperties = {});
+        std::string const & fullPathName,
+        group_mode_t mode = CREATE_MODE,
+        PropertyList && linkCreationProperties = {},
+        PropertyList && GroupCreationProperties = {},
+        PropertyList && GroupAccessProperties = {});
 
   operator hid_t() const noexcept;
 
@@ -55,7 +57,7 @@ public:
 
 private:
   static HID_t const INVALID_GROUP_;
-  detail::SimpleRAII<HID_t> h5group_;
+  Resource<HID_t> h5group_;
 };
 
 inline
@@ -78,7 +80,8 @@ hep_hpc::hdf5::Group::
 info() const
 {
   H5G_info_t result;
-  (void) H5Gget_info(*h5group_, &result);
+  // We can't return the error code, so throw if something goes wrong.
+  ErrorController::call(ErrorMode::EXCEPTION, &H5Gget_info, *h5group_, &result);
   return result;
 }
 
@@ -87,7 +90,7 @@ herr_t
 hep_hpc::hdf5::Group::
 flush()
 {
-  return H5Gflush(*h5group_);
+  return ErrorController::call(&H5Gflush, *h5group_);
 }
 
 inline
@@ -95,7 +98,7 @@ herr_t
 hep_hpc::hdf5::Group::
 refresh()
 {
-  return H5Grefresh(*h5group_);
+  return ErrorController::call(&H5Grefresh, *h5group_);
 }
 
 inline

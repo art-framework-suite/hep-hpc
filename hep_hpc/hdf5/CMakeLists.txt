@@ -1,10 +1,8 @@
 set (source_files
   Dataset.cpp
-  Dataspace.cpp
   File.cpp
   Group.cpp
   PropertyList.cpp
-  ScopedErrorHandler.cpp
   errorHandling.cpp
   )
 

@@ -8,10 +8,18 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include <string>
+#include <typeinfo>
 
 namespace hep_hpc {
   namespace detail {
     std::string demangle_symbol(std::string const &mangled);
+
+    template <typename FUNC>
+    std::string
+    demangle_function(FUNC func)
+    {
+      return demangle_symbol(typeid(func).name());
+    }
   }
 }
 

@@ -8,7 +8,7 @@
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/PropertyList.hpp"
 #include "hep_hpc/hdf5/HID_t.hpp"
-#include "hep_hpc/Utilities/SimpleRAII.hpp"
+#include "hep_hpc/hdf5/Resource.hpp"
 
 #include "hdf5.h"
 
@@ -29,12 +29,11 @@ public:
   explicit File(hid_t file);
 
   // Open or create an HDF5 file, as appropriate. Note that the
-  // PropertyList objects (if specified) may be moved in or copied by
-  // value, but anyway do not need to live beyond this call.
-  explicit File(std::string filename,
-                  unsigned int flag = H5F_ACC_RDONLY,
-                  PropertyList fileCreationProperties = {},
-                  PropertyList fileAccessProperties = {});
+  // PropertyList objects (if specified) will be consumed.
+  explicit File(std::string const & filename,
+                unsigned int flag = H5F_ACC_RDONLY,
+                PropertyList && fileCreationProperties = {},
+                PropertyList && fileAccessProperties = {});
 
   operator hid_t() const noexcept;
 
@@ -47,8 +46,15 @@ public:
   void close();
 
 private:
-  detail::SimpleRAII<HID_t> h5file_;
+  Resource<HID_t> h5file_;
 };
+
+inline
+hep_hpc::hdf5::File::File(hid_t file)
+  :
+  h5file_(file)
+{
+}
 
 inline
 hep_hpc::hdf5::File::
@@ -70,7 +76,7 @@ herr_t
 hep_hpc::hdf5::File::
 flush(H5F_scope_t const scope)
 {
-  return H5Fflush(*h5file_, scope);
+  return ErrorController::call(&H5Fflush, *h5file_, scope);
 }
 
 inline

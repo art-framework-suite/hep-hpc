@@ -5,7 +5,7 @@
 #include "hep_hpc/hdf5/Dataset.hpp"
 #include "hep_hpc/hdf5/Dataspace.hpp"
 #include "hep_hpc/hdf5/PropertyList.hpp"
-#include "hep_hpc/hdf5/ScopedErrorHandler.hpp"
+#include "hep_hpc/hdf5/errorHandling.hpp"
 
 #include <string>
 
@@ -15,8 +15,8 @@ namespace hep_hpc {
     class NtupleDataStructure;
 
     hdf5::Group makeGroup(hid_t file,
-                      std::string const & name,
-                      bool overwriteContents);
+                          std::string const & name,
+                          bool overwriteContents);
 
     template <typename COL>
     hdf5::Dataset makeDataset(hid_t const group, COL const & col);
@@ -79,14 +79,15 @@ makeDataset(hid_t const group, COL const & col)
   // FIXME: Should be 1 infinite dim + dims from columns spec when they appear.
   hsize_t const dim = 0ull;
   hsize_t maxdim = H5S_UNLIMITED;
-  hdf5::Dataspace dspace{1, &dim, &maxdim};
   // Set up creation properties of the dataset.
   hdf5::PropertyList cprops(H5P_DATASET_CREATE);
   hsize_t const chunking = 128;
   H5Pset_chunk(cprops, 1, &chunking);
   unsigned int const compressionLevel = 6;
   H5Pset_deflate(cprops, compressionLevel);
-  return hdf5::Dataset(group, col.name(), col.engine_type(), dspace, {}, cprops);
+  return hdf5::Dataset(group, col.name(), col.engine_type(),
+                       hdf5::Dataspace{1, &dim, &maxdim},
+                       {}, std::move(cprops));
 }
 
 

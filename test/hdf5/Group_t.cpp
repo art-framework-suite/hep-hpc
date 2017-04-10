@@ -1,7 +1,6 @@
 #include "hep_hpc/hdf5/File.hpp"
 #include "hep_hpc/hdf5/Group.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
-#include "hep_hpc/hdf5/ScopedErrorHandler.hpp"
 
 #include "gtest/gtest.h"
 
@@ -116,6 +115,6 @@ TEST(Group, reset)
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  setErrorHandler(ErrorMode::EXCEPTIONS);
+  ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
   return RUN_ALL_TESTS();
 }

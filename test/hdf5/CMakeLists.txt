@@ -1,4 +1,10 @@
 ####################################
+# Resource test.
+add_executable(Resource_t Resource_t.cpp)
+target_link_libraries(Resource_t hep_hpc_hdf5 gtest)
+add_test(NAME Resource_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Resource_t)
+
+####################################
 # File test.
 add_executable(File_t File_t.cpp)
 target_link_libraries(File_t hep_hpc_hdf5 gtest)

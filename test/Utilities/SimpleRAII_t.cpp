@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 
-#include <iostream>
+#include <sstream>
 #include <string>
 #include <utility>
 
@@ -51,7 +51,7 @@ TEST(SimpleRAII_construction, h_td_size_t)
   size_t const ref = 27;
   size_t iut = 0;
   {
-    SimpleRAII<size_t> const r(size_t{ref}, [&iut](size_t && i) { iut = i; });
+    SimpleRAII<size_t> const r(size_t{ref}, [&iut](size_t i) { iut = i; });
     ASSERT_EQ(*r, ref);
   }
   ASSERT_EQ(iut, ref);
@@ -80,7 +80,7 @@ namespace {
   decltype(auto) teardown(std::ostream & os)
   {
     return
-      [&os](auto && x) noexcept
+      [&os](auto x) noexcept
     {
       os << x;
     };
@@ -89,6 +89,17 @@ namespace {
   {
     return [&os, &msg](){ os << msg; };
   }
+}
+
+TEST(SimpleRAII_Simple, non_owning)
+{
+  size_t const ref = 27ull;
+  auto iut = ref;
+  {
+    SimpleRAII<size_t *> const r(&iut);
+    ASSERT_FALSE(r.teardownFunc());
+  }
+  ASSERT_EQ(iut, ref);
 }
 
 TEST(SimpleRAII_simple, size_t)
