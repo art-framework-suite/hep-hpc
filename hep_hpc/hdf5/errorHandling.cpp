@@ -13,6 +13,21 @@ namespace {
   hep_hpc::hdf5::detail::StoredErrorHandler const SYSTEM_ERROR_HANDLER;
 }
 
+
+hep_hpc::hdf5::detail::StoredErrorHandler
+hep_hpc::hdf5::detail::
+saveErrorHandler()
+{
+  detail::StoredErrorHandler result;
+  result.mode = ErrorController::currentMode();
+  if (ErrorController::call(&H5Eget_auto2, H5E_DEFAULT,
+                            &result.func, &result.clientData) != 0) {
+    throw Exception("Error Controller: unable to retrieve and save current "
+                    "error handling configuration.");
+  }
+  return result;
+}
+
 [[noreturn]]
 herr_t
 hep_hpc::hdf5::detail::throwH5Error(hid_t estack)
@@ -39,11 +54,11 @@ hep_hpc::hdf5::detail::throwH5Error(hid_t estack)
 }
 
 herr_t
-hep_hpc::hdf5::
-ErrorController::setErrorHandler(ErrorMode const mode)
+hep_hpc::hdf5::ErrorController::
+setErrorHandler(ErrorMode const mode)
 {
   herr_t result = -1;
-  switch (mode_) {
+  switch (mode) {
   case ErrorMode::HDF5_DEFAULT:
     result = setErrorHandler_((H5E_auto2_t)&H5Eprint2, stderr);
     break;
@@ -65,41 +80,16 @@ ErrorController::setErrorHandler(ErrorMode const mode)
 }
 
 herr_t
-hep_hpc::hdf5::
-ErrorController::setAndSaveErrorHandler(H5E_auto2_t const func,
-                                        void * const clientData)
-{
-  herr_t result = -1;
-  result = saveErrorHandler_();
-  if (result == 0) {
-    result = setErrorHandler(func, clientData);
-  }
-  return result;
-}
-
-herr_t
-hep_hpc::hdf5::
-ErrorController::setAndSaveErrorHandler(ErrorMode mode)
-{
-  herr_t result = saveErrorHandler_();
-  if (result != 0) {
-    throw Exception("Unable to save current error handling configuration.");
-  }
-  result = setErrorHandler(mode);
-  return result;
-}
-
-herr_t
-hep_hpc::hdf5::
-ErrorController::resetErrorHandler()
+hep_hpc::hdf5::ErrorController::
+resetErrorHandler()
 {
   storedHandler_ = SYSTEM_ERROR_HANDLER;
   return setErrorHandler(ErrorMode::HDF5_DEFAULT);
 }
 
 herr_t
-hep_hpc::hdf5::
-ErrorController::restoreErrorHandler()
+hep_hpc::hdf5::ErrorController::
+restoreErrorHandler()
 {
   herr_t result = -1;
   result = setErrorHandler(storedHandler_.func, storedHandler_.clientData);
@@ -108,14 +98,6 @@ ErrorController::restoreErrorHandler()
     storedHandler_ = SYSTEM_ERROR_HANDLER;
   }
   return result;
-}
-
-herr_t
-hep_hpc::hdf5::
-ErrorController::saveErrorHandler_()
-{
-  storedHandler_.mode = mode_;
-  return H5Eget_auto2(H5E_DEFAULT, &storedHandler_.func, &storedHandler_.clientData);
 }
 
 thread_local

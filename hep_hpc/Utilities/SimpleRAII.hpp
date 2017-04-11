@@ -127,7 +127,7 @@ public:
   void reset(RH rh, TEARDOWN_FUNC teardown);
 
   // Destructor.
-  ~SimpleRAII();
+  ~SimpleRAII() noexcept(false);
 
 private:
   RH resourceHandle_ {};
@@ -181,7 +181,7 @@ public:
   void reset(TEARDOWN_FUNC teardown);
 
   // Destructor.
-  ~SimpleRAII();
+  ~SimpleRAII() noexcept(false);
 
 private:
   std::function<void()> teardown_ {};
@@ -319,7 +319,7 @@ reset(RH rh, TEARDOWN_FUNC teardown)
 template <typename RH>
 inline
 hep_hpc::detail::SimpleRAII<RH>::
-~SimpleRAII()
+~SimpleRAII() noexcept(false)
 {
   if (teardown_) {
     teardown_(std::move(resourceHandle_));
@@ -414,7 +414,7 @@ reset(TEARDOWN_FUNC teardown)
 // Destructor.
 inline
 hep_hpc::detail::SimpleRAII<void>::
-~SimpleRAII()
+~SimpleRAII() noexcept(false)
 {
   if (teardown_) {
     teardown_();

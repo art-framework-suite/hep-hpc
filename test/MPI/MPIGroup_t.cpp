@@ -60,6 +60,8 @@ namespace {
     MPIGroup const wg;
     std::vector<int> gMembers;
 
+    ~GroupFixture() noexcept try { } catch (...) { }
+
   private:
     std::vector<int> initGMembers() const;
   };

@@ -1,4 +1,10 @@
 ####################################
+# Error handling test.
+add_executable(errorHandling_t errorHandling_t.cpp)
+target_link_libraries(errorHandling_t hep_hpc_hdf5 gtest)
+add_test(NAME errorHandling_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/errorHandling_t)
+
+####################################
 # Resource test.
 add_executable(Resource_t Resource_t.cpp)
 target_link_libraries(Resource_t hep_hpc_hdf5 gtest)

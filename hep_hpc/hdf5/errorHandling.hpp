@@ -130,11 +130,12 @@
 //   thread.
 //
 ////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/Utilities/SimpleRAII.hpp"
+#include "hep_hpc/hdf5/Exception.hpp"
 
 #include "hdf5.h"
 
 #include <cstdint>
-#include <exception>
 
 namespace hep_hpc {
   namespace hdf5 {
@@ -157,16 +158,26 @@ namespace hep_hpc {
 
     namespace detail {
       struct StoredErrorHandler {
-        StoredErrorHandler()
+        StoredErrorHandler() = default;
+
+        StoredErrorHandler(ErrorMode mode,
+                           H5E_auto2_t func,
+                           void * clientData) noexcept
           :
-          mode(ErrorMode::HDF5_DEFAULT),
-          func((H5E_auto2_t)(&H5Eprint2)), clientData(stderr)
+          mode(mode),
+          func(func),
+          clientData(clientData)
           { }
 
-        ErrorMode mode;
-        H5E_auto2_t func;
-        void *clientData;
+        ErrorMode mode {ErrorMode::HDF5_DEFAULT};
+        H5E_auto2_t func {(H5E_auto2_t)&H5Eprint2};
+        void *clientData {stderr};
       };
+
+      bool operator == (StoredErrorHandler const & left,
+                        StoredErrorHandler const & right);
+
+      StoredErrorHandler saveErrorHandler();
 
       [[noreturn]] herr_t throwH5Error(hid_t estack);
     } // namespace detail.
@@ -180,16 +191,20 @@ public:
   static herr_t setErrorHandler(H5E_auto2_t errorFunc = nullptr,
                                 void * clientData = nullptr);
 
+  static herr_t setErrorHandler(ErrorMode mode);
+
   static herr_t setAndSaveErrorHandler(H5E_auto2_t errorFunc = nullptr,
                                        void * clientData = nullptr);
 
   static herr_t setAndSaveErrorHandler(ErrorMode mode);
   
-  static herr_t setErrorHandler(ErrorMode mode);
-
   static herr_t resetErrorHandler();
 
+  static void saveErrorHandler();
+
   static herr_t restoreErrorHandler();
+
+  static ErrorMode currentMode();
 
   template <typename H5FUNC, typename... Args>
   static decltype(auto) call(H5FUNC h5func, Args && ... args)
@@ -212,8 +227,6 @@ private:
   static herr_t setErrorHandler_(H5E_auto2_t errorFunc = nullptr,
                                  void * clientData = nullptr);
 
-  static herr_t saveErrorHandler_();
-
   static thread_local ErrorMode mode_;
   static thread_local detail::StoredErrorHandler storedHandler_;
 };
@@ -232,24 +245,58 @@ private:
 
 inline
 herr_t
-hep_hpc::hdf5::
-ErrorController::setErrorHandler(H5E_auto2_t func, void * clientData)
+hep_hpc::hdf5::ErrorController::
+setErrorHandler(H5E_auto2_t func, void * clientData)
 {
   mode_ = (func == nullptr) ? ErrorMode::NONE : ErrorMode::CUSTOM;
   return setErrorHandler_(func, clientData);
 }
 
+inline
+herr_t
+hep_hpc::hdf5::ErrorController::
+setAndSaveErrorHandler(H5E_auto2_t const func, void * const clientData)
+{
+  saveErrorHandler();
+  return setErrorHandler(func, clientData);
+}
+
+inline
+herr_t
+hep_hpc::hdf5::ErrorController::
+setAndSaveErrorHandler(ErrorMode mode)
+{
+  saveErrorHandler();
+  return setErrorHandler(mode);
+}
+
+inline
+void
+hep_hpc::hdf5::ErrorController::
+saveErrorHandler()
+{
+  storedHandler_ = detail::saveErrorHandler();
+}
+
+inline
+hep_hpc::hdf5::ErrorMode
+hep_hpc::hdf5::ErrorController::
+currentMode()
+{
+  return mode_;
+}
+
 template <typename H5FUNC, typename... Args>
 decltype(auto)
-hep_hpc::hdf5::
-ErrorController::call(H5FUNC h5func, Args && ... args)
+hep_hpc::hdf5::ErrorController::
+call(H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
   decltype(h5func(std::forward<Args>(args)...)) result =
     h5func(std::forward<Args>(args)...);
   if (result < 0 &&
       mode_ == ErrorMode::EXCEPTION &&
-      std::current_exception() == nullptr) {
+      !std::uncaught_exception()) {
     detail::throwH5Error(H5E_DEFAULT);
   }
   return result;
@@ -258,9 +305,8 @@ ErrorController::call(H5FUNC h5func, Args && ... args)
 template <typename H5FUNC, typename... Args>
 inline
 decltype(auto)
-hep_hpc::hdf5::
-ErrorController::call(ErrorMode mode,
-                      H5FUNC h5func, Args && ... args)
+hep_hpc::hdf5::ErrorController::
+call(ErrorMode mode, H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
   decltype(h5func(std::forward<Args>(args)...)) result;
@@ -277,9 +323,9 @@ ErrorController::call(ErrorMode mode,
 template <typename H5FUNC, typename... Args>
 inline
 decltype(auto)
-hep_hpc::hdf5::
-ErrorController::call(H5E_auto2_t errorFunc, void * clientData,
-                      H5FUNC h5func, Args && ... args)
+hep_hpc::hdf5::ErrorController::
+call(H5E_auto2_t errorFunc, void * clientData,
+     H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
   decltype(h5func(std::forward<Args>(args)...)) result;
@@ -290,8 +336,8 @@ ErrorController::call(H5E_auto2_t errorFunc, void * clientData,
 
 inline
 herr_t
-hep_hpc::hdf5::
-ErrorController::setErrorHandler_(H5E_auto2_t func, void * clientData)
+hep_hpc::hdf5::ErrorController::
+setErrorHandler_(H5E_auto2_t func, void * clientData)
 {
   return call(&H5Eset_auto2, H5E_DEFAULT, func, clientData);
 }
@@ -314,5 +360,16 @@ ScopedErrorHandler(H5E_auto2_t func, void * clientData)
 {
 }
 
+
+inline
+bool
+hep_hpc::hdf5::detail::
+operator == (StoredErrorHandler const & left,
+             StoredErrorHandler const & right)
+{
+  return left.mode == right.mode &&
+    left.func == right.func &&
+    left.clientData == right.clientData;
+}
 
 #endif /* hep_hpc_hdf5_errorHandling_hpp */
