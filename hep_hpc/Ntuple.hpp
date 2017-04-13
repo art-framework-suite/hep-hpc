@@ -18,19 +18,34 @@
 //
 // Template arguments are specified as basic types (double, int, etc.)
 // or of type hep_hpc::Column (see hep_hpc/Column.hpp for
-// details). Currently only scalar basic types are supported (not
-// strings).
+// details). Currently simple n-dimensional fixed-size arrays of
+// arithmetic types are supported (no string types as yet).
 //
 ////////////////////////////////////
 //
 // Ntuple<Args...>(filename_or_hid_t,
 //                 std::string tablename,
-//                 name_array const & column_names,
+//                 column_info_t columns,
 //                 bool overwriteContents,
 //                 std::size_t bufsize)
 //
 //   Create an Ntuple tied to an HDF5 file with column types specified
-//   by Args and column names specified by column_names.
+//   by Args and column information specified by columns. A valid
+//   columns parameter would be a brace-enclosed initializer list whose
+//   elements are either:
+//
+//     1) a string representing the column name if the column's element
+//        type is a scalar (corresponding Arg should be <basic-type> or
+//        Column<<basic-type>, 1>);
+//
+//     2) a brace-enclosed initializer list: {<string>, n} if the
+//        column's element type is a one-dimensional array of length n
+//        (corresponding Arg should be <basic-type> or
+//        Column<<basic-type>, 1>); or
+//
+//     3) a brace-enclosed initializer list {<string>, {n, ...}} if the
+//        column's element type is of rank 2 or greater (corresponding
+//        Arg should be Column<<basic-type>, rank>).
 //
 //   If hid_t is provided, caller is responsible for file resource
 //   management. If filename is provided and file exists, it is
@@ -52,9 +67,17 @@
 //
 ////////////////////////////////////
 //
-// void insert(Args const &...);
+// void insert(ELEMENT<Args> const *...);
 //
-//   Insert a row of data.
+//   Insert a row of data. Each argument is expected to be a pointer to
+//   the basic element type T of each column. If the argument is not
+//   nullptr, it is expected to be a pointer to a contiguous sequence of
+//   items of the column's basic type (e.g. double) of length
+//   Column::elementSize(). If the argument is nullptr, then the buffer
+//   will be filled with Column::elementSize() default-constructed items
+//   of type T. This contiguous sequence must be organized according to
+//   the HDF5 description for n-dimensional array representation:
+//   right-most index moves fastest.
 //
 //   If the buffer is full, flush it first.
 //
@@ -92,24 +115,27 @@ class hep_hpc::Ntuple {
 public:
   static constexpr auto nColumns() { return sizeof...(Args); }
 
-  using name_array = detail::name_array<nColumns()>;
+  using column_info_t = std::tuple<detail::permissive_column<Args>...>;
+
+  template <typename T>
+  using Element_t = typename detail::permissive_column<T>::element_type;
 
   Ntuple(hid_t file,
          std::string tablename,
-         name_array const & columns,
+         column_info_t columns,
          bool overwriteContents = false,
          std::size_t bufsize = 1000ull);
 
   Ntuple(std::string filename,
          std::string tablename,
-         name_array const & columns,
+         column_info_t columns,
          std::size_t bufsiz = 1000ull);
 
   ~Ntuple() noexcept;
 
   std::string const& name() const { return name_; }
 
-  void insert(Args const & ...);
+  void insert(Element_t<Args> const * ...);
   void flush();
 
   // Disable copying
@@ -127,7 +153,7 @@ private:
   template <std::size_t... I>
   Ntuple(hdf5::File file,
          std::string tablename,
-         name_array const& columns,
+         column_info_t columns,
          bool overwriteContents,
          std::size_t bufsize,
          std::index_sequence<I...>);
@@ -135,11 +161,11 @@ private:
   template <size_t... I>
   int flush_no_throw_(std::index_sequence<I...>);
 
-  std::tuple<std::vector<Args>...> buffers_;
+  std::tuple<std::vector<Element_t<Args> >...> buffers_;
     
   hdf5::File file_;
   std::string name_;
-  std::size_t max_;
+  std::array<size_t, nColumns()> max_;
   std::recursive_mutex mutex_ {};
   detail::NtupleDataStructure<Args...> dd_;
 };
@@ -152,13 +178,15 @@ namespace hep_hpc {
   namespace NtupleDetail {
     hdf5::File verifiedFile(hdf5::File file);
 
-    template <size_t I, typename TUPLE, typename Head, typename... Tail>
+    template <size_t I, typename TUPLE, typename COLS,
+              typename Head, typename... Tail>
     void
-    insert(TUPLE & buffers, Head const & head, Tail const & ... tail);
+    insert(TUPLE & buffers, COLS const & cols,
+           Head const * head, Tail const * ... tail);
 
-    template <size_t I, typename TUPLE>
+    template <size_t I, typename TUPLE, typename COLS>
     void
-    insert(TUPLE &) { }
+    insert(TUPLE &, COLS const &) { }
 
     template <typename BUFFER, typename COL>
     int flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col);
@@ -168,12 +196,12 @@ namespace hep_hpc {
 template <typename... Args>
 hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
                                   std::string name,
-                                  name_array const & cnames,
+                                  column_info_t columns,
                                   bool const overwriteContents,
                                   std::size_t const bufsize) :
   Ntuple{hdf5::File(file),
     std::move(name),
-    cnames,
+    std::move(columns),
     overwriteContents,
     bufsize}
 {}
@@ -191,29 +219,29 @@ namespace {
 template <typename... Args>
 hep_hpc::Ntuple<Args...>::Ntuple(std::string filename,
                                   std::string name,
-                                  name_array const & cnames,
+                                  column_info_t columns,
                                   std::size_t const bufsize) :
   Ntuple{hdf5::File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
-    std::move(name), cnames, false, bufsize, iSequence()}
+    std::move(name), std::move(columns), false, bufsize, iSequence()}
 {}
 
 template <typename... Args>
 template <std::size_t... I>
 hep_hpc::Ntuple<Args...>::Ntuple(hdf5::File file,
                                   std::string name,
-                                  name_array const & cnames,
+                                  column_info_t columns,
                                   bool const overwriteContents,
                                   std::size_t const bufsize,
                                   std::index_sequence<I...>) :
   file_{NtupleDetail::verifiedFile(std::move(file))},
   name_{std::move(name)},
-  max_{bufsize},
-  dd_(file_, name_, overwriteContents, detail::permissive_column<Args>{cnames[I]}...)
+  max_{(std::get<I>(columns).elementSize() * bufsize)...},
+  dd_(file_, name_, overwriteContents, detail::permissive_column<Args>{std::move(std::get<I>(columns))}...)
 {
   // Reserve buffer space.
-  using std::get;
   using swallow = int[];
-  swallow {0, (get<I>(buffers_).reserve(bufsize), 0)...};
+  // Reserve the right amount of space in each buffer.
+  swallow {0, (std::get<I>(buffers_).reserve(max_[I]), 0)...};
 }
 
 template <typename... Args>
@@ -226,14 +254,14 @@ hep_hpc::Ntuple<Args...>::~Ntuple() noexcept
 
 template <typename... Args>
 void
-hep_hpc::Ntuple<Args...>::insert(Args const & ... args)
+hep_hpc::Ntuple<Args...>::insert(Element_t<Args> const * ... args)
 {
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
-  if (get<0>(buffers_).size() == max_) {
+  if (get<0>(buffers_).size() == max_[0]) {
     flush();
   }
-  NtupleDetail::insert<0>(buffers_, args...);
+  NtupleDetail::insert<0>(buffers_, dd_.columns, args...);
 }
 
 template <typename... Args>
@@ -243,7 +271,7 @@ hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
 {
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
-  hdf5::ScopedErrorHandler seh;
+  hdf5::ScopedErrorHandler seh(hdf5::ErrorMode::HDF5_DEFAULT);
   auto const results =
     {0, NtupleDetail::flush_no_throw_one(get<I>(buffers_),
                                          get<I>(dd_.dsets),
@@ -259,24 +287,21 @@ hep_hpc::NtupleDetail::
 flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
 {
   using std::get;
+  // Obtain the current dataspace for this dataset.
   auto dspace = hdf5::Dataspace{H5Dget_space(dset)};
-  // How many dimensions?
-  auto const ndims = H5Sget_simple_extent_ndims(dspace);
-  // Obtain current and max dimensions.
-  std::vector<hsize_t> dims(ndims), maxdims(ndims);
-  int rc = H5Sget_simple_extent_dims(dspace, dims.data(), maxdims.data());
-  if (rc != ndims) {
+  std::array<hsize_t, COL::nDims() + 1ull> filedims, filemaxdims, offsets {0}, nElements;
+  int rc = H5Sget_simple_extent_dims(dspace, filedims.data(), filemaxdims.data());
+  if (rc != COL::nDims() + 1ull) {
     rc = -1;
     return rc;
   }
-  auto dimsext = dims;
-  hsize_t const nElements = buf.size();
-  dimsext[0] = nElements;
-  auto const offset = dims[0];
+  nElements[0] = buf.size() / col.elementSize();
+  std::copy(col.dims(), col.dims() + col.nDims(), std::begin(nElements) + 1ull);
+  offsets[0] = filedims[0];
   // Extend long dimension.
-  dims[0] += nElements;
+  filedims[0] += nElements[0];
   // Update dataset.
-  rc = H5Dset_extent(dset, dims.data());
+  rc = H5Dset_extent(dset, filedims.data());
   if (rc != 0) {
     return rc;
   }
@@ -285,9 +310,9 @@ flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
   rc =
     H5Sselect_hyperslab(dspace,
                         H5S_SELECT_SET,
-                        &offset,
+                        offsets.data(),
                         NULL,
-                        &nElements,
+                        nElements.data(),
                         NULL);
   if (rc != 0) {
     return rc;
@@ -296,7 +321,7 @@ flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
   rc =
     H5Dwrite(dset,
              col.engine_type(),
-             hdf5::Dataspace{ndims, dimsext.data(), dimsext.data()},
+             hdf5::Dataspace{col.nDims() + 1ull, nElements.data(), nElements.data()},
              std::move(dspace),
              H5P_DEFAULT,
              buf.data());
@@ -316,16 +341,26 @@ hep_hpc::Ntuple<Args...>::flush()
   }
 }
 
-template <size_t I, typename TUPLE, typename Head, typename... Tail>
+template <size_t I, typename TUPLE, typename COLS,
+          typename Head, typename... Tail>
 inline
 void
 hep_hpc::NtupleDetail::insert(TUPLE & buffers,
-                               Head const & head,
-                               Tail const & ... tail)
+                               COLS const & cols,
+                               Head const * head,
+                               Tail const * ... tail)
 {
   using std::get;
-  get<I>(buffers).emplace_back(head);
-  insert<I + 1>(buffers, tail...);
+  auto & col = get<I>(cols);
+  auto & buffer = get<I>(buffers);
+  if (head != nullptr) {
+    buffer.insert(buffer.end(),
+                  head,
+                  head + col.elementSize());
+  } else { // Insert empty
+    buffer.insert(buffer.end(), col.elementSize(), {});
+  }
+  insert<I + 1>(buffers, cols, tail...);
 }
 
 #endif /* hep_hpc_Ntuple_hpp */

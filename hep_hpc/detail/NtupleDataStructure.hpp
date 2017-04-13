@@ -70,23 +70,27 @@ makeGroup(hid_t file, std::string const & name, bool overwriteContents)
   }
   return group;
 }
-
+               
 template <typename COL>
 hep_hpc::hdf5::Dataset
 hep_hpc::detail::
 makeDataset(hid_t const group, COL const & col)
 {
-  // FIXME: Should be 1 infinite dim + dims from columns spec when they appear.
-  hsize_t const dim = 0ull;
-  hsize_t maxdim = H5S_UNLIMITED;
+  using namespace std::string_literals;
+  std::array<hsize_t, COL::nDims() + 1ull> dims;
+  dims[0] = 0ull;
+  std::copy(col.dims(), col.dims() + col.nDims(), std::begin(dims) + 1ull);
+  auto maxdims = dims;
+  maxdims[0] = H5S_UNLIMITED;
   // Set up creation properties of the dataset.
   hdf5::PropertyList cprops(H5P_DATASET_CREATE);
-  hsize_t const chunking = 128;
-  H5Pset_chunk(cprops, 1, &chunking);
+  auto chunking = dims;
+  chunking[0] = 128ull;
+  H5Pset_chunk(cprops, chunking.size(), chunking.data());
   unsigned int const compressionLevel = 6;
   H5Pset_deflate(cprops, compressionLevel);
   return hdf5::Dataset(group, col.name(), col.engine_type(),
-                       hdf5::Dataspace{1, &dim, &maxdim},
+                       hdf5::Dataspace{dims.size(), dims.data(), maxdims.data()},
                        {}, std::move(cprops));
 }
 

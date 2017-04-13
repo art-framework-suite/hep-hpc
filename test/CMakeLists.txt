@@ -32,6 +32,13 @@ add_subdirectory(MPI)
 ########################################################################
 
 ####################################
+# Column test.
+#add_executable(Column_t Column_t.cpp)
+#add_test(NAME Column_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Column_t)
+#target_link_libraries(Column_t hep_hpc)
+####################################
+
+####################################
 # Ntuple test.
 add_executable(Ntuple_t Ntuple_t.cpp)
 add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)
