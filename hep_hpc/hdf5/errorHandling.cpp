@@ -30,7 +30,7 @@ saveErrorHandler()
 
 [[noreturn]]
 herr_t
-hep_hpc::hdf5::detail::throwH5Error(hid_t estack)
+hep_hpc::hdf5::detail::throwH5Error(std::string msg, hid_t estack)
 {
   // Resource management for error message generation.
   char * msgBuf = nullptr;
@@ -50,7 +50,7 @@ hep_hpc::hdf5::detail::throwH5Error(hid_t estack)
   fflush(*fileMgr);
   // Throw the exception with the generated message, and clean up as
   // the stack is unwound.
-  throw hep_hpc::hdf5::Exception(msgBuf);
+  throw hep_hpc::hdf5::Exception(msg + msgBuf);
 }
 
 herr_t

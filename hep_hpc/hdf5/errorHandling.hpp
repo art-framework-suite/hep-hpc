@@ -179,7 +179,8 @@ namespace hep_hpc {
 
       StoredErrorHandler saveErrorHandler();
 
-      [[noreturn]] herr_t throwH5Error(hid_t estack);
+      [[noreturn]] herr_t throwH5Error(std::string msg = "",
+                                       hid_t estack = H5E_DEFAULT);
     } // namespace detail.
 
   } // namespace hdf5.
@@ -206,6 +207,7 @@ public:
 
   static ErrorMode currentMode();
 
+  // No leading message.
   template <typename H5FUNC, typename... Args>
   static decltype(auto) call(H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...));
@@ -219,6 +221,25 @@ public:
   static decltype(auto) call(H5E_auto2_t errorFunc, void * clientData,
                              H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...));
+
+  // Exception will start with specified message.
+  template <typename H5FUNC, typename... Args>
+  static decltype(auto) call(std::string msg,
+                             H5FUNC h5func, Args && ... args)
+-> decltype(h5func(std::forward<Args>(args)...));
+
+  template <typename H5FUNC, typename... Args>
+  static decltype(auto) call(ErrorMode mode,
+                             std::string msg,
+                             H5FUNC h5func, Args && ... args)
+-> decltype(h5func(std::forward<Args>(args)...));
+
+  template <typename H5FUNC, typename... Args>
+  static decltype(auto) call(H5E_auto2_t errorFunc, void * clientData,
+                             std::string msg,
+                             H5FUNC h5func, Args && ... args)
+-> decltype(h5func(std::forward<Args>(args)...));
+
 
 private:
   ErrorController() = default;
@@ -292,32 +313,20 @@ hep_hpc::hdf5::ErrorController::
 call(H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
-  decltype(h5func(std::forward<Args>(args)...)) result =
-    h5func(std::forward<Args>(args)...);
-  if (result < 0 &&
-      mode_ == ErrorMode::EXCEPTION &&
-      !std::uncaught_exception()) {
-    detail::throwH5Error(H5E_DEFAULT);
-  }
-  return result;
+  using namespace std::string_literals;
+  return call(""s, h5func, std::forward<Args>(args)...);
 }
 
 template <typename H5FUNC, typename... Args>
 inline
 decltype(auto)
 hep_hpc::hdf5::ErrorController::
-call(ErrorMode mode, H5FUNC h5func, Args && ... args)
+call(ErrorMode mode,
+     H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
-  decltype(h5func(std::forward<Args>(args)...)) result;
-  // FIXME: Need std::optional, here (C++17).
-  if (mode_ == mode) {
-    result = call(h5func, std::forward<Args>(args)...);
-  } else {
-    ScopedErrorHandler seh(mode);
-    result = call(h5func, std::forward<Args>(args)...);
-  }
-  return result;
+  using namespace std::string_literals;
+  return call(mode, ""s, h5func, std::forward<Args>(args)...);
 }
 
 template <typename H5FUNC, typename... Args>
@@ -328,9 +337,59 @@ call(H5E_auto2_t errorFunc, void * clientData,
      H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
+  using namespace std::string_literals;
+  return call(errorFunc, clientData, ""s, h5func, std::forward<Args>(args)...);
+}
+
+template <typename H5FUNC, typename... Args>
+decltype(auto)
+hep_hpc::hdf5::ErrorController::
+call(std::string msg,
+     H5FUNC h5func, Args && ... args)
+-> decltype(h5func(std::forward<Args>(args)...))
+{
+  decltype(h5func(std::forward<Args>(args)...)) result =
+    h5func(std::forward<Args>(args)...);
+  if (result < 0 &&
+      mode_ == ErrorMode::EXCEPTION &&
+      !std::uncaught_exception()) {
+    detail::throwH5Error(std::move(msg));
+  }
+  return result;
+}
+
+template <typename H5FUNC, typename... Args>
+inline
+decltype(auto)
+hep_hpc::hdf5::ErrorController::
+call(ErrorMode mode,
+     std::string msg,
+     H5FUNC h5func, Args && ... args)
+-> decltype(h5func(std::forward<Args>(args)...))
+{
+  decltype(h5func(std::forward<Args>(args)...)) result;
+  // FIXME: Need std::optional, here (C++17).
+  if (mode_ == mode) {
+    result = call(std::move(msg), h5func, std::forward<Args>(args)...);
+  } else {
+    ScopedErrorHandler seh(mode);
+    result = call(std::move(msg), h5func, std::forward<Args>(args)...);
+  }
+  return result;
+}
+
+template <typename H5FUNC, typename... Args>
+inline
+decltype(auto)
+hep_hpc::hdf5::ErrorController::
+call(H5E_auto2_t errorFunc, void * clientData,
+     std::string msg,
+     H5FUNC h5func, Args && ... args)
+-> decltype(h5func(std::forward<Args>(args)...))
+{
   decltype(h5func(std::forward<Args>(args)...)) result;
   ScopedErrorHandler seh(errorFunc, clientData);
-  result = call(h5func, std::forward<Args>(args)...);
+  result = call(std::move(msg), h5func, std::forward<Args>(args)...);
   return result;
 }
 
