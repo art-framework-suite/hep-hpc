@@ -1,5 +1,6 @@
 set (source_files
   Dataset.cpp
+  Datatype.cpp
   File.cpp
   Group.cpp
   PropertyList.cpp

@@ -292,7 +292,7 @@ hep_hpc::Ntuple<Args...>::Ntuple(hdf5::File file,
   file_{NtupleDetail::verifiedFile(std::move(file))},
   name_{std::move(name)},
   max_{(std::get<I>(columns).elementSize() * bufsize)...},
-  dd_(file_, name_, mode, overwriteContents, detail::permissive_column<Args>{std::move(std::get<I>(columns))}...)
+  dd_(file_, name_, mode, overwriteContents, std::move(std::get<I>(columns))...)
 {
   // Reserve buffer space.
   using swallow = int[];

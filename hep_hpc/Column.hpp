@@ -59,6 +59,7 @@
 //   file storage.
 //
 ////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/hdf5/Datatype.hpp"
 #include "hep_hpc/hdf5/Exception.hpp"
 
 #include "hdf5.h"
@@ -119,9 +120,9 @@ namespace hep_hpc {
 
       using dims_array = detail::dims_array<NDIMS>;
 
-      column_base(std::string const& n, dims_array dims)
+      column_base(std::string n, dims_array dims)
         :
-        name_{n},
+        name_{std::move(n)},
         dims_{dims},
         elementSize_{std::accumulate(std::cbegin(dims_),
                                      std::cend(dims_),
@@ -148,6 +149,7 @@ namespace hep_hpc {
       static constexpr size_t nDims() { return 1ull; }
       size_t const * dims() const { return &dim_; }
       size_t elementSize() const { return dim_; }
+
   private:
       std::string name_;
       size_t dim_;
@@ -232,6 +234,71 @@ namespace hep_hpc {
       { ENGINE_TYPE(H5T_NATIVE_ULLONG, H5T_STD_U64LE, H5T_STD_U64BE) }
   };
 
+  template <size_t NDIMS>
+  struct Column<char const *, NDIMS> : detail::column_base<NDIMS> {
+
+    Column(std::string n, detail::dims_array<NDIMS> dims)
+      :
+      detail::column_base<NDIMS>(std::move(n), std::move(dims)),
+      STRING_TYPE_(H5Tcopy(H5T_C_S1))
+      { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+
+    hid_t engine_type(TranslationMode mode [[gnu::unused]] =
+                      TranslationMode::NONE) const
+      { return STRING_TYPE_; }
+
+private:
+    hdf5::Datatype STRING_TYPE_;
+  };
+
+  template <>
+  struct Column<char const *, 1ull> : detail::column_base<1ull> {
+    Column(std::string n, size_t dim)
+      :
+      detail::column_base<1ull>(std::move(n), dim),
+      STRING_TYPE_(H5Tcopy(H5T_C_S1))
+      { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+
+    hid_t engine_type(TranslationMode mode [[gnu::unused]] =
+                      TranslationMode::NONE) const
+      { return STRING_TYPE_; }
+
+private:
+    hdf5::Datatype STRING_TYPE_;
+  };
+
+  template <size_t NDIMS>
+  struct Column<char *, NDIMS> : detail::column_base<NDIMS> {
+
+    Column(std::string n, detail::dims_array<NDIMS> dims)
+      :
+      detail::column_base<NDIMS>(std::move(n), std::move(dims)),
+      STRING_TYPE_(H5Tcopy(H5T_C_S1))
+      { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+
+    hid_t engine_type(TranslationMode mode [[gnu::unused]] =
+                      TranslationMode::NONE) const
+      { return STRING_TYPE_; }
+
+private:
+    hdf5::Datatype STRING_TYPE_;
+  };
+
+  template <>
+  struct Column<char *, 1ull> : detail::column_base<1ull> {
+    Column(std::string n, size_t dim)
+      :
+      detail::column_base<1ull>(std::move(n), dim),
+      STRING_TYPE_(H5Tcopy(H5T_C_S1))
+      { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+
+    hid_t engine_type(TranslationMode mode [[gnu::unused]] =
+                      TranslationMode::NONE) const
+      { return STRING_TYPE_; }
+
+private:
+    hdf5::Datatype STRING_TYPE_;
+  };
 
   namespace detail {
 
