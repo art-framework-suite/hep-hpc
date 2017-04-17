@@ -23,11 +23,18 @@
 //
 ////////////////////////////////////
 //
-// Ntuple<Args...>(filename_or_hid_t,
+// Ntuple<Args...>(hid_t file,
 //                 std::string tablename,
 //                 column_info_t columns,
+//                 [TranslationMode mode,]
 //                 bool overwriteContents,
-//                 std::size_t bufsize)
+//                 std::size_t bufsize); // or ...
+//
+// Ntuple<Args...>(std::string filename,
+//                 std::string tablename,
+//                 column_info_t columns,
+//                 [TranslationMode mode,]
+//                 std::size_t bufsize);
 //
 //   Create an Ntuple tied to an HDF5 file with column types specified
 //   by Args and column information specified by columns. A valid
@@ -51,13 +58,21 @@
 //   management. If filename is provided and file exists, it is
 //   truncated.
 //
-//   Buffer size defaults to 1000 if not specified.
-//
-//   Insertion is row-wise; storage is column-wise.
+//   If TranslationMode is specified (see hep_hpc/Column.hpp for
+//   details), then the representation on disk is specified (e.g. as
+//   IEEE 754 and little-endian). Not specifying is equivalent to
+//   specifying TranslationMode::NONE. Use for the rare case when data
+//   are to be produced on a machine with a different architecture than
+//   that of the machines where the data are to be used.
 //
 //   overwriteContents controls whether an existing entity of name
 //   <tablename> would be overwritten or not (if not, an exception is
 //   thrown currently).
+//
+//   Buffer size controls how many rows are cached in memory before
+//   being flushed to the file; defaults to 1000 if not specified.
+//
+//   Insertion is row-wise; storage is column-wise.
 //
 ////////////////////////////////////
 //
@@ -126,9 +141,22 @@ public:
          bool overwriteContents = false,
          std::size_t bufsize = 1000ull);
 
+  Ntuple(hid_t file,
+         std::string tablename,
+         column_info_t columns,
+         TranslationMode mode,
+         bool overwriteContents = false,
+         std::size_t bufsize = 1000ull);
+
   Ntuple(std::string filename,
          std::string tablename,
          column_info_t columns,
+         std::size_t bufsiz = 1000ull);
+
+  Ntuple(std::string filename,
+         std::string tablename,
+         column_info_t columns,
+         TranslationMode mode,
          std::size_t bufsiz = 1000ull);
 
   ~Ntuple() noexcept;
@@ -154,6 +182,7 @@ private:
   Ntuple(hdf5::File file,
          std::string tablename,
          column_info_t columns,
+         TranslationMode mode,
          bool overwriteContents,
          std::size_t bufsize,
          std::index_sequence<I...>);
@@ -202,6 +231,22 @@ hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
   Ntuple{hdf5::File(file),
     std::move(name),
     std::move(columns),
+    TranslationMode::NONE,
+    overwriteContents,
+    bufsize}
+{}
+
+template <typename... Args>
+hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
+                                  std::string name,
+                                  column_info_t columns,
+                                  TranslationMode mode,
+                                  bool const overwriteContents,
+                                  std::size_t const bufsize) :
+  Ntuple{hdf5::File(file),
+    std::move(name),
+    std::move(columns),
+    mode,
     overwriteContents,
     bufsize}
 {}
@@ -222,7 +267,17 @@ hep_hpc::Ntuple<Args...>::Ntuple(std::string filename,
                                   column_info_t columns,
                                   std::size_t const bufsize) :
   Ntuple{hdf5::File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
-    std::move(name), std::move(columns), false, bufsize, iSequence()}
+    std::move(name), std::move(columns), TranslationMode::NONE, false, bufsize, iSequence()}
+{}
+
+template <typename... Args>
+hep_hpc::Ntuple<Args...>::Ntuple(std::string filename,
+                                  std::string name,
+                                  column_info_t columns,
+                                  TranslationMode mode,
+                                  std::size_t const bufsize) :
+  Ntuple{hdf5::File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
+    std::move(name), std::move(columns), mode, false, bufsize, iSequence()}
 {}
 
 template <typename... Args>
@@ -230,13 +285,14 @@ template <std::size_t... I>
 hep_hpc::Ntuple<Args...>::Ntuple(hdf5::File file,
                                   std::string name,
                                   column_info_t columns,
+                                  TranslationMode mode,
                                   bool const overwriteContents,
                                   std::size_t const bufsize,
                                   std::index_sequence<I...>) :
   file_{NtupleDetail::verifiedFile(std::move(file))},
   name_{std::move(name)},
   max_{(std::get<I>(columns).elementSize() * bufsize)...},
-  dd_(file_, name_, overwriteContents, detail::permissive_column<Args>{std::move(std::get<I>(columns))}...)
+  dd_(file_, name_, mode, overwriteContents, detail::permissive_column<Args>{std::move(std::get<I>(columns))}...)
 {
   // Reserve buffer space.
   using swallow = int[];
@@ -320,8 +376,10 @@ flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
   // Write the data.
   rc =
     H5Dwrite(dset,
-             col.engine_type(),
-             hdf5::Dataspace{col.nDims() + 1ull, nElements.data(), nElements.data()},
+             // Memory type should be native.
+             col.engine_type(TranslationMode::NONE),
+             hdf5::Dataspace{col.nDims() + 1ull, nElements.data(),
+                 nElements.data()},
              std::move(dspace),
              H5P_DEFAULT,
              buf.data());

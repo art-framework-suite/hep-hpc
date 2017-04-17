@@ -19,13 +19,14 @@ namespace hep_hpc {
                           bool overwriteContents);
 
     template <typename COL>
-    hdf5::Dataset makeDataset(hid_t const group, COL const & col);
+    hdf5::Dataset makeDataset(hid_t const group, COL const & col, TranslationMode mode);
   }
 }
 
 template <typename... Args>
 struct hep_hpc::detail::NtupleDataStructure {
   NtupleDataStructure(hid_t file, std::string const & name,
+                      TranslationMode mode,
                       bool overwriteContents,
                       permissive_column<Args> const & ... cols);
 
@@ -39,12 +40,13 @@ struct hep_hpc::detail::NtupleDataStructure {
 template <typename... Args>
 hep_hpc::detail::NtupleDataStructure<Args...>::
 NtupleDataStructure(hid_t const file, std::string const & name,
+                    TranslationMode mode,
                     bool const overwriteContents,
                     permissive_column<Args> const & ... cols)
   :
   columns(cols...),
   group(detail::makeGroup(file, name, overwriteContents)),
-  dsets({detail::makeDataset(group, cols)...})
+  dsets({detail::makeDataset(group, cols, mode)...})
 {
 }
 
@@ -74,7 +76,7 @@ makeGroup(hid_t file, std::string const & name, bool overwriteContents)
 template <typename COL>
 hep_hpc::hdf5::Dataset
 hep_hpc::detail::
-makeDataset(hid_t const group, COL const & col)
+makeDataset(hid_t const group, COL const & col, TranslationMode mode)
 {
   // Cause an exception to be thrown if we have an HDF5 issue.
   hdf5::ScopedErrorHandler seh(hdf5::ErrorMode::EXCEPTION);
@@ -93,7 +95,7 @@ makeDataset(hid_t const group, COL const & col)
   // Set compression level.
   hdf5::ErrorController::call(&H5Pset_deflate, cprops, compressionLevel);
   // Create and return appropriately constructed dataset.
-  return hdf5::Dataset(group, col.name(), col.engine_type(),
+  return hdf5::Dataset(group, col.name(), col.engine_type(mode),
                        hdf5::Dataspace{dims.size(), dims.data(), maxdims.data()},
                        {}, std::move(cprops));
 }

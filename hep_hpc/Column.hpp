@@ -50,11 +50,17 @@
 //   The number of basic elements of type T in a single element of the
 //   column.
 //
-// static hid_t engine_type();
+// static hid_t engine_type(TranslationMode mode =
+//                          TranslationMode::NONE);
 //
-//   The HDF5 handle to the basic HDF5 type by which T is represented.
+//   The HDF5 handle to the basic HDF5 type by which T is
+//   represented. If mode is specifed and not TranslationMode::NONE, the
+//   native representation will be translated to the specifed format for
+//   file storage.
 //
 ////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/hdf5/Exception.hpp"
+
 #include "hdf5.h"
 
 #include <array>
@@ -64,10 +70,40 @@
 namespace hep_hpc {
   template<typename T, size_t NDIMS = 1>
   struct Column;
+
+  namespace detail {
+    enum class TranslationMode : uint8_t {
+      NONE,
+        IEEE_STD_LE, // Little-endian, IEEE-754 floating point.
+        IEEE_STD_BE // Big-endian, IEEE-754 floating point.
+    };
+  }
+
+  using detail::TranslationMode;
 }
 
 ////////////////////////////////////////////////////////////////////////
 // No user-serviceable parts.
+
+#define ENGINE_TYPE(NATIVE, IEEE_LE, IEEE_BE)   \
+  using namespace std::string_literals;         \
+  using std::to_string;                         \
+  hid_t result;                                 \
+  switch (mode) {                               \
+  case TranslationMode::NONE:                   \
+    result = NATIVE;                            \
+    break;                                      \
+  case TranslationMode::IEEE_STD_LE:            \
+    result = IEEE_LE;                           \
+    break;                                      \
+  case TranslationMode::IEEE_STD_BE:            \
+    result = IEEE_BE;                           \
+    break;                                      \
+  default:                                      \
+    throw hdf5::Exception("Un-handled translation mode: "s + to_string((int)mode)); \
+  } \
+    return result;
+
 namespace hep_hpc {
 
   namespace detail {
@@ -121,49 +157,79 @@ namespace hep_hpc {
   template <size_t NDIMS>
   struct Column<double, NDIMS> : detail::column_base<NDIMS> {
     using detail::column_base<NDIMS>::column_base;
-    static hid_t engine_type() { return H5T_NATIVE_DOUBLE; }
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+      { ENGINE_TYPE(H5T_NATIVE_DOUBLE, H5T_IEEE_F64LE, H5T_IEEE_F64BE) }
   };
 
   template <size_t NDIMS>
   struct Column<float, NDIMS> : detail::column_base<NDIMS> {
     using detail::column_base<NDIMS>::column_base;
-    static hid_t engine_type() { return H5T_NATIVE_FLOAT; }
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+      { ENGINE_TYPE(H5T_NATIVE_FLOAT, H5T_IEEE_F32LE, H5T_IEEE_F32BE) }
+  };
+
+  template <size_t NDIMS>
+  struct Column<short, NDIMS> : detail::column_base<NDIMS> {
+    using detail::column_base<NDIMS>::column_base;
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+      { ENGINE_TYPE(H5T_NATIVE_SHORT, H5T_STD_I16LE, H5T_STD_I16BE) }
   };
 
   template <size_t NDIMS>
   struct Column<int, NDIMS> : detail::column_base<NDIMS> {
     using detail::column_base<NDIMS>::column_base;
-    static hid_t engine_type() { return H5T_NATIVE_INT; }
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+      { ENGINE_TYPE(H5T_NATIVE_INT, H5T_STD_I32LE, H5T_STD_I32BE) }
   };
 
   template <size_t NDIMS>
   struct Column<long, NDIMS> : detail::column_base<NDIMS> {
     using detail::column_base<NDIMS>::column_base;
-    static hid_t engine_type() { return H5T_NATIVE_LONG; }
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+#ifdef __APPLE__
+      { ENGINE_TYPE(H5T_NATIVE_LONG, H5T_STD_I32LE, H5T_STD_I32BE) }
+#else
+      { ENGINE_TYPE(H5T_NATIVE_LONG, H5T_STD_I64LE, H5T_STD_I64BE) }
+#endif
   };
 
   template <size_t NDIMS>
   struct Column<long long, NDIMS> : detail::column_base<NDIMS> {
     using detail::column_base<NDIMS>::column_base;
-    static hid_t engine_type() { return H5T_NATIVE_LLONG; }
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+      { ENGINE_TYPE(H5T_NATIVE_LLONG, H5T_STD_I64LE, H5T_STD_I64BE) }
+  };
+
+  template <size_t NDIMS>
+  struct Column<unsigned short, NDIMS> : detail::column_base<NDIMS> {
+    using detail::column_base<NDIMS>::column_base;
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+      { ENGINE_TYPE(H5T_NATIVE_USHORT, H5T_STD_U16LE, H5T_STD_U16BE) }
   };
 
   template <size_t NDIMS>
   struct Column<unsigned int, NDIMS> : detail::column_base<NDIMS> {
     using detail::column_base<NDIMS>::column_base;
-    static hid_t engine_type() { return H5T_NATIVE_UINT; }
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+      { ENGINE_TYPE( H5T_NATIVE_UINT, H5T_STD_U32LE, H5T_STD_U32BE) }
   };
 
   template <size_t NDIMS>
   struct Column<unsigned long, NDIMS> : detail::column_base<NDIMS> {
     using detail::column_base<NDIMS>::column_base;
-    static hid_t engine_type() { return H5T_NATIVE_ULONG; }
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+#ifdef __APPLE__
+      { ENGINE_TYPE(H5T_NATIVE_ULONG, H5T_STD_U32LE, H5T_STD_U32BE) }
+#else
+      { ENGINE_TYPE(H5T_NATIVE_ULONG, H5T_STD_U64LE, H5T_STD_U64BE) }
+#endif
   };
 
   template <size_t NDIMS>
   struct Column<unsigned long long, NDIMS> : detail::column_base<NDIMS> {
     using detail::column_base<NDIMS>::column_base;
-    static hid_t engine_type() { return H5T_NATIVE_ULLONG; }
+    static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+      { ENGINE_TYPE(H5T_NATIVE_ULLONG, H5T_STD_U64LE, H5T_STD_U64BE) }
   };
 
 
