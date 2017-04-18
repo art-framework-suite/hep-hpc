@@ -94,6 +94,13 @@
 //   the HDF5 description for n-dimensional array representation:
 //   right-most index moves fastest.
 //
+//   N.B. Strings are supported with a basic element type of const char
+//   * (or char *). One therefore insert()s providing a char const * * (
+//   or char * *) which points to a contiguous array of char const * (or
+//   char *), each of which must continue to point to valid
+//   null-terminated character strings until the buffer has been
+//   flushed.
+//
 //   If the buffer is full, flush it first.
 //
 ////////////////////////////////////
