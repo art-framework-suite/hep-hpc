@@ -225,7 +225,7 @@ namespace hep_hpc {
     insert(TUPLE &, COLS const &) { }
 
     template <typename BUFFER, typename COL>
-    int flush_one(BUFFER & buf, hid_t dset, COL const & col);
+    int flush_one(BUFFER & buf, hdf5::Dataset & dset, COL const & col);
   } // Namespace NtupleDetail.
 } // Namespace hep_hpc.
 
@@ -347,7 +347,7 @@ hep_hpc::Ntuple<Args...>::flush_(std::index_sequence<I...>)
 template <typename BUFFER, typename COL>
 int
 hep_hpc::NtupleDetail::
-flush_one(BUFFER & buf, hid_t dset, COL const & col)
+flush_one(BUFFER & buf, hdf5::Dataset & dset, COL const & col)
 {
   using std::get;
   using hdf5::ErrorController;
@@ -381,16 +381,12 @@ flush_one(BUFFER & buf, hid_t dset, COL const & col)
     return rc;
   }
   // Write the data.
-  if ((rc = ErrorController::call(&H5Dwrite,
-                                  dset,
-                                  // Memory type should be native.
-                                  col.engine_type(TranslationMode::NONE),
-                                  hdf5::Dataspace{col.nDims() + 1ull,
-                                      nElements.data(),
-                                      nElements.data()},
-                                  std::move(dspace),
-                                  H5P_DEFAULT,
-                                  buf.data())) == 0) {
+  if ((rc = dset.write(col.engine_type(TranslationMode::NONE),
+                       buf.data(),
+                       hdf5::Dataspace{col.nDims() + 1ull,
+                           nElements.data(),
+                           nElements.data()},
+                       std::move(dspace))) == 0) {
     buf.clear(); // Clear the buffer.
   }
   return rc;
