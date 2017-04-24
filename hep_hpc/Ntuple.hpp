@@ -195,7 +195,7 @@ private:
          std::index_sequence<I...>);
 
   template <size_t... I>
-  int flush_no_throw_(std::index_sequence<I...>);
+  int flush_(std::index_sequence<I...>);
 
   std::tuple<std::vector<Element_t<Args> >...> buffers_;
     
@@ -225,7 +225,7 @@ namespace hep_hpc {
     insert(TUPLE &, COLS const &) { }
 
     template <typename BUFFER, typename COL>
-    int flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col);
+    int flush_one(BUFFER & buf, hid_t dset, COL const & col);
   } // Namespace NtupleDetail.
 } // Namespace hep_hpc.
 
@@ -310,7 +310,8 @@ hep_hpc::Ntuple<Args...>::Ntuple(hdf5::File file,
 template <typename... Args>
 hep_hpc::Ntuple<Args...>::~Ntuple() noexcept
 {
-  if (flush_no_throw_(iSequence()) != 0) {
+  hdf5::ScopedErrorHandler seh(hdf5::ErrorMode::HDF5_DEFAULT);
+  if (flush_(iSequence()) != 0) {
     std::cerr << "HDF5 failure while flushing.\n";
   }
 }
@@ -330,15 +331,14 @@ hep_hpc::Ntuple<Args...>::insert(Element_t<Args> const * ... args)
 template <typename... Args>
 template <size_t... I>
 int
-hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
+hep_hpc::Ntuple<Args...>::flush_(std::index_sequence<I...>)
 {
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
-  hdf5::ScopedErrorHandler seh(hdf5::ErrorMode::HDF5_DEFAULT);
   auto const results =
-    {0, NtupleDetail::flush_no_throw_one(get<I>(buffers_),
-                                         get<I>(dd_.dsets),
-                                         get<I>(dd_.columns))...};
+    {0, NtupleDetail::flush_one(get<I>(buffers_),
+                                get<I>(dd_.dsets),
+                                get<I>(dd_.columns))...};
   return std::any_of(std::cbegin(results),
                      std::cend(results),
                      [](auto const res) { return res != 0; });
@@ -347,15 +347,16 @@ hep_hpc::Ntuple<Args...>::flush_no_throw_(std::index_sequence<I...>)
 template <typename BUFFER, typename COL>
 int
 hep_hpc::NtupleDetail::
-flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
+flush_one(BUFFER & buf, hid_t dset, COL const & col)
 {
   using std::get;
+  using hdf5::ErrorController;
+  herr_t rc = -1;
   // Obtain the current dataspace for this dataset.
-  auto dspace = hdf5::Dataspace{H5Dget_space(dset)};
+  auto dspace = hdf5::Dataspace{ErrorController::call(&H5Dget_space, dset)};
   std::array<hsize_t, COL::nDims() + 1ull> filedims, filemaxdims, offsets {0}, nElements;
-  int rc = H5Sget_simple_extent_dims(dspace, filedims.data(), filemaxdims.data());
-  if (rc != COL::nDims() + 1ull) {
-    rc = -1;
+  if (H5Sget_simple_extent_dims(dspace, filedims.data(), filemaxdims.data()) !=
+      COL::nDims() + 1ull) {
     return rc;
   }
   nElements[0] = buf.size() / col.elementSize();
@@ -364,33 +365,32 @@ flush_no_throw_one(BUFFER & buf, hid_t dset, COL const & col)
   // Extend long dimension.
   filedims[0] += nElements[0];
   // Update dataset.
-  rc = H5Dset_extent(dset, filedims.data());
-  if (rc != 0) {
+  if ((rc = ErrorController::call(&H5Dset_extent,dset, filedims.data())) != 0) {
     return rc;
   }
-  dspace = hdf5::Dataspace{H5Dget_space(dset)};
+  // Need to get fresh dataspace info after updating dataset.
+  dspace = hdf5::Dataspace{ErrorController::call(&H5Dget_space, dset)};
   // Data selection for write.
-  rc =
-    H5Sselect_hyperslab(dspace,
-                        H5S_SELECT_SET,
-                        offsets.data(),
-                        NULL,
-                        nElements.data(),
-                        NULL);
-  if (rc != 0) {
+  if ((rc = ErrorController::call(&H5Sselect_hyperslab,
+                                  dspace,
+                                  H5S_SELECT_SET,
+                                  offsets.data(),
+                                  nullptr,
+                                  nElements.data(),
+                                  nullptr)) != 0) {
     return rc;
   }
   // Write the data.
-  rc =
-    H5Dwrite(dset,
-             // Memory type should be native.
-             col.engine_type(TranslationMode::NONE),
-             hdf5::Dataspace{col.nDims() + 1ull, nElements.data(),
-                 nElements.data()},
-             std::move(dspace),
-             H5P_DEFAULT,
-             buf.data());
-  if (rc == 0) {
+  if ((rc = ErrorController::call(&H5Dwrite,
+                                  dset,
+                                  // Memory type should be native.
+                                  col.engine_type(TranslationMode::NONE),
+                                  hdf5::Dataspace{col.nDims() + 1ull,
+                                      nElements.data(),
+                                      nElements.data()},
+                                  std::move(dspace),
+                                  H5P_DEFAULT,
+                                  buf.data())) == 0) {
     buf.clear(); // Clear the buffer.
   }
   return rc;
@@ -400,8 +400,8 @@ template <typename... Args>
 void
 hep_hpc::Ntuple<Args...>::flush()
 {
-  // No lock here -- lock held by flush_no_throw;
-  if (flush_no_throw_(iSequence()) != 0) {
+  // No lock here -- lock held by flush_();
+  if (flush_(iSequence()) != 0) {
     throw std::runtime_error("HDF5 write failure.");
   }
 }
