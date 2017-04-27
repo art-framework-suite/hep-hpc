@@ -244,8 +244,7 @@ namespace hep_hpc {
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
-      hid_t engine_type(TranslationMode mode [[gnu::unused]] =
-                        TranslationMode::NONE) const
+      hid_t engine_type(TranslationMode mode) const
         { return STRING_TYPE_; }
 
   private:
@@ -260,8 +259,7 @@ namespace hep_hpc {
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
-      hid_t engine_type(TranslationMode mode [[gnu::unused]] =
-                        TranslationMode::NONE) const
+      hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }
 
   private:
@@ -277,8 +275,7 @@ namespace hep_hpc {
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
-      hid_t engine_type(TranslationMode mode [[gnu::unused]] =
-                        TranslationMode::NONE) const
+      hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }
 
   private:
@@ -293,8 +290,38 @@ namespace hep_hpc {
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
-      hid_t engine_type(TranslationMode mode [[gnu::unused]] =
-                        TranslationMode::NONE) const
+      hid_t engine_type(TranslationMode) const
+        { return STRING_TYPE_; }
+
+  private:
+      hdf5::Datatype STRING_TYPE_;
+    };
+
+    template <size_t NDIMS>
+    struct Column<std::string, NDIMS> : detail::column_base<NDIMS> {
+
+      Column(std::string n, detail::dims_array<NDIMS> dims)
+        :
+        detail::column_base<NDIMS>(std::move(n), std::move(dims)),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+
+      hid_t engine_type(TranslationMode) const
+        { return STRING_TYPE_; }
+
+  private:
+      hdf5::Datatype STRING_TYPE_;
+    };
+
+    template <>
+    struct Column<std::string, 1ull> : detail::column_base<1ull> {
+      Column(std::string n, size_t dim)
+        :
+        detail::column_base<1ull>(std::move(n), dim),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+
+      hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }
 
   private:

@@ -3,13 +3,16 @@
 
 using namespace hep_hpc::hdf5;
 
+#include <string>
+#include <vector>
+
 int main()
 {
   using namespace std::string_literals;
   ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
-  Ntuple<int, double, Column<int, 2>, char const *>
+  Ntuple<int, double, Column<int, 2>, char const *, std::string>
     data("test-ntuple.hdf5", "g1",
-         {{"A"s, 2}, "B"s, {"C"s, {2, 3}}, {"D"s, 2}},
+         {{"A"s, 2}, "B"s, {"C"s, {2, 3}}, {"D"s, 2}, {"E"s, 2}},
          2);
   int i1data[] = { 1, 1, 2, 4, 3, 6, 5, 10, 7, 14, 11, 22, 13, 26, 17, 34, 23, 46};
   double d1data[] = { 1.01, 2.02, 3.03, 5.05, 7.07, 11.11, 13.13, 19.17, 23.23 };
@@ -41,7 +44,16 @@ int main()
       "In such a jocund company:",
       "I gazed - and gazed - but little thought",
       "What wealth the show to me had brought:" };
+
+  std::vector<std::string> const stringdata (std::cbegin(sdata),
+                                             std::cend(sdata));
+
+  auto siter = stringdata.data();
   for (auto i = 0; i < 9; ++i) {
-    data.insert(&i1data[i*2], &d1data[i], &i2data[i*6], &sdata[i*2]);
+    data.insert(&i1data[i*2],
+                &d1data[i],
+                &i2data[i*6],
+                &sdata[i*2],
+                siter + i * 2);
   }
 }

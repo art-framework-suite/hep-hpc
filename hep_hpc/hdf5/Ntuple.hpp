@@ -16,10 +16,16 @@
 ////////////////////////////////////
 // Interface
 //
-// Template arguments are specified as basic types (double, int, etc.)
-// or of type hep_hpc::Column (see hep_hpc/Column.hpp for
-// details). Currently simple n-dimensional fixed-size arrays of
-// arithmetic types are supported (no string types as yet).
+// Template arguments should be specified as the data element type
+// (double, int, etc.) or of type hep_hpc::Column (see
+// hep_hpc/Column.hpp for details). Supported currently are columns of
+// n-dimensional fixed-size arrays of:
+//
+// * basic arithmetic types;
+//
+// * std::string;
+//
+// * char const * or char *. However, see the notes for insert() below.
 //
 ////////////////////////////////////
 //
@@ -94,14 +100,18 @@
 //   the HDF5 description for n-dimensional array representation:
 //   right-most index moves fastest.
 //
-//   N.B. Strings are supported with a basic element type of const char
-//   * (or char *). One therefore insert()s providing a char const * * (
-//   or char * *) which points to a contiguous array of char const * (or
-//   char *), each of which must continue to point to valid
-//   null-terminated character strings until the buffer has been
-//   flushed.
+//   N.B. Strings are supported with a basic element type of std::string
+//   or const char * (or char *). In the case of std::string, you are
+//   providing to insert() a pointer to a contiguous array of
+//   std::string, each of which is copied at insert() time. In the case
+//   of the char * types, one therefore provides to insert() a char
+//   const * * (or char * *) which points to a contiguous array of char
+//   const * (or char *), /each of which must continue to point to a
+//   valid null-terminated character string until the buffer has been
+//   flushed/.
 //
-//   If the buffer is full, flush it first.
+//   If the buffer is full, it will be flushed prior to the data being
+//   inserted.
 //
 ////////////////////////////////////
 //
@@ -119,6 +129,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
@@ -228,6 +239,12 @@ namespace hep_hpc {
 
       template <typename BUFFER, typename COL>
       int flush_one(BUFFER & buf, Dataset & dset, COL const & col);
+
+      // Special case: shim for std::string.
+      template <typename COL>
+      int flush_one(std::vector<std::string> & buf,
+                    Dataset & dset,
+                    COL const & col);
     } // Namespace NtupleDetail.
   } // Namespace hdf5.
 } // Namespace hep_hpc.
@@ -390,6 +407,27 @@ flush_one(BUFFER & buf, Dataset & dset, COL const & col)
                            nElements.data()},
                        std::move(dspace))) == 0) {
     buf.clear(); // Clear the buffer.
+  }
+  return rc;
+}
+
+template <typename COL>
+inline
+int
+hep_hpc::hdf5::NtupleDetail::
+flush_one(std::vector<std::string> & buf,
+          Dataset & dset,
+          COL const & col)
+{
+  herr_t rc = -1;
+  std::vector<char const *> cbuf;
+  cbuf.reserve(buf.size());
+  std::transform(buf.cbegin(), buf.cend(),
+                 std::back_insert_iterator<std::vector<char const *> >(cbuf),
+                 [](std::string const & s) { return s.data(); });
+  rc = flush_one(cbuf, dset, col);
+  if (rc == 0) {
+    buf.clear();
   }
   return rc;
 }
