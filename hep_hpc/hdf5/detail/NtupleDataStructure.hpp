@@ -1,5 +1,5 @@
-#ifndef hep_hpc_detail_NtupleDataStructure_hpp
-#define hep_hpc_detail_NtupleDataStructure_hpp
+#ifndef hep_hpc_hdf5_detail_NtupleDataStructure_hpp
+#define hep_hpc_hdf5_detail_NtupleDataStructure_hpp
 
 #include "hep_hpc/hdf5/Group.hpp"
 #include "hep_hpc/hdf5/Dataset.hpp"
@@ -10,21 +10,23 @@
 #include <string>
 
 namespace hep_hpc {
-  namespace detail {
-    template <typename... Args>
-    class NtupleDataStructure;
+  namespace hdf5 {
+    namespace detail {
+      template <typename... Args>
+      class NtupleDataStructure;
 
-    hdf5::Group makeGroup(hid_t file,
-                          std::string const & name,
-                          bool overwriteContents);
+      Group makeGroup(hid_t file,
+                            std::string const & name,
+                            bool overwriteContents);
 
-    template <typename COL>
-    hdf5::Dataset makeDataset(hid_t const group, COL const & col, TranslationMode mode);
+      template <typename COL>
+      Dataset makeDataset(hid_t const group, COL const & col, TranslationMode mode);
+    }
   }
 }
 
 template <typename... Args>
-struct hep_hpc::detail::NtupleDataStructure {
+struct hep_hpc::hdf5::detail::NtupleDataStructure {
   NtupleDataStructure(hid_t file, std::string const & name,
                       TranslationMode mode,
                       bool overwriteContents,
@@ -33,72 +35,72 @@ struct hep_hpc::detail::NtupleDataStructure {
   static constexpr auto nColumns = sizeof...(Args);
 
   std::tuple<permissive_column<Args>...> columns;
-  hdf5::Group group;
-  std::array<hdf5::Dataset, nColumns> dsets;
+  Group group;
+  std::array<Dataset, nColumns> dsets;
 };
 
 template <typename... Args>
-hep_hpc::detail::NtupleDataStructure<Args...>::
+hep_hpc::hdf5::detail::NtupleDataStructure<Args...>::
 NtupleDataStructure(hid_t const file, std::string const & name,
                     TranslationMode mode,
                     bool const overwriteContents,
                     permissive_column<Args> const & ... cols)
   :
   columns(cols...),
-  group(detail::makeGroup(file, name, overwriteContents)),
-  dsets({detail::makeDataset(group, cols, mode)...})
+  group(makeGroup(file, name, overwriteContents)),
+  dsets({makeDataset(group, cols, mode)...})
 {
 }
 
 hep_hpc::hdf5::Group
-hep_hpc::detail::
+hep_hpc::hdf5::detail::
 makeGroup(hid_t file, std::string const & name, bool overwriteContents)
 {
   using namespace std::string_literals;
-  hdf5::Group group;
+  Group group;
   {
-    hdf5::ScopedErrorHandler seh;
-    group = hdf5::Group(file, name);
+    ScopedErrorHandler seh;
+    group = Group(file, name);
   }
   if (!group) { // Already exists.
     if (!overwriteContents) {
       throw std::runtime_error("Group "s + name +
                                " already exists and overwriting is not specified."s);
     }
-    hdf5::ErrorController::call(hdf5::ErrorMode::EXCEPTION,
+    ErrorController::call(ErrorMode::EXCEPTION,
                                 "Group "s + name + " cannot be deleted!"s,
                                 &H5Ldelete, file, name.c_str(), H5P_DEFAULT);
-    group = hdf5::Group(file, name);
+    group = Group(file, name);
   }
   return group;
 }
                
 template <typename COL>
 hep_hpc::hdf5::Dataset
-hep_hpc::detail::
+hep_hpc::hdf5::detail::
 makeDataset(hid_t const group, COL const & col, TranslationMode mode)
 {
   // Cause an exception to be thrown if we have an HDF5 issue.
-  hdf5::ScopedErrorHandler seh(hdf5::ErrorMode::EXCEPTION);
+  ScopedErrorHandler seh(ErrorMode::EXCEPTION);
   std::array<hsize_t, COL::nDims() + 1ull> dims;
   dims[0] = 0ull;
   std::copy(col.dims(), col.dims() + col.nDims(), std::begin(dims) + 1ull);
   auto maxdims = dims;
   maxdims[0] = H5S_UNLIMITED;
   // Set up creation properties of the dataset.
-  hdf5::PropertyList cprops(H5P_DATASET_CREATE);
+  PropertyList cprops(H5P_DATASET_CREATE);
   auto chunking = dims;
   chunking[0] = 128ull;
   // Set chunking.
-  hdf5::ErrorController::call(&H5Pset_chunk, cprops, chunking.size(), chunking.data());
+  ErrorController::call(&H5Pset_chunk, cprops, chunking.size(), chunking.data());
   unsigned int const compressionLevel = 6;
   // Set compression level.
-  hdf5::ErrorController::call(&H5Pset_deflate, cprops, compressionLevel);
+  ErrorController::call(&H5Pset_deflate, cprops, compressionLevel);
   // Create and return appropriately constructed dataset.
-  return hdf5::Dataset(group, col.name(), col.engine_type(mode),
-                       hdf5::Dataspace{dims.size(), dims.data(), maxdims.data()},
+  return Dataset(group, col.name(), col.engine_type(mode),
+                       Dataspace{dims.size(), dims.data(), maxdims.data()},
                        {}, std::move(cprops));
 }
 
 
-#endif /* hep_hpc_detail_NtupleDataStructure_hpp */
+#endif /* hep_hpc_hdf5_detail_NtupleDataStructure_hpp */

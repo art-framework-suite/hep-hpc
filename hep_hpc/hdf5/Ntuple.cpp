@@ -1,10 +1,10 @@
-#include "hep_hpc/Ntuple.hpp"
+#include "hep_hpc/hdf5/Ntuple.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
 
-using namespace hep_hpc::hdf5;
+#include <stdexcept>
 
-File
-hep_hpc::NtupleDetail::verifiedFile(hdf5::File file)
+hep_hpc::hdf5::File
+hep_hpc::hdf5::NtupleDetail::verifiedFile(File file)
 {
   if (!file) {
     throw std::runtime_error("Attempt to create Ntuple with invalid File.");

@@ -1,5 +1,5 @@
-#ifndef KKKFYUFYRYYAGHGS
-#define KKKFYUFYRYYAGHGS
+#ifndef hep_hpc_hdf5_Datatype_hpp
+#define hep_hpc_hdf5_Datatype_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::hdf5::Datatype
 //
@@ -98,4 +98,4 @@ reset()
   h5dtype_.reset();
 }
 
-#endif
+#endif /* hep_hpc_hdf5_Datatype_hpp */

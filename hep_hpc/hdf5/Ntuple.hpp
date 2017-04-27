@@ -1,5 +1,5 @@
-#ifndef hep_hpc_Ntuple_hpp
-#define hep_hpc_Ntuple_hpp
+#ifndef hep_hpc_hdf5_Ntuple_hpp
+#define hep_hpc_hdf5_Ntuple_hpp
 ////////////////////////////////////////////////////////////////////////
 // Ntuple.hpp
 //
@@ -110,9 +110,9 @@
 //   Flush the currently-buffered data to file.
 //
 ////////////////////////////////////////////////////////////////////////
-#include "hep_hpc/Column.hpp"
-#include "hep_hpc/detail/NtupleDataStructure.hpp"
+#include "hep_hpc/hdf5/Column.hpp"
 #include "hep_hpc/hdf5/File.hpp"
+#include "hep_hpc/hdf5/detail/NtupleDataStructure.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
 
 #include "hdf5.h"
@@ -127,13 +127,14 @@
 #include <vector>
 
 namespace hep_hpc {
-  template <typename... Args>
-  class Ntuple;
-
+  namespace hdf5 {
+    template <typename... Args>
+    class Ntuple;
+  } // Namespace hdf5.
 } // Namespace hep_hpc.
 
 template <typename... Args>
-class hep_hpc::Ntuple {
+class hep_hpc::hdf5::Ntuple {
 public:
   static constexpr auto nColumns() { return sizeof...(Args); }
 
@@ -186,7 +187,7 @@ private:
   // This is the c'tor that does all of the work. It exists so that the
   // Args... and column-names array can be expanded in parallel.
   template <std::size_t... I>
-  Ntuple(hdf5::File file,
+  Ntuple(File file,
          std::string tablename,
          column_info_t columns,
          TranslationMode mode,
@@ -199,7 +200,7 @@ private:
 
   std::tuple<std::vector<Element_t<Args> >...> buffers_;
     
-  hdf5::File file_;
+  File file_;
   std::string name_;
   std::array<size_t, nColumns()> max_;
   std::recursive_mutex mutex_ {};
@@ -211,31 +212,33 @@ private:
 ////////////////////////////////////
 
 namespace hep_hpc {
-  namespace NtupleDetail {
-    hdf5::File verifiedFile(hdf5::File file);
+  namespace hdf5 {
+    namespace NtupleDetail {
+      File verifiedFile(File file);
 
-    template <size_t I, typename TUPLE, typename COLS,
-              typename Head, typename... Tail>
-    void
-    insert(TUPLE & buffers, COLS const & cols,
-           Head const * head, Tail const * ... tail);
+      template <size_t I, typename TUPLE, typename COLS,
+                typename Head, typename... Tail>
+      void
+      insert(TUPLE & buffers, COLS const & cols,
+             Head const * head, Tail const * ... tail);
 
-    template <size_t I, typename TUPLE, typename COLS>
-    void
-    insert(TUPLE &, COLS const &) { }
+      template <size_t I, typename TUPLE, typename COLS>
+      void
+      insert(TUPLE &, COLS const &) { }
 
-    template <typename BUFFER, typename COL>
-    int flush_one(BUFFER & buf, hdf5::Dataset & dset, COL const & col);
-  } // Namespace NtupleDetail.
+      template <typename BUFFER, typename COL>
+      int flush_one(BUFFER & buf, Dataset & dset, COL const & col);
+    } // Namespace NtupleDetail.
+  } // Namespace hdf5.
 } // Namespace hep_hpc.
 
 template <typename... Args>
-hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
+hep_hpc::hdf5::Ntuple<Args...>::Ntuple(hid_t file,
                                   std::string name,
                                   column_info_t columns,
                                   bool const overwriteContents,
                                   std::size_t const bufsize) :
-  Ntuple{hdf5::File(file),
+  Ntuple{File(file),
     std::move(name),
     std::move(columns),
     TranslationMode::NONE,
@@ -244,13 +247,13 @@ hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
 {}
 
 template <typename... Args>
-hep_hpc::Ntuple<Args...>::Ntuple(hid_t file,
+hep_hpc::hdf5::Ntuple<Args...>::Ntuple(hid_t file,
                                   std::string name,
                                   column_info_t columns,
                                   TranslationMode mode,
                                   bool const overwriteContents,
                                   std::size_t const bufsize) :
-  Ntuple{hdf5::File(file),
+  Ntuple{File(file),
     std::move(name),
     std::move(columns),
     mode,
@@ -269,27 +272,27 @@ namespace {
 }
 
 template <typename... Args>
-hep_hpc::Ntuple<Args...>::Ntuple(std::string filename,
+hep_hpc::hdf5::Ntuple<Args...>::Ntuple(std::string filename,
                                   std::string name,
                                   column_info_t columns,
                                   std::size_t const bufsize) :
-  Ntuple{hdf5::File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
+  Ntuple{File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
     std::move(name), std::move(columns), TranslationMode::NONE, false, bufsize, iSequence()}
 {}
 
 template <typename... Args>
-hep_hpc::Ntuple<Args...>::Ntuple(std::string filename,
+hep_hpc::hdf5::Ntuple<Args...>::Ntuple(std::string filename,
                                   std::string name,
                                   column_info_t columns,
                                   TranslationMode mode,
                                   std::size_t const bufsize) :
-  Ntuple{hdf5::File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
+  Ntuple{File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
     std::move(name), std::move(columns), mode, false, bufsize, iSequence()}
 {}
 
 template <typename... Args>
 template <std::size_t... I>
-hep_hpc::Ntuple<Args...>::Ntuple(hdf5::File file,
+hep_hpc::hdf5::Ntuple<Args...>::Ntuple(File file,
                                   std::string name,
                                   column_info_t columns,
                                   TranslationMode mode,
@@ -308,9 +311,9 @@ hep_hpc::Ntuple<Args...>::Ntuple(hdf5::File file,
 }
 
 template <typename... Args>
-hep_hpc::Ntuple<Args...>::~Ntuple() noexcept
+hep_hpc::hdf5::Ntuple<Args...>::~Ntuple() noexcept
 {
-  hdf5::ScopedErrorHandler seh(hdf5::ErrorMode::HDF5_DEFAULT);
+  ScopedErrorHandler seh(ErrorMode::HDF5_DEFAULT);
   if (flush_(iSequence()) != 0) {
     std::cerr << "HDF5 failure while flushing.\n";
   }
@@ -318,7 +321,7 @@ hep_hpc::Ntuple<Args...>::~Ntuple() noexcept
 
 template <typename... Args>
 void
-hep_hpc::Ntuple<Args...>::insert(Element_t<Args> const * ... args)
+hep_hpc::hdf5::Ntuple<Args...>::insert(Element_t<Args> const * ... args)
 {
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
@@ -331,7 +334,7 @@ hep_hpc::Ntuple<Args...>::insert(Element_t<Args> const * ... args)
 template <typename... Args>
 template <size_t... I>
 int
-hep_hpc::Ntuple<Args...>::flush_(std::index_sequence<I...>)
+hep_hpc::hdf5::Ntuple<Args...>::flush_(std::index_sequence<I...>)
 {
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
@@ -346,14 +349,13 @@ hep_hpc::Ntuple<Args...>::flush_(std::index_sequence<I...>)
 
 template <typename BUFFER, typename COL>
 int
-hep_hpc::NtupleDetail::
-flush_one(BUFFER & buf, hdf5::Dataset & dset, COL const & col)
+hep_hpc::hdf5::NtupleDetail::
+flush_one(BUFFER & buf, Dataset & dset, COL const & col)
 {
   using std::get;
-  using hdf5::ErrorController;
   herr_t rc = -1;
   // Obtain the current dataspace for this dataset.
-  auto dspace = hdf5::Dataspace{ErrorController::call(&H5Dget_space, dset)};
+  auto dspace = Dataspace{ErrorController::call(&H5Dget_space, dset)};
   std::array<hsize_t, COL::nDims() + 1ull> filedims, filemaxdims, offsets {0}, nElements;
   if (H5Sget_simple_extent_dims(dspace, filedims.data(), filemaxdims.data()) !=
       COL::nDims() + 1ull) {
@@ -369,7 +371,7 @@ flush_one(BUFFER & buf, hdf5::Dataset & dset, COL const & col)
     return rc;
   }
   // Need to get fresh dataspace info after updating dataset.
-  dspace = hdf5::Dataspace{ErrorController::call(&H5Dget_space, dset)};
+  dspace = Dataspace{ErrorController::call(&H5Dget_space, dset)};
   // Data selection for write.
   if ((rc = ErrorController::call(&H5Sselect_hyperslab,
                                   dspace,
@@ -383,7 +385,7 @@ flush_one(BUFFER & buf, hdf5::Dataset & dset, COL const & col)
   // Write the data.
   if ((rc = dset.write(col.engine_type(TranslationMode::NONE),
                        buf.data(),
-                       hdf5::Dataspace{col.nDims() + 1ull,
+                       Dataspace{col.nDims() + 1ull,
                            nElements.data(),
                            nElements.data()},
                        std::move(dspace))) == 0) {
@@ -394,7 +396,7 @@ flush_one(BUFFER & buf, hdf5::Dataset & dset, COL const & col)
 
 template <typename... Args>
 void
-hep_hpc::Ntuple<Args...>::flush()
+hep_hpc::hdf5::Ntuple<Args...>::flush()
 {
   // No lock here -- lock held by flush_();
   if (flush_(iSequence()) != 0) {
@@ -406,7 +408,7 @@ template <size_t I, typename TUPLE, typename COLS,
           typename Head, typename... Tail>
 inline
 void
-hep_hpc::NtupleDetail::insert(TUPLE & buffers,
+hep_hpc::hdf5::NtupleDetail::insert(TUPLE & buffers,
                                COLS const & cols,
                                Head const * head,
                                Tail const * ... tail)
@@ -424,7 +426,7 @@ hep_hpc::NtupleDetail::insert(TUPLE & buffers,
   insert<I + 1>(buffers, cols, tail...);
 }
 
-#endif /* hep_hpc_Ntuple_hpp */
+#endif /* hep_hpc_hdf5_Ntuple_hpp */
 
 // Local Variables:
 // mode: c++

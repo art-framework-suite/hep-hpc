@@ -1,7 +1,6 @@
-#include "hep_hpc/Ntuple.hpp"
+#include "hep_hpc/hdf5/Ntuple.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
 
-using namespace hep_hpc;
 using namespace hep_hpc::hdf5;
 
 int main()

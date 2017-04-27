@@ -3,6 +3,7 @@ set (source_files
   Datatype.cpp
   File.cpp
   Group.cpp
+  Ntuple.cpp
   PropertyList.cpp
   errorHandling.cpp
   )
