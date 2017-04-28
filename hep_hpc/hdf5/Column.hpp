@@ -34,7 +34,7 @@
 //////////////////
 // Types
 //
-// using dims_array = std::array<size_t, NDIMS>;
+// using dims_t = std::array<size_t, NDIMS>;
 //
 //////////////////
 // Constructors:
@@ -46,7 +46,7 @@
 //   whose elements were 1-dimensional arrays of length 12.
 //
 // Column<T, N>::Column(std::string const & colname,
-//                      dims_array dims);
+//                      dims_t dims);
 //
 //   e.g. Column<int, 2>("MyIntMatrix", {3, 3}) woud describe a column
 //   whose elements were 3x3 matrices.
@@ -137,7 +137,7 @@ namespace hep_hpc {
   namespace hdf5 {
     namespace detail {
       template <size_t NDIMS>
-      using dims_array = std::array<size_t, NDIMS>;
+      using dims_t = std::array<size_t, NDIMS>;
 
       template <size_t NDIMS>
       class column_base {
@@ -146,9 +146,9 @@ namespace hep_hpc {
                       "Cannot represent data in HDF5 as a column of elements of "
                       "more than (H5S_MAX_RANK-1) dimensions");
 
-        using dims_array = detail::dims_array<NDIMS>;
+        using dims_t = detail::dims_t<NDIMS>;
 
-        column_base(std::string n, dims_array dims)
+        column_base(std::string n, dims_t dims)
           :
           name_{std::move(n)},
           dims_{dims},
@@ -279,7 +279,7 @@ namespace hep_hpc {
     template <size_t NDIMS>
     struct Column<char const *, NDIMS> : detail::column_base<NDIMS> {
 
-      Column(std::string n, detail::dims_array<NDIMS> dims)
+      Column(std::string n, detail::dims_t<NDIMS> dims)
         :
         detail::column_base<NDIMS>(std::move(n), std::move(dims)),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
@@ -310,7 +310,7 @@ namespace hep_hpc {
     template <size_t NDIMS>
     struct Column<char *, NDIMS> : detail::column_base<NDIMS> {
 
-      Column(std::string n, detail::dims_array<NDIMS> dims)
+      Column(std::string n, detail::dims_t<NDIMS> dims)
         :
         detail::column_base<NDIMS>(std::move(n), std::move(dims)),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
@@ -341,7 +341,7 @@ namespace hep_hpc {
     template <size_t NDIMS>
     struct Column<std::string, NDIMS> : detail::column_base<NDIMS> {
 
-      Column(std::string n, detail::dims_array<NDIMS> dims)
+      Column(std::string n, detail::dims_t<NDIMS> dims)
         :
         detail::column_base<NDIMS>(std::move(n), std::move(dims)),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
@@ -372,7 +372,7 @@ namespace hep_hpc {
     template <size_t SZ, size_t NDIMS>
     struct Column<fstring_t<SZ>, NDIMS> : detail::column_base<NDIMS> {
 
-      Column(std::string n, detail::dims_array<NDIMS> dims)
+      Column(std::string n, detail::dims_t<NDIMS> dims)
         :
         detail::column_base<NDIMS>(std::move(n), std::move(dims)),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
