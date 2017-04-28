@@ -1,6 +1,7 @@
 #ifndef hep_hpc_hdf5_detail_NtupleDataStructure_hpp
 #define hep_hpc_hdf5_detail_NtupleDataStructure_hpp
 
+#include "hep_hpc/hdf5/Column.hpp"
 #include "hep_hpc/hdf5/Group.hpp"
 #include "hep_hpc/hdf5/Dataset.hpp"
 #include "hep_hpc/hdf5/Dataspace.hpp"
@@ -52,29 +53,6 @@ NtupleDataStructure(hid_t const file, std::string const & name,
 {
 }
 
-hep_hpc::hdf5::Group
-hep_hpc::hdf5::detail::
-makeGroup(hid_t file, std::string const & name, bool overwriteContents)
-{
-  using namespace std::string_literals;
-  Group group;
-  {
-    ScopedErrorHandler seh;
-    group = Group(file, name);
-  }
-  if (!group) { // Already exists.
-    if (!overwriteContents) {
-      throw std::runtime_error("Group "s + name +
-                               " already exists and overwriting is not specified."s);
-    }
-    ErrorController::call(ErrorMode::EXCEPTION,
-                                "Group "s + name + " cannot be deleted!"s,
-                                &H5Ldelete, file, name.c_str(), H5P_DEFAULT);
-    group = Group(file, name);
-  }
-  return group;
-}
-               
 template <typename COL>
 hep_hpc::hdf5::Dataset
 hep_hpc::hdf5::detail::

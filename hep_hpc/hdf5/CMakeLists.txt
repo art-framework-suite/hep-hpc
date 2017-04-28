@@ -6,6 +6,7 @@ set (source_files
   Ntuple.cpp
   PropertyList.cpp
   errorHandling.cpp
+  detail/NtupleDataStructure.cpp
   )
 
 add_library(hep_hpc_hdf5 SHARED ${source_files})
