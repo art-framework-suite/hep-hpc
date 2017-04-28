@@ -12,5 +12,6 @@ add_library(hep_hpc_hdf5 SHARED ${source_files})
 
 target_link_libraries(hep_hpc_hdf5
   hep_hpc_Utilities
+  memstream
   ${HDF5_C_LIBRARIES}
   )

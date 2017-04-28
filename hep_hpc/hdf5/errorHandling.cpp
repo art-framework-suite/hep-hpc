@@ -2,6 +2,8 @@
 #include "hep_hpc/Utilities/SimpleRAII.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
 
+#include "memstream/memstream.h"
+
 #include "hdf5.h"
 
 #include <cstdio>

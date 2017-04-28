@@ -104,9 +104,8 @@
 // 
 // * The implementation of the exception-throwing functionality requires
 //   POSIX.1-2008 support, specifically the function
-//   open_memstream(). If support for other platforms is required,
-//   consider using a third party implementation such as
-//   http://piumarta.com/software/memstream/,
+//   open_memstream(). If missing from the system, it is supplied in the
+//   memstream/ directory of this package.
 //
 // * The ability to throw an exception upon HDF5 failure does not
 //   utilize the HDF5 error-handling callback system (other than to

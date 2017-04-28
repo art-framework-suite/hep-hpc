@@ -70,6 +70,7 @@ include_directories(${HDF5_INCLUDE_DIRS})
 include (CTest)
 
 # Subdirectories.
+add_subdirectory(memstream)
 add_subdirectory(hep_hpc)
 add_subdirectory(gtest)
 add_subdirectory(test)
