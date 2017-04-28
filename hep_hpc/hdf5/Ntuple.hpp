@@ -270,7 +270,8 @@ hep_hpc::hdf5::Ntuple<Args...>::Ntuple(hid_t file,
     std::move(columns),
     TranslationMode::NONE,
     overwriteContents,
-    bufsize}
+    bufsize,
+    iSequence()}
 {}
 
 template <typename... Args>
@@ -285,7 +286,8 @@ hep_hpc::hdf5::Ntuple<Args...>::Ntuple(hid_t file,
     std::move(columns),
     mode,
     overwriteContents,
-    bufsize}
+    bufsize,
+    iSequence()}
 {}
 
 namespace {
