@@ -1,21 +1,42 @@
 #ifndef hep_hpc_hdf5_Column_hpp
 #define hep_hpc_hdf5_Column_hpp
 ////////////////////////////////////////////////////////////////////////
-// template <typename T, size_t NDIMS = 1> hep_hpc::Column
+// template <typename T, size_t NDIMS = 1> hep_hpc::hdf5::Column;
 //
-// A template representing an Ntuple column whose elements are an
-// NDIMS-dimensional array of T. The cardinality of each dimension is
-// specified at construction time; the rank is specified at compile
-// time.
+//   A template representing an Ntuple column whose elements are an
+//   NDIMS-dimensional array of T. The cardinality of each dimension is
+//   specified at construction time; the rank is specified at compile
+//   time.
 //
-// Every supported T requires a specialization.
+//   Every supported T requires a specialization.
 //
 ////////////////////////////////////
+// template <size_t SZ>
+// using hep_hpc::hdf5::fstring_t = std::array<char, SZ>;
 //
+//   for straightforward representation of fixed-length strings.
+//
+////////////////////////////////////
+// enum class hep_hpc::hdf5::TranslationMode;
+//
+//   Force representation on disk regardless of current architecture.
+//   Values are:
+//
+//   * NONE
+//
+//   * IEEE_STD_LE
+//
+//   * IEEE_STD_BE
+//
+////////////////////////////////////
+// hep_hpc::hdf5::Column details.
+//
+//////////////////
 // Types
 //
 // using dims_array = std::array<size_t, NDIMS>;
 //
+//////////////////
 // Constructors:
 //
 // Column<T, 1>::Column(std::string const & colname,
@@ -30,6 +51,7 @@
 //   e.g. Column<int, 2>("MyIntMatrix", {3, 3}) woud describe a column
 //   whose elements were 3x3 matrices.
 //
+//////////////////
 // Members
 //
 // auto const name() const;
@@ -65,6 +87,7 @@
 #include "hdf5.h"
 
 #include <array>
+#include <cstdint>
 #include <numeric>
 #include <string>
 
@@ -73,6 +96,9 @@ namespace hep_hpc {
     template<typename T, size_t NDIMS = 1>
     struct Column;
 
+    template <size_t SZ>
+    using fstring_t = std::array<char, SZ>;
+
     namespace detail {
       enum class TranslationMode : uint8_t {
         NONE,
@@ -80,6 +106,7 @@ namespace hep_hpc {
           IEEE_STD_BE // Big-endian, IEEE-754 floating point.
           };
     }
+
     using detail::TranslationMode;
   }
 }
@@ -172,6 +199,13 @@ namespace hep_hpc {
     };
 
     template <size_t NDIMS>
+    struct Column<int8_t, NDIMS> : detail::column_base<NDIMS> {
+      using detail::column_base<NDIMS>::column_base;
+      static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+        { ENGINE_TYPE(H5T_NATIVE_SCHAR, H5T_STD_I8LE, H5T_STD_I8BE) }
+    };
+
+    template <size_t NDIMS>
     struct Column<short, NDIMS> : detail::column_base<NDIMS> {
       using detail::column_base<NDIMS>::column_base;
       static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
@@ -201,6 +235,13 @@ namespace hep_hpc {
       using detail::column_base<NDIMS>::column_base;
       static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
         { ENGINE_TYPE(H5T_NATIVE_LLONG, H5T_STD_I64LE, H5T_STD_I64BE) }
+    };
+
+    template <size_t NDIMS>
+    struct Column<uint8_t, NDIMS> : detail::column_base<NDIMS> {
+      using detail::column_base<NDIMS>::column_base;
+      static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
+        { ENGINE_TYPE(H5T_NATIVE_UCHAR, H5T_STD_U8LE, H5T_STD_U8BE) }
     };
 
     template <size_t NDIMS>
@@ -244,7 +285,7 @@ namespace hep_hpc {
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
-      hid_t engine_type(TranslationMode mode) const
+      hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }
 
   private:
@@ -320,6 +361,37 @@ namespace hep_hpc {
         detail::column_base<1ull>(std::move(n), dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+
+      hid_t engine_type(TranslationMode) const
+        { return STRING_TYPE_; }
+
+  private:
+      hdf5::Datatype STRING_TYPE_;
+    };
+
+    template <size_t SZ, size_t NDIMS>
+    struct Column<fstring_t<SZ>, NDIMS> : detail::column_base<NDIMS> {
+
+      Column(std::string n, detail::dims_array<NDIMS> dims)
+        :
+        detail::column_base<NDIMS>(std::move(n), std::move(dims)),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, SZ); }
+
+      hid_t engine_type(TranslationMode) const
+        { return STRING_TYPE_; }
+
+  private:
+      hdf5::Datatype STRING_TYPE_;
+    };
+
+    template <size_t SZ>
+    struct Column<std::array<char, SZ>, 1ull> : detail::column_base<1ull> {
+      Column(std::string n, size_t dim = 1ull)
+        :
+        detail::column_base<1ull>(std::move(n), dim),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, SZ); }
 
       hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }

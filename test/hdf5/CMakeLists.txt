@@ -42,9 +42,9 @@ add_test(NAME Dataset_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Dataset_t)
 
 ####################################
 # Column test.
-#add_executable(Column_t Column_t.cpp)
-#add_test(NAME Column_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Column_t)
-#target_link_libraries(Column_t hep_hpc)
+add_executable(Column_t Column_t.cpp)
+add_test(NAME Column_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Column_t)
+target_link_libraries(Column_t hep_hpc_hdf5)
 ####################################
 
 ####################################

@@ -1,7 +1,7 @@
 #ifndef hep_hpc_hdf5_Ntuple_hpp
 #define hep_hpc_hdf5_Ntuple_hpp
 ////////////////////////////////////////////////////////////////////////
-// Ntuple.hpp
+// hep_hpc::hdf5::Ntuple
 //
 // An implementation of an Ntuple with an HDF5 backend.
 //
@@ -10,7 +10,9 @@
 //
 // * This is a variadic template (takes an arbitrary number of template
 //   arguments).
+//
 // * Each template argument represents a column of the Ntuple.
+//
 // * Insertions are row-wise, storage is column-wise.
 //
 ////////////////////////////////////
@@ -23,9 +25,11 @@
 //
 // * basic arithmetic types;
 //
-// * std::string;
+// * hdstudy::hdf5::fstring_t<N> a.k.a. std::array<char, N>
+//   (fixed-length string support);
 //
-// * char const * or char *. However, see the notes for insert() below.
+// * std::string, char const * or char * (variable-length string
+//   support). However, see the notes for insert() below.
 //
 ////////////////////////////////////
 //
@@ -100,15 +104,15 @@
 //   the HDF5 description for n-dimensional array representation:
 //   right-most index moves fastest.
 //
-//   N.B. Strings are supported with a basic element type of std::string
-//   or const char * (or char *). In the case of std::string, you are
-//   providing to insert() a pointer to a contiguous array of
-//   std::string, each of which is copied at insert() time. In the case
-//   of the char * types, one therefore provides to insert() a char
-//   const * * (or char * *) which points to a contiguous array of char
-//   const * (or char *), /each of which must continue to point to a
-//   valid null-terminated character string until the buffer has been
-//   flushed/.
+//   N.B. Variable-length strings are supported with a basic element
+//   type of std::string or const char * (or char *). In the case of
+//   std::string, you are providing to insert() a pointer to a
+//   contiguous array of std::string, each of which is copied at
+//   insert() time. In the case of the char * types, one therefore
+//   provides to insert() a char const * * (or char * *) which points to
+//   a contiguous array of char const * (or char *), /each of which must
+//   continue to point to a valid null-terminated character string until
+//   the buffer has been flushed/.
 //
 //   If the buffer is full, it will be flushed prior to the data being
 //   inserted.
@@ -243,6 +247,12 @@ namespace hep_hpc {
       // Special case: shim for std::string.
       template <typename COL>
       int flush_one(std::vector<std::string> & buf,
+                    Dataset & dset,
+                    COL const & col);
+
+      // Special case: shim for std::array.
+      template <int SZ, typename COL>
+      int flush_one(std::vector<std::array<char, SZ> > & buf,
                     Dataset & dset,
                     COL const & col);
     } // Namespace NtupleDetail.
@@ -425,6 +435,27 @@ flush_one(std::vector<std::string> & buf,
   std::transform(buf.cbegin(), buf.cend(),
                  std::back_insert_iterator<std::vector<char const *> >(cbuf),
                  [](std::string const & s) { return s.data(); });
+  rc = flush_one(cbuf, dset, col);
+  if (rc == 0) {
+    buf.clear();
+  }
+  return rc;
+}
+
+template <int SZ, typename COL>
+inline
+int
+hep_hpc::hdf5::NtupleDetail::
+flush_one(std::vector<std::array<char, SZ> > & buf,
+          Dataset & dset,
+          COL const & col)
+{
+  herr_t rc = -1;
+  std::vector<char const *> cbuf;
+  cbuf.reserve(buf.size());
+  std::transform(buf.cbegin(), buf.cend(),
+                 std::back_insert_iterator<std::vector<char const *> >(cbuf),
+                 [](std::array<char, SZ> const & s) { return s.data(); });
   rc = flush_one(cbuf, dset, col);
   if (rc == 0) {
     buf.clear();

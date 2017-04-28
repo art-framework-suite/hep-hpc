@@ -64,7 +64,6 @@ Datatype(Datatype const & other)
   :
   h5dtype_(&H5Tcopy, &H5Tclose, *other.h5dtype_)
 {
-  std::cerr << "Copying a dtype.\n";
 }
 
 inline
