@@ -186,7 +186,8 @@ public:
 
   std::string const& name() const { return name_; }
 
-  void insert(Element_t<Args> const * ...);
+  template <typename... T>
+  void insert(T && ...);
   void flush();
 
   // Disable copying
@@ -231,11 +232,17 @@ namespace hep_hpc {
     namespace NtupleDetail {
       File verifiedFile(File file);
 
-      template <size_t I, typename TUPLE, typename COLS,
-                typename Head, typename... Tail>
+      template <size_t I, typename TUPLE, typename COLS, typename... Tail>
       void
       insert(TUPLE & buffers, COLS const & cols,
-             Head const * head, Tail const * ... tail);
+             typename std::tuple_element<I, COLS>::type::element_type head,
+             Tail && ... tail);
+
+      template <size_t I, typename TUPLE, typename COLS, typename... Tail>
+      void
+      insert(TUPLE & buffers, COLS const & cols,
+             typename std::tuple_element<I, COLS>::type::element_type const * head,
+             Tail && ... tail);
 
       template <size_t I, typename TUPLE, typename COLS>
       void
@@ -349,15 +356,16 @@ hep_hpc::hdf5::Ntuple<Args...>::~Ntuple() noexcept
 }
 
 template <typename... Args>
+template <typename... T>
 void
-hep_hpc::hdf5::Ntuple<Args...>::insert(Element_t<Args> const * ... args)
+hep_hpc::hdf5::Ntuple<Args...>::insert(T && ... args)
 {
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
   if (get<0>(buffers_).size() == max_[0]) {
     flush();
   }
-  NtupleDetail::insert<0>(buffers_, dd_.columns, args...);
+  NtupleDetail::insert<0>(buffers_, dd_.columns, std::forward<T>(args)...);
 }
 
 template <typename... Args>
@@ -475,14 +483,26 @@ hep_hpc::hdf5::Ntuple<Args...>::flush()
   }
 }
 
-template <size_t I, typename TUPLE, typename COLS,
-          typename Head, typename... Tail>
+template <size_t I, typename TUPLE, typename COLS, typename... Tail>
 inline
 void
-hep_hpc::hdf5::NtupleDetail::insert(TUPLE & buffers,
-                               COLS const & cols,
-                               Head const * head,
-                               Tail const * ... tail)
+hep_hpc::hdf5::NtupleDetail::
+insert(TUPLE & buffers,
+       COLS const & cols,
+       typename std::tuple_element<I, COLS>::type::element_type head,
+       Tail && ... tail)
+{
+  insert<I>(buffers, cols, &head, std::forward<Tail>(tail)...);
+}
+
+template <size_t I, typename TUPLE, typename COLS, typename... Tail>
+inline
+void
+hep_hpc::hdf5::NtupleDetail::
+insert(TUPLE & buffers,
+       COLS const & cols,
+       typename std::tuple_element<I, COLS>::type::element_type const * head,
+       Tail && ... tail)
 {
   using std::get;
   auto & col = get<I>(cols);
@@ -494,7 +514,7 @@ hep_hpc::hdf5::NtupleDetail::insert(TUPLE & buffers,
   } else { // Insert empty
     buffer.insert(buffer.end(), col.elementSize(), {});
   }
-  insert<I + 1>(buffers, cols, tail...);
+  insert<I + 1>(buffers, cols, std::forward<Tail>(tail)...);
 }
 
 #endif /* hep_hpc_hdf5_Ntuple_hpp */

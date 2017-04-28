@@ -55,10 +55,10 @@ int main()
   auto siter = stringdata.data();
   for (auto i = 0; i < 9; ++i) {
     data.insert(&i1data[i*2],
-                &d1data[i],
+                d1data[i],
                 &i2data[i*6],
                 &sdata[i*2],
                 siter + i * 2,
-                factors + i);
+                factors[i]);
   }
 }
