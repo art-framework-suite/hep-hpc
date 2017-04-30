@@ -171,7 +171,9 @@ namespace hep_hpc {
       template <>
       class column_base<1ull> {
     public:
-        column_base(std::string const& n, size_t dim = 1ull) : name_{n}, dim_{dim}
+        column_base(std::string n, size_t dim = 1ull) : name_{n}, dim_{dim}
+          { }
+        column_base(char const * n, size_t dim = 1ull) : name_{n}, dim_{dim}
           { }
         auto const & name() const { return name_; }
         static constexpr size_t nDims() { return 1ull; }
@@ -291,6 +293,11 @@ namespace hep_hpc {
         detail::column_base<NDIMS>(std::move(n), std::move(dims)),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+      Column(char const * n, detail::dims_t<NDIMS> dims)
+        :
+        detail::column_base<NDIMS>(n, std::move(dims)),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
       hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }
@@ -304,6 +311,11 @@ namespace hep_hpc {
       Column(std::string n, size_t dim)
         :
         detail::column_base<1ull>(std::move(n), dim),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+      Column(char const * n, size_t dim)
+        :
+        detail::column_base<1ull>(n, dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
@@ -322,6 +334,11 @@ namespace hep_hpc {
         detail::column_base<NDIMS>(std::move(n), std::move(dims)),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+      Column(char const * n, detail::dims_t<NDIMS> dims)
+        :
+        detail::column_base<NDIMS>(n, std::move(dims)),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
       hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }
@@ -335,6 +352,11 @@ namespace hep_hpc {
       Column(std::string n, size_t dim)
         :
         detail::column_base<1ull>(std::move(n), dim),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+      Column(const char * n, size_t dim)
+        :
+        detail::column_base<1ull>(n, dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
@@ -353,6 +375,11 @@ namespace hep_hpc {
         detail::column_base<NDIMS>(std::move(n), std::move(dims)),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+      Column(char const * n, detail::dims_t<NDIMS> dims)
+        :
+        detail::column_base<NDIMS>(n, std::move(dims)),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
       hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }
@@ -366,6 +393,11 @@ namespace hep_hpc {
       Column(std::string n, size_t dim)
         :
         detail::column_base<1ull>(std::move(n), dim),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
+      Column(char const * n, size_t dim)
+        :
+        detail::column_base<1ull>(n, dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
 
@@ -384,6 +416,11 @@ namespace hep_hpc {
         detail::column_base<NDIMS>(std::move(n), std::move(dims)),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, SZ); }
+      Column(char const * n, detail::dims_t<NDIMS> dims)
+        :
+        detail::column_base<NDIMS>(n, std::move(dims)),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, SZ); }
 
       hid_t engine_type(TranslationMode) const
         { return STRING_TYPE_; }
@@ -393,10 +430,15 @@ namespace hep_hpc {
     };
 
     template <size_t SZ>
-    struct Column<std::array<char, SZ>, 1ull> : detail::column_base<1ull> {
+    struct Column<fstring_t<SZ>, 1ull> : detail::column_base<1ull> {
       Column(std::string n, size_t dim = 1ull)
         :
         detail::column_base<1ull>(std::move(n), dim),
+        STRING_TYPE_(H5Tcopy(H5T_C_S1))
+        { H5Tset_size(STRING_TYPE_, SZ); }
+      Column(char const * n, size_t dim = 1ull)
+        :
+        detail::column_base<1ull>(n, dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, SZ); }
 

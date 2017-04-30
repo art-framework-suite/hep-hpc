@@ -12,7 +12,7 @@ int main()
   ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
   Ntuple<int, double, Column<int, 2>, char const *, std::string, fstring_t<6> >
     data("test-ntuple.hdf5", "g1",
-         {{"A"s, 2}, "B"s, {"C"s, {2, 3}}, {"D"s, 2}, {"E"s, 2}, "F"s},
+         {{"A", 2}, "B", {"C", {2, 3}}, {"D", 2}, {"E", 2}, "F"},
          2);
   int i1data[] = { 1, 1, 2, 4, 3, 6, 5, 10, 7, 14, 11, 22, 13, 26, 17, 34, 23, 46};
   double d1data[] = { 1.01, 2.02, 3.03, 5.05, 7.07, 11.11, 13.13, 19.17, 23.23 };
