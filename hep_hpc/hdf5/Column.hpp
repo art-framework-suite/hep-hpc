@@ -185,6 +185,13 @@ namespace hep_hpc {
     }
 
     template <size_t NDIMS>
+    struct Column<long double, NDIMS> : detail::column_base<NDIMS> {
+      using detail::column_base<NDIMS>::column_base;
+      static hid_t engine_type(TranslationMode)
+        { return H5T_NATIVE_LDOUBLE; }
+    };
+
+    template <size_t NDIMS>
     struct Column<double, NDIMS> : detail::column_base<NDIMS> {
       using detail::column_base<NDIMS>::column_base;
       static hid_t engine_type(TranslationMode mode = TranslationMode::NONE)
