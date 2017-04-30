@@ -23,7 +23,9 @@
 // hep_hpc/Column.hpp for details). Supported currently are columns of
 // n-dimensional fixed-size arrays of:
 //
-// * basic arithmetic types;
+// * basic arithmetic types ({u,}int8_t,{un,}signed {short, int, long,
+//   long long}, float, double, long double). char is explicitly
+//   disallowed: see string storage below;
 //
 // * hdstudy::hdf5::fstring_t<N> a.k.a. std::array<char, N>
 //   (fixed-length string support);
@@ -92,17 +94,19 @@
 //
 ////////////////////////////////////
 //
-// void insert(ELEMENT<Args> const *...);
+// template <typename T>
+// void insert(T...);
 //
 //   Insert a row of data. Each argument is expected to be a pointer to
-//   the basic element type T of each column. If the argument is not
-//   nullptr, it is expected to be a pointer to a contiguous sequence of
-//   items of the column's basic type (e.g. double) of length
-//   Column::elementSize(). If the argument is nullptr, then the buffer
-//   will be filled with Column::elementSize() default-constructed items
-//   of type T. This contiguous sequence must be organized according to
-//   the HDF5 description for n-dimensional array representation:
-//   right-most index moves fastest.
+//   the basic element type T of each column or (if scalar) a T by
+//   value. If the argument is not nullptr, it is expected to be a
+//   pointer to a contiguous sequence of items of the column's basic
+//   type (e.g. double) of length Column::elementSize(). If the argument
+//   is nullptr, then the buffer will be filled with
+//   Column::elementSize() default-constructed items of type T. This
+//   contiguous sequence must be organized according to the HDF5
+//   description for n-dimensional array representation: right-most
+//   index moves fastest.
 //
 //   N.B. Variable-length strings are supported with a basic element
 //   type of std::string or const char * (or char *). In the case of
