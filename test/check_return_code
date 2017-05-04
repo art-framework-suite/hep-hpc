@@ -1,0 +1,32 @@
+#!/bin/bash
+########################################################################
+# check_return_code
+#
+# Check the return code from the specified command and return success or
+# failure according to whether it matches the expected value.
+########################################################################
+function usage() {
+  cat 1>&2 <<EOF
+Usage: ${0##*/} <exit-code> <command> [<args>+]
+
+Execute the provided command and verify it returns the expected exit code.
+
+Exit code is either 0 or 1, signifying whether the command did or did
+not return the expected code, respectively.
+EOF
+  exit 1
+}
+
+[[ "${1}" =~ [0-9]{1,}$ ]] || \
+  { echo "ERROR: Expected desired return code as first argument, got \"${1}\"" \
+         1>&2; usage; }
+
+# Pull the desired return code from the head of the argument list.
+(( return_code = ${1} ))
+shift
+
+# Invoke the specified command with its argument.
+"$@"
+
+# Set the exit code according to whether it matches the expectation.
+exit $(( $? != ${return_code} ))
