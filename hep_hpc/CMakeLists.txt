@@ -1,3 +1,5 @@
 add_subdirectory(Utilities)
 add_subdirectory(hdf5)
-add_subdirectory(MPI)
+if (MPI_FOUND)
+  add_subdirectory(MPI)
+endif()

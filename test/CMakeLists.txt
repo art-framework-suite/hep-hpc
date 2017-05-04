@@ -25,4 +25,6 @@ set(CHECK_RETURN_CODE ${EXECUTABLE_OUTPUT_PATH}/check_return_code)
 ########################################################################
 add_subdirectory(Utilities)
 add_subdirectory(hdf5)
-add_subdirectory(MPI)
+if (MPI_FOUND)
+  add_subdirectory(MPI)
+endif()
