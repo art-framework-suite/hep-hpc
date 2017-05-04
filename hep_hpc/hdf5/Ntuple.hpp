@@ -364,6 +364,9 @@ template <typename... T>
 void
 hep_hpc::hdf5::Ntuple<Args...>::insert(T && ... args)
 {
+  static_assert(sizeof...(T) == nColumns(),
+                "Number of arguments to insert() must match nColumns().");
+
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
   if (get<0>(buffers_).size() == max_[0]) {
