@@ -1,26 +1,39 @@
 # README #
 
-This code is part of a Fermilab LDRD project studying the use of HDF5 for HEP event data. See the [project wiki](https://bitbucket.org/mpaterno/hdffilestructurestudy/wiki).
+This code was produced as part of a Fermilab LDRD project studying the use of HDF5 for HEP event data.
 
-### What is this repository for? ###
+See the [original project wiki](https://bitbucket.org/mpaterno/hdffilestructurestudy/wiki).
 
-This code is used for generating files with a variety of organizations of run/subrun/event data.
+## What is this repository for? ##
 
-### How do I get set up? ###
+This repository includes utilities for resource and error management of HDF5 entities, and a facility (Ntuple) for persistence of simple tabular data in HDF5 files with row-wise fill semantics and column-wise read.
 
-In addition to cloning the repository, you may want to have access to the latest version of the `paterno/pyhdf` Docker image, from Docker Hub (https://hub.docker.com/r/paterno/pyhdf/).
+## Requirements ##
 
-All file generation **except for use of MPI and `mpio`** can be done from within a running Docker container, using the `makefile` provided in this repository. The system has also been tested with a native installation on OSX Yosemite. This is done using:
+* Linux (tested on RHEL6/7-related, should work on Ubuntu 16.04) or Mac (tested on Sierra).
+* CMake.
+* A modern C++ compiler (C++14-compliant).
+* A modern HDF5 distribution (1.10.0+).
+* Optionally, MPI distribution (tested with MPICH, likely to be problematic with OpenMPI).
+* For reading the data so produced, there are Python and R packages which should be very straightforward to use (e.g. h5py, pandas, h5). See notes below with regard to package compatibility, however.
+
+N.B. due to ABI compatibility restrictions with respect to both C++ and Fortran >= 90, all dependencies using either of these languages (e.g. HDF5 and MPI with most common configurations) must have been compiled with the same compiler. Pure C dependencies do not suffer this restriction. Packages used for data reading will have no link dependency on the compiled code herein, so you are not constrained to use the same compiler (for instance). However your data reading packages will have to be consistent within themselves in their use of (e.g.) compiler, HDF5, MPI, etc.
+
+## How do I get set up? ##
+
+### Mac ###
+
+The system has been tested with a native installation on Sierra. The following describes getting everything up through h5py, including the optional MPI for parallel I/O with HDF5.
 
 1. Python from Homebrew.
-2. MPI from Homebrew, specifically `mpich`. OpenMPI causes failures in some use of parallel I/O in `h5py`.
-3. HDF5 1.10, see below.
+2. MPI from Homebrew, specifically `mpich`. OpenMPI causes failures in some uses of parallel I/O in `h5py`.
+3. HDF5 1.10+, see below.
 4. `mpi4py`, `numpy`, and `six`, installed using `pip`. 
 5. `h5py` installed from the installation tarball, after running `python setup.py configure --mpi` to force creation of the MPI-aware version of `h5py`. Obtain installation tarballs from [The h5py project on PyPi](https://pypi.python.org/pypi/h5py).
 
-If you have `open_mpi` installed, to remove it and build `mpich` instead, use
+If you have `open-mpi` installed, to remove it and build `mpich` instead, use
 
-1. `brew rm openmpi`
+1. `brew rm open-mpi`
 2. `brew cleanup`
 3. `brew install mpich`
 4. `pip uninstall mpi4py`
@@ -31,30 +44,22 @@ In order to obtain a reasonable build of HDF5 1.10, one should:
 
 1. `brew tap homebrew/science`
 2. `cd $(brew --repository homebrew/science)`
-3. download https://bitbucket.org/mpaterno/hdffilestructurestudy/downloads/hdf5fnal.rb and put it into the current directory
-4. `brew install --build-from-source hdf5fnal --with-mpi --without-cxx`
+3. `brew install --build-from-source hdf5 --with-mpi --without-cxx`
 
-To go the Docker route:
+### Linux ###
 
-1. Install the Docker image using `docker pull`.
-2. In the directory to which you cloned this repository, start the image using:  
-    ```
-    $ docker run --rm -it --name hdfwork -v $PWD:/hdfwork -w /hdfwork paterno/pyhdf
-    ```  
+Use your OS' package manager wherever possible.
 
-To generate files, then just run `make` from within the container (or, if working with native installs, just in a shell). The `makefile` needs to be adjusted to switch between MPI usage and non-MPI usage; look for the invocation of `mpiexec` to see where this is done. In addition, it may be necessary to modify the `make_file.py` (possibly in multiple directories).
+We (Fermilab) use a system called UPS (Unix Product System) for environment-based setup and use of interdependent packages of known version and variant. The following packages are available for SL7 (RHEL7-based) on https://scisoft.fnal.gov/:
 
-### Active branches
+* GCC 6.3.0
+* HDF5 1.10.1 (with and without MPI)
+* Python 2.7.13
+* mpi4py 2.0.0, numpy1.12.1, six 1.10.0 and h5py 2.7.0
 
-The *master* branch of the repository has the code that is using `mpio` to write files.
+If you are interested in details, please contact us (see below). We are also in a position to provide binaries for SLF6 and Ubuntu 16.04 on request using this system.
 
-### Contribution guidelines ###
-
-Please fork the repository and send pull requests.
-
-### Repository architecture and build details ###
-
-The interested observer will notice the presence not only of a `CMakeLists.txt` file and associated `CMakeModules` directory, but also a `GNUmakefie`. The latter manages the in-place invocation of the (mainly python) tests in directories named `ex00`_n_. The `CMakeLists.txt` manages the building and testing of the mainly C and C++ code in the other directories. In order to utilize the 'CMake side' of things, you should:
+## Building the code ##
 
 1. Make a build directory and `cd` into it.
 1. One time per local repository only:  
@@ -67,16 +72,38 @@ The interested observer will notice the presence not only of a `CMakeLists.txt` 
     ```
 1. Invoke CMake:  
     ```
-    CC=<c-compiler> CXX=<c++-compiler> cmake -DCMAKE_BUILD_TYPE=<Debug|Release|RelWithDebInfo> <path-to-repository-top-dir>
+    CC=<c-compiler> CXX=<c++-compiler> FC=<Fortran-compiler> \
+      cmake -DCMAKE_BUILD_TYPE=<Debug|Release|RelWithDebInfo> <path-to-repository-top-dir>
     ```  
     The `CMakeLists.txt` file includes a safeguard against invoking CMake from within the source directory, but you may still have to remove some debris if you do this unintentionally.
+    CMake will detect the presence or absence of MPI and build (or not) code depending on it as appropriate.
+1. Build the code:
+    ```
+    make [-j #]
+    ```
+1. Run the tests:
+    ```
+    ctest [-j #]
+    ```
 
-If you wish to update gtest with respect to Google, use a modern git to do the following:  
+N.B. If you wish to update gtest with respect to Google, use a modern git to do the following:  
     ```
     git submodule update --remote --merge
     ```  
-    This will cause the index representing the gtest "head" to be updated in your local repository. This can be committed and pushed upstream in order to propagate it, but don't forget to test first.
+    This will cause the index representing the gtest "head" to be updated in your local repository. This can be committed if you wish.
 
-### Who do I talk to? ###
+## Using the code ##
 
-Send all queries to the owner of the repository, paterno at fnal dot gov.
+The main user-facing classes are `Ntuple` and `Column` -- see the documentation in each header for details, and `test/hdf5/Ntuple_t.cpp` for an example of use. After running the tests, you may run `h5dump` on `test/hdf5/test-ntuple.h5` to examine the structure of the data saved.
+
+## Future work ##
+
+The column specification system will be extended to allow user specification of dataset properties such as chunking and compression.
+
+## Contribution guidelines ##
+
+Please fork the repository and send pull requests.
+
+## Who do I talk to? ##
+
+Send all queries to paterno at fnal dot gov.
