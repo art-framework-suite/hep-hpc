@@ -27,7 +27,7 @@ if (NOT CMAKE_VERSION VERSION_LESS 3.1)
   set(CMAKE_C_STANDARD_REQUIRED TRUE)
 else()
   set(cxx_standard -std=c++14)
-  set(c_standard -std=c11)
+  set(c_standard -std=gnu11) # For _POSIX_C_SOURCE >= 200809L
 endif()
 
 # Set compiler flags
