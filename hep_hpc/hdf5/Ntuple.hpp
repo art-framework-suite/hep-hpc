@@ -94,12 +94,26 @@
 //
 ////////////////////////////////////
 //
+// Group const & group() const;
+//
+//   Give access to the HDF5 group encapsulating the datasets for this
+//   Ntuple.
+//
+////////////////////////////////////
+//
+// std::array<Dataset, ncolumns()> const & datasets() const;
+//
+//   Give access to the HDF5 datasets representing the data in the file.
+//
+////////////////////////////////////
+//
 // template <typename T>
 // void insert(T...);
 //
 //   Insert a row of data. Each argument is expected to be a pointer to
-//   the basic element type T of each column or (if scalar) a T by
-//   value. If the argument is not nullptr, it is expected to be a
+//   the basic element type T of each column or (if scalar) a T by value
+//   (it is a compile-time error to fail to provide one argument per
+//   column). If the argument is not nullptr, it is expected to be a
 //   pointer to a contiguous sequence of items of the column's basic
 //   type (e.g. double) of length Column::elementSize(). If the argument
 //   is nullptr, then the buffer will be filled with
@@ -188,7 +202,10 @@ public:
 
   ~Ntuple() noexcept;
 
-  std::string const& name() const { return name_; }
+  File const & file() const;
+  std::string const & name() const;
+  Group const &  group() const;
+  std::array<Dataset, nColumns()> const & datasets() const;
 
   template <typename... T>
   void insert(T && ...);
@@ -357,6 +374,39 @@ hep_hpc::hdf5::Ntuple<Args...>::~Ntuple() noexcept
   if (flush_(iSequence()) != 0) {
     std::cerr << "HDF5 failure while flushing.\n";
   }
+}
+
+template <typename... Args>
+inline
+hep_hpc::hdf5::File const &
+hep_hpc::hdf5::Ntuple<Args...>::file() const
+{
+  return file_;
+}
+
+template <typename... Args>
+inline
+std::string const &
+hep_hpc::hdf5::Ntuple<Args...>::name() const
+{
+  return name_;
+}
+
+template <typename... Args>
+inline
+hep_hpc::hdf5::Group const &
+hep_hpc::hdf5::Ntuple<Args...>::group() const
+{
+  return dd_.group;
+}
+
+template <typename... Args>
+inline
+auto
+hep_hpc::hdf5::Ntuple<Args...>::datasets() const
+-> std::array<Dataset, nColumns()> const &
+{
+  return dd_.dsets;
 }
 
 template <typename... Args>
