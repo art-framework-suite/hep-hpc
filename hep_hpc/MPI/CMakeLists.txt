@@ -29,6 +29,6 @@ install(FILES ${headers}
   DESTINATION "include/hep_hpc/MPI"
 )
 
-install(FILES "detail/throwOnMPIError.hpp"
+install(FILES "detail/throwMPIError.hpp"
   DESTINATION "include/hep_hpc/MPI/detail"
 )
