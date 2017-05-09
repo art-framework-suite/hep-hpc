@@ -10,3 +10,11 @@ set_source_files_properties(test.c PROPERTIES COMPILE_FLAGS
 add_executable(memstream_t test.c)
 target_link_libraries(memstream_t memstream)
 add_test(NAME memstream_t COMMAND memstream_t)
+
+install(TARGETS memstream
+  LIBRARY DESTINATION "${CMAKE_ARCH_SPECIFIC_DIR}/lib"
+  NAMELINK_SKIP
+  )
+install(FILES "memstream.h"
+  DESTINATION "include/memstream"
+)

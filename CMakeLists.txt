@@ -13,11 +13,17 @@ set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
   )
 
+
 # Ensure out-of-source build.
 include(EnsureOutOfSourceBuild)
 cet_ensure_out_of_source_build()
 
 enable_testing()
+
+# Architecture-specific path component.
+if (NOT CMAKE_ARCH_SPECIFIC_DIR)
+  set(CMAKE_ARCH_SPECIFIC_DIR .)
+endif()
 
 # Set language standard for the C and CXX compilers.
 if (NOT CMAKE_VERSION VERSION_LESS 3.1)
@@ -71,6 +77,9 @@ include (CTest)
 # Subdirectories.
 add_subdirectory(memstream)
 add_subdirectory(hep_hpc)
-add_subdirectory(gtest)
+add_subdirectory(gtest EXCLUDE_FROM_ALL)
 add_subdirectory(test)
 #add_subdirectory(doc)
+
+install(FILES LICENSE README.md
+  DESTINATION ".")

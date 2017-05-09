@@ -5,9 +5,30 @@ set (source_files
   detail/throwMPIError.cpp
   )
 
+set (headers
+  MPICommunicator.hpp
+  MPIComparison_t.hpp
+  MPIGroup.hpp
+  MPIInstance.hpp
+  throwOnMPIError.hpp
+  )
+
 add_library(hep_hpc_MPI SHARED ${source_files})
 
 target_link_libraries(hep_hpc_MPI
   hep_hpc_Utilities
   ${MPI_C_LIBRARIES}
+)
+
+install(TARGETS hep_hpc_MPI
+  LIBRARY DESTINATION "${CMAKE_ARCH_SPECIFIC_DIR}/lib"
+  NAMELINK_SKIP
+  )
+
+install(FILES ${headers}
+  DESTINATION "include/hep_hpc/MPI"
+)
+
+install(FILES "detail/throwOnMPIError.hpp"
+  DESTINATION "include/hep_hpc/MPI/detail"
 )
