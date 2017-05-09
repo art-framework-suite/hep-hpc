@@ -12,7 +12,7 @@ target_link_libraries(memstream_t memstream)
 add_test(NAME memstream_t COMMAND memstream_t)
 
 install(TARGETS memstream
-  LIBRARY DESTINATION "${CMAKE_ARCH_SPECIFIC_DIR}/lib"
+  LIBRARY DESTINATION "lib"
   NAMELINK_SKIP
   )
 install(FILES "memstream.h"

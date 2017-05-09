@@ -21,7 +21,7 @@ target_link_libraries(hep_hpc_MPI
 )
 
 install(TARGETS hep_hpc_MPI
-  LIBRARY DESTINATION "${CMAKE_ARCH_SPECIFIC_DIR}/lib"
+  LIBRARY DESTINATION "lib"
   NAMELINK_SKIP
   )
 

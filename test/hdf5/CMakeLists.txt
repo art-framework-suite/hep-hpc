@@ -55,7 +55,7 @@ target_link_libraries(Ntuple_t hep_hpc_hdf5)
 ####################################
 
 install(TARGETS Ntuple_t
-  RUNTIME DESTINATION "${CMAKE_ARCH_SPECIFIC_DIR}/example"
+  RUNTIME DESTINATION "example"
   )
 
 install(FILES Ntuple_t.cpp

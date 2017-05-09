@@ -33,7 +33,7 @@ target_link_libraries(hep_hpc_hdf5
   )
 
 install(TARGETS hep_hpc_hdf5
-  LIBRARY DESTINATION "${CMAKE_ARCH_SPECIFIC_DIR}/lib"
+  LIBRARY DESTINATION "lib"
   NAMELINK_SKIP
 )
 

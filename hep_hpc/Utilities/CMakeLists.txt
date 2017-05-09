@@ -12,7 +12,7 @@ set (headers
 add_library(hep_hpc_Utilities SHARED ${source_files})
 
 install(TARGETS hep_hpc_Utilities
-  LIBRARY DESTINATION "${CMAKE_ARCH_SPECIFIC_DIR}/lib"
+  LIBRARY DESTINATION "lib"
   NAMELINK_SKIP
   )
 

@@ -20,11 +20,6 @@ cet_ensure_out_of_source_build()
 
 enable_testing()
 
-# Architecture-specific path component.
-if (NOT CMAKE_ARCH_SPECIFIC_DIR)
-  set(CMAKE_ARCH_SPECIFIC_DIR .)
-endif()
-
 # Set language standard for the C and CXX compilers.
 if (NOT CMAKE_VERSION VERSION_LESS 3.1)
   set(CMAKE_CXX_STANDARD 14)
