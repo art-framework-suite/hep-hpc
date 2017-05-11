@@ -55,7 +55,10 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${EXECUTABLE_OUTPUT_P
   COMMAND ${CMAKE_COMMAND} -E make_directory ${LIBRARY_OUTPUT_PATH})
 
 # MPI
-find_package(MPI QUIET)
+if (WANT_MPI) # Set at CMake invocation time.
+  find_package(MPI QUIET)
+endif()
+
 if (MPI_FOUND)
   include_directories(${MPI_C_INCLUDE_PATH})
 endif()

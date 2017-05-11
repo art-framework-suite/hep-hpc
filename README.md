@@ -73,10 +73,12 @@ If you are interested in details, please contact us (see below). We are also in 
 1. Invoke CMake:  
     ```
     CC=<c-compiler> CXX=<c++-compiler> FC=<Fortran-compiler> \
-      cmake -DCMAKE_BUILD_TYPE=<Debug|Release|RelWithDebInfo> <path-to-repository-top-dir>
+      cmake -DCMAKE_BUILD_TYPE=<Debug|Release|RelWithDebInfo> \
+      [-DWANT_MPI=1] \
+      <path-to-repository-top-dir>
     ```  
     The `CMakeLists.txt` file includes a safeguard against invoking CMake from within the source directory, but you may still have to remove some debris if you do this unintentionally.
-    CMake will detect the presence or absence of MPI and build (or not) code depending on it as appropriate.
+    Define WANT_MPI appropriately to activate MPI, if it available.
 1. Build the code:
     ```
     make [-j #]
