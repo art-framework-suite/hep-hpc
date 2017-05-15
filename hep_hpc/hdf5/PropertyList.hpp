@@ -40,7 +40,11 @@ public:
   explicit operator bool () const noexcept;
 
   // Access to the underlying resource handle.
-  operator hid_t() const noexcept;
+  operator hid_t () const noexcept;
+
+  // Chaining operator
+  template <typename FUNC, typename... Args>
+  PropertyList & operator () (FUNC func, Args && ... args);
 
   // What is the class of this property list?
   hid_t getClass() const;
@@ -91,9 +95,21 @@ operator bool () const noexcept
 
 inline
 hep_hpc::hdf5::PropertyList::
-operator hid_t() const noexcept
+operator hid_t () const noexcept
 {
   return *h5plist_;
+}
+
+template <typename FUNC, typename... Args>
+inline
+hep_hpc::hdf5::PropertyList &
+hep_hpc::hdf5::PropertyList::
+operator () (FUNC func, Args && ... args)
+{
+  (void) ErrorController::call(ErrorMode::EXCEPTION, func,
+                               (hid_t) (*this),
+                               std::forward<Args>(args)...);
+  return *this;
 }
 
 inline
