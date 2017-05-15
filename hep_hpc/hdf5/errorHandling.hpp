@@ -208,33 +208,33 @@ public:
 
   // No leading message.
   template <typename H5FUNC, typename... Args>
-  static decltype(auto) call(H5FUNC h5func, Args && ... args)
+  static auto call(H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...));
 
   template <typename H5FUNC, typename... Args>
-  static decltype(auto) call(ErrorMode mode,
+  static auto call(ErrorMode mode,
                              H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...));
 
   template <typename H5FUNC, typename... Args>
-  static decltype(auto) call(H5E_auto2_t errorFunc, void * clientData,
+  static auto call(H5E_auto2_t errorFunc, void * clientData,
                              H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...));
 
   // Exception will start with specified message.
   template <typename H5FUNC, typename... Args>
-  static decltype(auto) call(std::string msg,
+  static auto call(std::string msg,
                              H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...));
 
   template <typename H5FUNC, typename... Args>
-  static decltype(auto) call(ErrorMode mode,
+  static auto call(ErrorMode mode,
                              std::string msg,
                              H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...));
 
   template <typename H5FUNC, typename... Args>
-  static decltype(auto) call(H5E_auto2_t errorFunc, void * clientData,
+  static auto call(H5E_auto2_t errorFunc, void * clientData,
                              std::string msg,
                              H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...));
@@ -307,7 +307,7 @@ currentMode()
 }
 
 template <typename H5FUNC, typename... Args>
-decltype(auto)
+auto
 hep_hpc::hdf5::ErrorController::
 call(H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
@@ -318,7 +318,7 @@ call(H5FUNC h5func, Args && ... args)
 
 template <typename H5FUNC, typename... Args>
 inline
-decltype(auto)
+auto
 hep_hpc::hdf5::ErrorController::
 call(ErrorMode mode,
      H5FUNC h5func, Args && ... args)
@@ -330,7 +330,7 @@ call(ErrorMode mode,
 
 template <typename H5FUNC, typename... Args>
 inline
-decltype(auto)
+auto
 hep_hpc::hdf5::ErrorController::
 call(H5E_auto2_t errorFunc, void * clientData,
      H5FUNC h5func, Args && ... args)
@@ -341,7 +341,7 @@ call(H5E_auto2_t errorFunc, void * clientData,
 }
 
 template <typename H5FUNC, typename... Args>
-decltype(auto)
+auto
 hep_hpc::hdf5::ErrorController::
 call(std::string msg,
      H5FUNC h5func, Args && ... args)
@@ -359,7 +359,7 @@ call(std::string msg,
 
 template <typename H5FUNC, typename... Args>
 inline
-decltype(auto)
+auto
 hep_hpc::hdf5::ErrorController::
 call(ErrorMode mode,
      std::string msg,
@@ -379,7 +379,7 @@ call(ErrorMode mode,
 
 template <typename H5FUNC, typename... Args>
 inline
-decltype(auto)
+auto
 hep_hpc::hdf5::ErrorController::
 call(H5E_auto2_t errorFunc, void * clientData,
      std::string msg,

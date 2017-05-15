@@ -177,8 +177,8 @@ namespace hep_hpc {
           :
           name_{std::move(colName)},
           dims_{dims},
-          elementSize_{std::accumulate(std::cbegin(dims_),
-                                       std::cend(dims_),
+          elementSize_{std::accumulate(std::begin(dims_),
+                                       std::end(dims_),
                                        1ull,
                                        std::multiplies<size_t>())}
           { }
@@ -542,11 +542,11 @@ namespace hep_hpc {
 
 } // Namespace hep_hpc.
 
-template <typename T, size_t NDIMS = 1>
+template <typename T, size_t NDIMS>
 inline
 hep_hpc::hdf5::detail::permissive_column<T, NDIMS>
 hep_hpc::hdf5::make_column(std::string name,
-                           typename detail::permissive_column<T, NDIMS>::dims_t dims,
+                           typename detail::permissive_column<T, NDIMS>::dims_t const & dims,
                            PropertyList linkCreationProperties,
                            PropertyList datasetCreationProperties,
                            PropertyList datasetAccessProperties)

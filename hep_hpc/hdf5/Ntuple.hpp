@@ -319,6 +319,7 @@ hep_hpc::hdf5::Ntuple<Args...>::Ntuple(hid_t file,
 {}
 
 namespace {
+  [[gnu::unused]]
   hep_hpc::hdf5::PropertyList fileAccessProperties()
   {
     // Ensure we are using the latest available HDF5 file format to write our data.
@@ -364,7 +365,7 @@ hep_hpc::hdf5::Ntuple<Args...>::Ntuple(File file,
   // Reserve buffer space.
   using swallow = int[];
   // Reserve the right amount of space in each buffer.
-  swallow {0, (std::get<I>(buffers_).reserve(max_[I]), 0)...};
+  (void) swallow {0, (std::get<I>(buffers_).reserve(max_[I]), 0)...};
 }
 
 template <typename... Args>
@@ -436,8 +437,8 @@ hep_hpc::hdf5::Ntuple<Args...>::flush_(std::index_sequence<I...>)
     {0, NtupleDetail::flush_one(get<I>(buffers_),
                                 get<I>(dd_.dsets),
                                 get<I>(dd_.columns))...};
-  return std::any_of(std::cbegin(results),
-                     std::cend(results),
+  return std::any_of(std::begin(results),
+                     std::end(results),
                      [](auto const res) { return res != 0; });
 }
 
@@ -479,7 +480,7 @@ flush_one(BUFFER & buf, Dataset & dset, COL const & col)
   // Write the data.
   if ((rc = dset.write(col.engine_type(TranslationMode::NONE),
                        buf.data(),
-                       Dataspace{col.nDims() + 1ull,
+                       Dataspace{int (col.nDims() + 1ull),
                            nElements.data(),
                            nElements.data()},
                        std::move(dspace))) == 0) {

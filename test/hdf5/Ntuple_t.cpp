@@ -10,9 +10,12 @@ int main()
 {
   using namespace std::string_literals;
   ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
-  Ntuple<int, double, Column<int, 2>, char const *, std::string, fstring_t<6> >
+  using ntuple_t = Ntuple<int, double, Column<int, 2>, char const *, std::string, fstring_t<6> >;
+  // Type specifier for argument #3 below (ntuple_t::column_info_t)
+  // necessary for clang (defect?) but not g++.
+  ntuple_t
     data("test-ntuple.hdf5", "g1",
-         {{"A", 2},
+         ntuple_t::column_info_t {{"A"s, 2},
              "B",
              {"C", {2, 3}},
              {"D", 2},

@@ -14,6 +14,7 @@
 
 #include "hdf5.h"
 
+#include <cstdlib>
 #include <string>
 
 namespace hep_hpc {

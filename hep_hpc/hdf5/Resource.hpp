@@ -31,8 +31,8 @@
 namespace hep_hpc {
   namespace hdf5 {
     template <typename RH,
-              typename = std::enable_if_t<std::is_same<RH, HID_t>::value ||
-                                          std::is_same<RH, hid_t>::value> >
+              typename = typename std::enable_if<std::is_same<RH, HID_t>::value ||
+                                                 std::is_same<RH, hid_t>::value>::type >
     class Resource;
 
     template <typename RH>

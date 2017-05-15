@@ -14,7 +14,7 @@ namespace hep_hpc {
   namespace hdf5 {
     namespace detail {
       template <typename... Args>
-      class NtupleDataStructure;
+      struct NtupleDataStructure;
 
       Group makeGroup(hid_t file,
                       std::string const & name,

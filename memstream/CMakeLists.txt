@@ -4,9 +4,13 @@ add_library(memstream SHARED memstream.c)
 # Make sure that asserts are evaluated in test.c, and we are permissive
 # about known warnings.
 
-set_source_files_properties(test.c PROPERTIES COMPILE_FLAGS
-  "-UNDEBUG -Wno-error=sign-compare -Wno-error=format=")
-
+if (CMAKE_CXX_COMPILER MATCHES clang)
+  set_source_files_properties(test.c PROPERTIES COMPILE_FLAGS
+    "-UNDEBUG -Wno-error=sign-compare -Wno-error=format-pedantic")
+else()
+  set_source_files_properties(test.c PROPERTIES COMPILE_FLAGS
+    "-UNDEBUG -Wno-error=sign-compare -Wno-error=format=")
+endif()
 add_executable(memstream_t test.c)
 target_link_libraries(memstream_t memstream)
 add_test(NAME memstream_t COMMAND memstream_t)

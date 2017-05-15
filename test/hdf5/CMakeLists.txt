@@ -48,7 +48,19 @@ target_link_libraries(Column_t hep_hpc_hdf5)
 ####################################
 
 ####################################
-# Ntuple test.
+# Ntuple tests.
+add_executable(Ntuple_01_t Ntuple_01_t.cpp)
+add_test(NAME Ntuple_01_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_01_t)
+target_link_libraries(Ntuple_01_t hep_hpc_hdf5)
+
+add_executable(Ntuple_02_t Ntuple_02_t.cpp)
+add_test(NAME Ntuple_02_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_02_t)
+target_link_libraries(Ntuple_02_t hep_hpc_hdf5)
+
+add_executable(Ntuple_03_t Ntuple_03_t.cpp)
+add_test(NAME Ntuple_03_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_03_t)
+target_link_libraries(Ntuple_03_t hep_hpc_hdf5)
+
 add_executable(Ntuple_t Ntuple_t.cpp)
 add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)
 target_link_libraries(Ntuple_t hep_hpc_hdf5)

@@ -32,7 +32,7 @@ else()
 endif()
 
 # Set compiler flags
-set(common_flags "-Wall -Wextra -Werror -pedantic")
+set(common_flags "-Wall -Wextra -Werror -pedantic -Wno-missing-braces")
 set(CMAKE_CXX_FLAGS "${common_flags} ${cxx_standard}")
 set(CMAKE_C_FLAGS "${common_flags} ${c_standard}")
 string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UC)
