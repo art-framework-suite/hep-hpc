@@ -17,11 +17,19 @@ namespace hep_hpc {
       class NtupleDataStructure;
 
       Group makeGroup(hid_t file,
-                            std::string const & name,
-                            bool overwriteContents);
+                      std::string const & name,
+                      bool overwriteContents);
 
       template <typename COL>
       Dataset makeDataset(hid_t const group, COL const & col, TranslationMode mode);
+
+      template <size_t NDIMS>
+      PropertyList
+      defaultDatasetCreationProperties(dims_t<NDIMS> const & dims);
+
+      template <size_t NDIMS>
+      herr_t
+      setDefaultChunking(PropertyList & cprops, dims_t<NDIMS> const & dims);
     }
   }
 }
@@ -65,20 +73,47 @@ makeDataset(hid_t const group, COL const & col, TranslationMode mode)
   std::copy(col.dims(), col.dims() + col.nDims(), std::begin(dims) + 1ull);
   auto maxdims = dims;
   maxdims[0] = H5S_UNLIMITED;
+  // Create and return appropriately constructed dataset.
+  PropertyList cdprops = col.datasetCreationProperties();
+  if (!cdprops) {
+    // Default chunking and compression.
+    cdprops = defaultDatasetCreationProperties(dims);
+  } else if (H5Pget_layout(cdprops) != H5D_CHUNKED) {
+    // Add defaulted chunking information to the provided dataset
+    // creation properties.
+    (void) setDefaultChunking(cdprops, dims);
+  }
+  return Dataset(group, col.name(), col.engine_type(mode),
+                 Dataspace{dims.size(), dims.data(), maxdims.data()},
+                 col.linkCreationProperties(),
+                 std::move(cdprops),
+                 col.datasetAccessProperties());
+}
+
+template <size_t NDIMS>
+hep_hpc::hdf5::PropertyList
+hep_hpc::hdf5::detail::
+defaultDatasetCreationProperties(dims_t<NDIMS> const & dims)
+{
   // Set up creation properties of the dataset.
   PropertyList cprops(H5P_DATASET_CREATE);
-  auto chunking = dims;
-  chunking[0] = 128ull;
-  // Set chunking.
-  ErrorController::call(&H5Pset_chunk, cprops, chunking.size(), chunking.data());
+  setDefaultChunking(cprops, dims);
   unsigned int const compressionLevel = 6;
   // Set compression level.
   ErrorController::call(&H5Pset_deflate, cprops, compressionLevel);
-  // Create and return appropriately constructed dataset.
-  return Dataset(group, col.name(), col.engine_type(mode),
-                       Dataspace{dims.size(), dims.data(), maxdims.data()},
-                       {}, std::move(cprops));
+  return cprops;
 }
 
+template <size_t NDIMS>
+herr_t
+hep_hpc::hdf5::detail::
+setDefaultChunking(PropertyList & cprops,
+                   dims_t<NDIMS> const & dims)
+{
+  auto chunking = dims;
+  chunking[0] = 128ull;
+  // Set chunking.
+  return ErrorController::call(&H5Pset_chunk, cprops, chunking.size(), chunking.data());
+}
 
 #endif /* hep_hpc_hdf5_detail_NtupleDataStructure_hpp */

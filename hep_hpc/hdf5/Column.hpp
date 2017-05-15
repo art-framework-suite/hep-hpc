@@ -29,6 +29,27 @@
 //   * IEEE_STD_BE
 //
 ////////////////////////////////////
+// template <typename T, size_t NDIMS = 1>
+// <column-type>
+// make_column(std::string name,
+//             <dimensions> dims
+//             PropertyList linkCreationProperties,
+//             PropertyList datasetCreationProperties,
+//             PropertyList datasetAccessProperties)
+//
+// template <typename T>
+// <column-type>
+// make_column(std::string name,
+//             PropertyList linkCreationProperties,
+//             PropertyList datasetCreationProperties,
+//             PropertyList datasetAccessProperties)
+//
+//   Helper function to facilitate the creation of columns with
+//   particular HDF5 properties. The second signature is specifically
+//   for columns of scalars, where specifying the dimensions is
+//   unnecessary.
+//
+////////////////////////////////////
 // hep_hpc::hdf5::Column details.
 //
 //////////////////
@@ -56,7 +77,7 @@
 //
 //////////////////
 // Members
-//name()
+//
 // std::string const & name() const;
 //
 //   The column name.
@@ -86,6 +107,7 @@
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/Datatype.hpp"
 #include "hep_hpc/hdf5/Exception.hpp"
+#include "hep_hpc/hdf5/PropertyList.hpp"
 
 #include "hdf5.h"
 
@@ -165,10 +187,29 @@ namespace hep_hpc {
         hsize_t const * dims() const { return dims_.data(); }
         size_t elementSize() const { return elementSize_; }
 
+        PropertyList linkCreationProperties() const
+          { return linkCreationProperties_; }
+        PropertyList datasetCreationProperties() const
+          { return datasetCreationProperties_; }
+        PropertyList datasetAccessProperties() const
+          { return datasetAccessProperties_; }
+
+        void setLinkCreationProperties(PropertyList lcprop)
+          { linkCreationProperties_ = std::move(lcprop); }
+
+        void setDatasetCreationProperties(PropertyList dcprop)
+          { datasetCreationProperties_ = std::move(dcprop); }
+
+        void setDatasetAccessProperties(PropertyList daprop)
+          { datasetAccessProperties_ = std::move(daprop); }
+
     private:
         std::string const name_;
         dims_t const dims_;
         size_t const elementSize_;
+        PropertyList linkCreationProperties_;
+        PropertyList datasetCreationProperties_;
+        PropertyList datasetAccessProperties_;
       };
 
       template <>
@@ -183,9 +224,28 @@ namespace hep_hpc {
         hsize_t const * dims() const { return &dim_; }
         size_t elementSize() const { return dim_; }
 
+        PropertyList linkCreationProperties() const
+          { return linkCreationProperties_; }
+        PropertyList datasetCreationProperties() const
+          { return datasetCreationProperties_; }
+        PropertyList datasetAccessProperties() const
+          { return datasetAccessProperties_; }
+
+        void setLinkCreationProperties(PropertyList lcprop)
+          { linkCreationProperties_ = std::move(lcprop); }
+
+        void setDatasetCreationProperties(PropertyList dcprop)
+          { datasetCreationProperties_ = std::move(dcprop); }
+
+        void setDatasetAccessProperties(PropertyList daprop)
+          { datasetAccessProperties_ = std::move(daprop); }
+
     private:
         std::string name_;
         hsize_t dim_;
+        PropertyList linkCreationProperties_;
+        PropertyList datasetCreationProperties_;
+        PropertyList datasetAccessProperties_;
       };
     }
 
@@ -463,9 +523,57 @@ namespace hep_hpc {
 
     } // Namespace detail.
 
+    template <typename T, size_t NDIMS = 1>
+    detail::permissive_column<T, NDIMS>
+    make_column(std::string name,
+                typename detail::permissive_column<T, NDIMS>::dims_t const & dims,
+                PropertyList linkCreationProperties = {},
+                PropertyList datasetCreationProperties = {},
+                PropertyList datasetAccessProperties = {});
+
+    template <typename T>
+    detail::permissive_column<T, 1ull>
+    make_column(std::string name,
+                PropertyList linkCreationProperties = {},
+                PropertyList datasetCreationProperties = {},
+                PropertyList datasetAccessProperties = {});
+
   } // Namespace hdf5.
 
 } // Namespace hep_hpc.
+
+template <typename T, size_t NDIMS = 1>
+inline
+hep_hpc::hdf5::detail::permissive_column<T, NDIMS>
+hep_hpc::hdf5::make_column(std::string name,
+                           typename detail::permissive_column<T, NDIMS>::dims_t dims,
+                           PropertyList linkCreationProperties,
+                           PropertyList datasetCreationProperties,
+                           PropertyList datasetAccessProperties)
+{
+  hep_hpc::hdf5::detail::permissive_column<T, NDIMS>
+    result(std::move(name), std::move(dims));
+  result.setLinkCreationProperties(std::move(linkCreationProperties));
+  result.setDatasetCreationProperties(std::move(datasetCreationProperties));
+  result.setDatasetAccessProperties(std::move(datasetAccessProperties));
+  return result;
+}
+
+template <typename T>
+inline
+hep_hpc::hdf5::detail::permissive_column<T, 1ull>
+hep_hpc::hdf5::make_column(std::string name,
+                           PropertyList linkCreationProperties,
+                           PropertyList datasetCreationProperties,
+                           PropertyList datasetAccessProperties)
+{
+  hep_hpc::hdf5::detail::permissive_column<T, 1ull>
+    result(std::move(name), 1ull);
+  result.setLinkCreationProperties(std::move(linkCreationProperties));
+  result.setDatasetCreationProperties(std::move(datasetCreationProperties));
+  result.setDatasetAccessProperties(std::move(datasetAccessProperties));
+  return result;
+}
 
 #endif /* hep_hpc_hdf5_Column_hpp */
 
