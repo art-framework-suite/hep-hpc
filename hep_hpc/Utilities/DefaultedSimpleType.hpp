@@ -10,7 +10,7 @@
 
 namespace hep_hpc {
   namespace detail {
-    template <typename T, T DEF = {}>
+    template <typename T, T DEF = T {}>
     class DefaultedSimpleType;
   }
 }
