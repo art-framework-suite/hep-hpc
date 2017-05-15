@@ -64,7 +64,7 @@
 // Constructors:
 //
 // Column<T, 1>::Column(<string-ish> colName,
-//                      size_t dim_size = 1ull);
+//                      hsize_t dim_size = 1ull);
 //
 //   e.g. Column<int>("MyIntArray", 12) would describe a column
 //   whose elements were 1-dimensional arrays of length 12.
@@ -215,9 +215,9 @@ namespace hep_hpc {
       template <>
       class column_base<1ull> {
     public:
-        column_base(std::string colName, size_t dim = 1ull) : name_{colName}, dim_{dim}
+        column_base(std::string colName, hsize_t dim = 1ull) : name_{colName}, dim_{dim}
           { }
-        column_base(char const * colName, size_t dim = 1ull) : name_{colName}, dim_{dim}
+        column_base(char const * colName, hsize_t dim = 1ull) : name_{colName}, dim_{dim}
           { }
         auto const & name() const { return name_; }
         static constexpr size_t nDims() { return 1ull; }
@@ -368,12 +368,12 @@ namespace hep_hpc {
 
     template <>
     struct Column<char const *, 1ull> : detail::column_base<1ull> {
-      Column(std::string colName, size_t dim)
+      Column(std::string colName, hsize_t dim = 1ull)
         :
         detail::column_base<1ull>(std::move(colName), dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
-      Column(char const * colName, size_t dim)
+      Column(char const * colName, hsize_t dim = 1ull)
         : Column(std::string(colName), dim) { }
 
       hid_t engine_type(TranslationMode) const
@@ -403,12 +403,12 @@ namespace hep_hpc {
 
     template <>
     struct Column<char *, 1ull> : detail::column_base<1ull> {
-      Column(std::string colName, size_t dim)
+      Column(std::string colName, hsize_t dim = 1ull)
         :
         detail::column_base<1ull>(std::move(colName), dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
-      Column(const char * colName, size_t dim)
+      Column(const char * colName, hsize_t dim = 1ull)
         : Column(std::string(colName), dim) { }
 
       hid_t engine_type(TranslationMode) const
@@ -438,12 +438,12 @@ namespace hep_hpc {
 
     template <>
     struct Column<std::string, 1ull> : detail::column_base<1ull> {
-      Column(std::string colName, size_t dim)
+      Column(std::string colName, hsize_t dim = 1ull)
         :
         detail::column_base<1ull>(std::move(colName), dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, H5T_VARIABLE); }
-      Column(char const * colName, size_t dim)
+      Column(char const * colName, hsize_t dim = 1ull)
         : Column(std::string(colName), dim) { }
 
       hid_t engine_type(TranslationMode) const
@@ -473,12 +473,12 @@ namespace hep_hpc {
 
     template <size_t SZ>
     struct Column<fstring_t<SZ>, 1ull> : detail::column_base<1ull> {
-      Column(std::string colName, size_t dim = 1ull)
+      Column(std::string colName, hsize_t dim = 1ull)
         :
         detail::column_base<1ull>(std::move(colName), dim),
         STRING_TYPE_(H5Tcopy(H5T_C_S1))
         { H5Tset_size(STRING_TYPE_, SZ); }
-      Column(char const * colName, size_t dim = 1ull)
+      Column(char const * colName, hsize_t dim = 1ull)
         : Column(std::string(colName), dim) { }
 
       hid_t engine_type(TranslationMode) const
