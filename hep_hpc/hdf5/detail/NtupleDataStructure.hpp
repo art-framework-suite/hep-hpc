@@ -60,7 +60,7 @@ makeDataset(hid_t const group, COL const & col, TranslationMode mode)
 {
   // Cause an exception to be thrown if we have an HDF5 issue.
   ScopedErrorHandler seh(ErrorMode::EXCEPTION);
-  std::array<hsize_t, COL::nDims() + 1ull> dims;
+  dims_t<COL::nDims() + 1ull> dims;
   dims[0] = 0ull;
   std::copy(col.dims(), col.dims() + col.nDims(), std::begin(dims) + 1ull);
   auto maxdims = dims;

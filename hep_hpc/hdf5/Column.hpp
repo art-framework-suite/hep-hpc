@@ -34,7 +34,10 @@
 //////////////////
 // Types
 //
-// using dims_t = std::array<size_t, NDIMS>;
+// using dims_t = std::array<hsize_t, NDIMS>;
+//
+// Useful typedef to describe an array of extent information for the
+// column.
 //
 //////////////////
 // Constructors:
@@ -62,7 +65,7 @@
 //
 //   The rank of the column elements.
 //
-// size_t const * dims() const;
+// hsize_t const * dims() const;
 //
 //   A pointer to a contiguous sequence whose members are the
 //   extent of each dimension.
@@ -137,7 +140,7 @@ namespace hep_hpc {
   namespace hdf5 {
     namespace detail {
       template <size_t NDIMS>
-      using dims_t = std::array<size_t, NDIMS>;
+      using dims_t = std::array<hsize_t, NDIMS>;
 
       template <size_t NDIMS>
       class column_base {
@@ -159,12 +162,12 @@ namespace hep_hpc {
           { }
         std::string const & name() const { return name_; }
         static constexpr size_t nDims() { return NDIMS; }
-        size_t const * dims() const { return dims_.data(); }
+        hsize_t const * dims() const { return dims_.data(); }
         size_t elementSize() const { return elementSize_; }
 
     private:
         std::string const name_;
-        std::array<size_t, NDIMS> const dims_;
+        dims_t const dims_;
         size_t const elementSize_;
       };
 
@@ -177,12 +180,12 @@ namespace hep_hpc {
           { }
         auto const & name() const { return name_; }
         static constexpr size_t nDims() { return 1ull; }
-        size_t const * dims() const { return &dim_; }
+        hsize_t const * dims() const { return &dim_; }
         size_t elementSize() const { return dim_; }
 
     private:
         std::string name_;
-        size_t dim_;
+        hsize_t dim_;
       };
     }
 
