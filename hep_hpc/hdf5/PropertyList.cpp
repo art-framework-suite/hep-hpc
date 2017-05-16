@@ -41,10 +41,9 @@ getClass() const
   } else if (H5Pequal(classID, H5P_STRING_CREATE)) {
     result = H5P_STRING_CREATE;
   } else {
-    using namespace std::string_literals;
     using std::to_string;
-    throw std::logic_error("INTERNAL ERROR: H5PopertyList::getClass() did not recognize property class ID "s +
-                           to_string(classID) + "property list ID "s + to_string(*h5plist_));
+    throw std::logic_error("INTERNAL ERROR: H5PopertyList::getClass() did not recognize property class ID " +
+                           to_string(classID) + "property list ID " + to_string(*h5plist_));
   }
   return result;
 }

@@ -7,7 +7,6 @@
 #include <string>
 
 using namespace hep_hpc::hdf5;
-using namespace std::string_literals;
 
 namespace {
   PropertyList fileAccessProperties()
@@ -27,7 +26,7 @@ TEST(File, def)
 
 TEST(File, construct)
 {
-  File const h("h5file_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
+  File const h("h5file_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
   ASSERT_TRUE(h);
 }
 
@@ -40,7 +39,7 @@ TEST(File, construct_non_owning)
 
 TEST(File, move_construction)
 {
-  File h("h5file_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
+  File h("h5file_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
   File const h2(std::move(h));
   ASSERT_FALSE(h);
   ASSERT_TRUE(h2);
@@ -48,7 +47,7 @@ TEST(File, move_construction)
 
 TEST(File, move_assignment)
 {
-  File h("h5file_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
+  File h("h5file_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
   File h2;
   h2 = std::move(h);
   ASSERT_FALSE(h);
@@ -57,26 +56,26 @@ TEST(File, move_assignment)
 
 TEST(File, open_sucess)
 {
-  File h("h5file_t.hdf5"s);
+  File h("h5file_t.hdf5");
   ASSERT_TRUE(h);
 }
 
 TEST(File, open_missing)
 {
   ScopedErrorHandler seh;
-  File h("h5file_t_noFile.hdf5"s);
+  File h("h5file_t_noFile.hdf5");
   ASSERT_FALSE(h);
 }
 
 TEST(File, flush)
 {
-  File h("h5file_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
+  File h("h5file_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
   ASSERT_EQ(h.flush(), herr_t(0));
 }
 
 TEST(File, explicit_close)
 {
-  File h("h5file_t.hdf5"s, H5F_ACC_TRUNC, {}, fileAccessProperties());
+  File h("h5file_t.hdf5", H5F_ACC_TRUNC, {}, fileAccessProperties());
   ASSERT_TRUE(h);
   h.close();
   ASSERT_FALSE(h);

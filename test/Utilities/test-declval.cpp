@@ -19,9 +19,8 @@ namespace {
 
 TEST(test_declval, test_declval)
 {
-  using namespace std::string_literals;
   auto y = callit([](int i, int j, double x) -> double { return x * (i + j); }, 6, 5, 3.4);
-  ASSERT_EQ(hep_hpc::detail::demangle_symbol(typeid(y).name()), "double"s);
+  ASSERT_EQ(hep_hpc::detail::demangle_symbol(typeid(y).name()), "double");
 }
 
 int main(int argc, char **argv) {

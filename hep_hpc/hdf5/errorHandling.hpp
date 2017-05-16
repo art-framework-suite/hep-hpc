@@ -312,8 +312,7 @@ hep_hpc::hdf5::ErrorController::
 call(H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
-  using namespace std::string_literals;
-  return call(""s, h5func, std::forward<Args>(args)...);
+  return call("", h5func, std::forward<Args>(args)...);
 }
 
 template <typename H5FUNC, typename... Args>
@@ -324,8 +323,7 @@ call(ErrorMode mode,
      H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
-  using namespace std::string_literals;
-  return call(mode, ""s, h5func, std::forward<Args>(args)...);
+  return call(mode, "", h5func, std::forward<Args>(args)...);
 }
 
 template <typename H5FUNC, typename... Args>
@@ -336,8 +334,7 @@ call(H5E_auto2_t errorFunc, void * clientData,
      H5FUNC h5func, Args && ... args)
 -> decltype(h5func(std::forward<Args>(args)...))
 {
-  using namespace std::string_literals;
-  return call(errorFunc, clientData, ""s, h5func, std::forward<Args>(args)...);
+  return call(errorFunc, clientData, "", h5func, std::forward<Args>(args)...);
 }
 
 template <typename H5FUNC, typename... Args>

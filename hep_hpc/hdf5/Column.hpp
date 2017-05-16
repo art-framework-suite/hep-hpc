@@ -72,7 +72,7 @@
 // Column<T, N>::Column(<string-ish> colName,
 //                      dims_t dims);
 //
-//   e.g. Column<int, 2>("MyIntMatrix"s, {3, 3}) woud describe a column
+//   e.g. Column<int, 2>("MyIntMatrix", {3, 3}) woud describe a column
 //   whose elements were 3x3 matrices.
 //
 //////////////////
@@ -140,7 +140,6 @@ namespace hep_hpc {
 // No user-serviceable parts.
 
 #define ENGINE_TYPE(NATIVE, IEEE_LE, IEEE_BE)   \
-  using namespace std::string_literals;         \
   using std::to_string;                         \
   hid_t result;                                 \
   switch (mode) {                               \
@@ -154,7 +153,7 @@ namespace hep_hpc {
     result = IEEE_BE;                           \
     break;                                      \
   default:                                      \
-    throw Exception("Un-handled translation mode: "s + to_string((int)mode)); \
+    throw Exception("Un-handled translation mode: " + to_string((int)mode)); \
   } \
     return result;
 
@@ -219,7 +218,7 @@ namespace hep_hpc {
           { }
         column_base(char const * colName, hsize_t dim = 1ull) : name_{colName}, dim_{dim}
           { }
-        auto const & name() const { return name_; }
+        std::string const & name() const { return name_; }
         static constexpr size_t nDims() { return 1ull; }
         hsize_t const * dims() const { return &dim_; }
         size_t elementSize() const { return dim_; }

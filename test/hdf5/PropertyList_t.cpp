@@ -4,7 +4,6 @@
 #include "gtest/gtest.h"
 
 using namespace hep_hpc::hdf5;
-using namespace std::string_literals;
 
 namespace {
   auto const known_classes =
@@ -71,7 +70,7 @@ TEST(PropertyList, move_construction)
   ASSERT_TRUE(plist2);
   ASSERT_FALSE(plist1);
   ASSERT_EQ(plist2.getClass(), H5P_FILE_ACCESS);
-  ASSERT_EQ(plist2.getClassName(), "file access"s);
+  ASSERT_EQ(plist2.getClassName(), "file access");
 }
 
 TEST(PropertyList, move_assignment)
@@ -83,7 +82,7 @@ TEST(PropertyList, move_assignment)
   ASSERT_TRUE(plist2);
   ASSERT_FALSE(plist1);
   ASSERT_EQ(plist2.getClass(), H5P_FILE_ACCESS);
-  ASSERT_EQ(plist2.getClassName(), "file access"s);
+  ASSERT_EQ(plist2.getClassName(), "file access");
 }
 
 TEST(PropertyList, getClass)

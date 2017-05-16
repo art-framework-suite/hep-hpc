@@ -17,7 +17,6 @@ using namespace hep_hpc;
 
 int main(int argc, char **argv)
 {
-  using namespace std::string_literals;
   using std::to_string;
   MPIInstance theMPI(argc, argv, MPIInstance::world_errors_return_tag);
   try {
@@ -30,7 +29,7 @@ int main(int argc, char **argv)
     MPI_Errhandler_get(splitComm, &splitHandler);
     if (rank == 0) {
       if (worldHandler != splitHandler) {
-        throw std::runtime_error("ERROR: Error handler comparison: "s +
+        throw std::runtime_error("ERROR: Error handler comparison: " +
                                  to_string(worldHandler) +
                                  " != " +
                                  to_string(splitHandler));

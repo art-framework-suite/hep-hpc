@@ -66,7 +66,6 @@ namespace {
   std::string ref_string = "Error function called successfully.";
   herr_t errFunc(hid_t, std::string * const sPtr)
   {
-    using namespace std::string_literals;
     *sPtr = ref_string;
     return 0;
   }

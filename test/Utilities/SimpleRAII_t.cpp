@@ -8,7 +8,6 @@
 
 using namespace hep_hpc;
 using namespace hep_hpc::detail;
-using namespace std::string_literals;
 
 namespace {
   template <typename RH>
@@ -106,24 +105,24 @@ TEST(SimpleRAII_simple, size_t)
 {
   using std::to_string;
   std::ostringstream os(std::ios_base::ate);
-  auto const ref = "Antidisestablishmentarianism"s;
+  std::string const ref = "Antidisestablishmentarianism";
   {
     SimpleRAII<size_t> const raii_a(setup(os), teardown(os), ref);
     ASSERT_EQ(os.str(), ref);
-    os.str(""s);
+    os.str("");
   }
   ASSERT_EQ(os.str(), to_string(ref.size()));
 }
 
 TEST(SimpleRAII_simple, void)
 {
-  auto const sref = "Hi"s;
-  auto const tref = "Bye"s;
+  auto const sref = "Hi";
+  auto const tref = "Bye";
   std::ostringstream os(std::ios_base::ate);
   {
     SimpleRAII<void> const raii_a(stVoid(os, sref), stVoid(os, tref));
     ASSERT_EQ(os.str(), sref);
-    os.str(""s);
+    os.str("");
   }
   ASSERT_EQ(os.str(), tref);
 }
@@ -133,20 +132,20 @@ TEST(SimpleRAII, swap_size_t)
   using std::swap;
   using std::to_string;
   std::ostringstream os(std::ios_base::ate);
-  std::string const ref1 = "Antidisestablishmentarianism"s;
-  std::string const ref2 = "Internationalization"s;
+  std::string const ref1 = "Antidisestablishmentarianism";
+  std::string const ref2 = "Internationalization";
   {
     SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref1);
     ASSERT_EQ(os.str(), ref1);
-    os.str(""s);
+    os.str("");
     {
       SimpleRAII<size_t> raii_b(setup(os), teardown(os), ref2);
       ASSERT_EQ(os.str(), ref2);
-      os.str(""s);
+      os.str("");
       swap(raii_a, raii_b);
     }
     ASSERT_EQ(os.str(), to_string(ref1.size()));
-    os.str(""s);
+    os.str("");
   }
   ASSERT_EQ(os.str(), to_string(ref2.size()));
 }
@@ -155,22 +154,22 @@ TEST(SimpleRAII, swap_void)
 {
   using std::swap;
   std::ostringstream os(std::ios_base::ate);
-  auto const sref1 = "Hi1"s;
-  auto const tref1 = "Bye1"s;
-  auto const sref2 = "Hi2"s;
-  auto const tref2 = "Bye2"s;
+  auto const sref1 = "Hi1";
+  auto const tref1 = "Bye1";
+  auto const sref2 = "Hi2";
+  auto const tref2 = "Bye2";
   {
     SimpleRAII<void> raii_a(stVoid(os, sref1), stVoid(os, tref1));
     ASSERT_EQ(os.str(), sref1);
-    os.str(""s);
+    os.str("");
     {
       SimpleRAII<void> raii_b(stVoid(os, sref2), stVoid(os, tref2));
       ASSERT_EQ(os.str(), sref2);
-      os.str(""s);
+      os.str("");
       swap(raii_a, raii_b);
     }
     ASSERT_EQ(os.str(), tref1);
-    os.str(""s);
+    os.str("");
   }
   ASSERT_EQ(os.str(), tref2);
 }
@@ -179,17 +178,17 @@ TEST(SimpleRAII, move_construct_size_t)
 {
   using std::to_string;
   std::ostringstream os(std::ios_base::ate);
-  std::string const ref = "Antidisestablishmentarianism"s;
+  std::string const ref = "Antidisestablishmentarianism";
   {
     SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
     ASSERT_EQ(os.str(), ref);
-    os.str(""s);
+    os.str("");
     {
       SimpleRAII<size_t> const raii_a2(std::move(raii_a));
       ASSERT_TRUE(os.str().empty());
     }
     ASSERT_EQ(os.str(), to_string(ref.size()));
-    os.str(""s);
+    os.str("");
   }
   ASSERT_TRUE(os.str().empty());
 }
@@ -197,18 +196,18 @@ TEST(SimpleRAII, move_construct_size_t)
 TEST(SimpleRAII, move_construct_void)
 {
   std::ostringstream os(std::ios_base::ate);
-  auto const sref = "Hi"s;
-  auto const tref = "Bye"s;
+  auto const sref = "Hi";
+  auto const tref = "Bye";
   {
     SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref));
     ASSERT_EQ(os.str(), sref);
-    os.str(""s);
+    os.str("");
     {
       SimpleRAII<void> const raii_a2(std::move(raii_a));
       ASSERT_TRUE(os.str().empty());
     }
     ASSERT_EQ(os.str(), tref);
-    os.str(""s);
+    os.str("");
   }
   ASSERT_TRUE(os.str().empty());
 }
@@ -217,18 +216,18 @@ TEST(SimpleRAII, move_assign_size_t)
 {
   using std::to_string;
   std::ostringstream os(std::ios_base::ate);
-  std::string const ref = "Antidisestablishmentarianism"s;
+  std::string const ref = "Antidisestablishmentarianism";
   {
     SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
     ASSERT_EQ(os.str(), ref);
-    os.str(""s);
+    os.str("");
     {
       SimpleRAII<size_t> raii_a2;
       raii_a2 = std::move(raii_a);
       ASSERT_TRUE(os.str().empty());
     }
     ASSERT_EQ(os.str(), to_string(ref.size()));
-    os.str(""s);
+    os.str("");
   }
   ASSERT_TRUE(os.str().empty());
 }
@@ -236,20 +235,20 @@ TEST(SimpleRAII, move_assign_size_t)
 TEST(SimpleRAII, move_assign_void)
 {
   std::ostringstream os(std::ios_base::ate);
-  std::string const ref = "Antidisestablishmentarianism"s;
-  auto const sref = "Hi"s;
-  auto const tref = "Bye"s;
+  std::string const ref = "Antidisestablishmentarianism";
+  auto const sref = "Hi";
+  auto const tref = "Bye";
   {
     SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref));
     ASSERT_EQ(os.str(), sref);
-    os.str(""s);
+    os.str("");
     {
       SimpleRAII<void> raii_a2;
       raii_a2 = std::move(raii_a);
       ASSERT_TRUE(os.str().empty());
     }
     ASSERT_EQ(os.str(), tref);
-    os.str(""s);
+    os.str("");
   }
   ASSERT_TRUE(os.str().empty());
 }
@@ -258,11 +257,11 @@ TEST(SimpleRAII, release_size_t)
 {
   using std::to_string;
   std::ostringstream os(std::ios_base::ate);
-  auto const ref = "Antidisestablishmentarianism"s;
+  std::string const ref = "Antidisestablishmentarianism";
   {
     SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
     ASSERT_EQ(os.str(), ref);
-    os.str(""s);
+    os.str("");
     ASSERT_EQ(raii_a.release(), ref.size());
   }
   ASSERT_TRUE(os.str().empty());
@@ -270,13 +269,13 @@ TEST(SimpleRAII, release_size_t)
 
 TEST(SimpleRAII, release_void)
 {
-  auto const sref = "Hi"s;
-  auto const tref = "Bye"s;
+  auto const sref = "Hi";
+  auto const tref = "Bye";
   std::ostringstream os(std::ios_base::ate);
   {
     SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref));
     ASSERT_EQ(os.str(), sref);
-    os.str(""s);
+    os.str("");
     raii_a.release();
   }
   ASSERT_TRUE(os.str().empty());
@@ -286,14 +285,14 @@ TEST(SimpleRAII_reset1, size_t)
 {
   using std::to_string;
   std::ostringstream os(std::ios_base::ate);
-  auto const ref = "Antidisestablishmentarianism"s;
+  std::string const ref = "Antidisestablishmentarianism";
   {
     SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
     ASSERT_EQ(os.str(), ref);
-    os.str(""s);
+    os.str("");
     raii_a.reset();
     ASSERT_EQ(os.str(), to_string(ref.size()));
-    os.str(""s);
+    os.str("");
   }
   ASSERT_TRUE(os.str().empty());
 }
@@ -302,48 +301,48 @@ TEST(SimpleRAII_reset2, size_t)
 {
   using std::to_string;
   std::ostringstream os(std::ios_base::ate);
-  auto const ref = "Antidisestablishmentarianism"s;
+  std::string const ref = "Antidisestablishmentarianism";
   size_t const r2 = 34ull;
   {
     SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
     ASSERT_EQ(os.str(), ref);
-    os.str(""s);
+    os.str("");
     raii_a.reset(int{r2}, teardown(os));
     ASSERT_EQ(os.str(), to_string(ref.size()));
-    os.str(""s);
+    os.str("");
   }
   ASSERT_EQ(os.str(), to_string(r2));
 }
 
 TEST(SimpleRAII_reset1, void)
 {
-  auto const sref = "Hi"s;
-  auto const tref = "Bye"s;
+  auto const sref = "Hi";
+  auto const tref = "Bye";
   std::ostringstream os(std::ios_base::ate);
   {
     SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref));
     ASSERT_EQ(os.str(), sref);
-    os.str(""s);
+    os.str("");
     raii_a.reset();
     ASSERT_EQ(os.str(), tref);
-    os.str(""s);
+    os.str("");
   }
   ASSERT_TRUE(os.str().empty());
 }
 
 TEST(SimpleRAII_reset2, void)
 {
-  auto const sref = "Hi"s;
-  auto const tref1 = "Bye1"s;
-  auto const tref2 = "Bye2"s;
+  auto const sref = "Hi";
+  auto const tref1 = "Bye1";
+  auto const tref2 = "Bye2";
   std::ostringstream os(std::ios_base::ate);
   {
     SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref1));
     ASSERT_EQ(os.str(), sref);
-    os.str(""s);
+    os.str("");
     raii_a.reset(stVoid(os, tref2));
     ASSERT_EQ(os.str(), tref1);
-    os.str(""s);
+    os.str("");
   }
   ASSERT_EQ(os.str(), tref2);
 }

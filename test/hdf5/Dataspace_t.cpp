@@ -7,7 +7,6 @@
 #include <list>
 
 using namespace hep_hpc::hdf5;
-using namespace std::string_literals;
 
 TEST(Dataspace, default_construction)
 {
