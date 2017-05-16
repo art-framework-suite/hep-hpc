@@ -34,7 +34,7 @@ TEST(Resource, construct_complex)
   hid_t const ref(31ll);
   HID_t iut;
   {
-    Resource<hid_t>([](auto h) { return h; }, [&iut](hid_t rh) { iut = rh; return iut;}, ref);
+    Resource<hid_t>([](hid_t h) { return h; }, [&iut](hid_t rh) { iut = rh; return iut;}, ref);
   }
   ASSERT_EQ((hid_t)iut, ref);
 }
@@ -42,7 +42,7 @@ TEST(Resource, construct_complex)
 TEST(Resource, move_construct)
 {
   HID_t const ref {27ll};
-  Resource<HID_t> r1{ref, [](auto){return 0;}};
+  Resource<HID_t> r1{ref, [](HID_t){return 0;}};
   Resource<HID_t> r2(std::move(r1));
   ASSERT_FALSE(r1.teardownFunc());
   ASSERT_EQ(*r1, HID_t {});
@@ -53,7 +53,7 @@ TEST(Resource, move_construct)
 TEST(Resource, move_assign)
 {
   HID_t const ref {27ll};
-  Resource<HID_t> r1{ref, [](auto){return 0;}};
+  Resource<HID_t> r1{ref, [](HID_t){return 0;}};
   Resource<HID_t> r2;
   r2 = std::move(r1);
   ASSERT_FALSE(r1.teardownFunc());

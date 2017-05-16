@@ -21,14 +21,22 @@ cet_ensure_out_of_source_build()
 enable_testing()
 
 # Set language standard for the C and CXX compilers.
-if (NOT CMAKE_VERSION VERSION_LESS 3.1)
+if (NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
-  set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+if (NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 11)
-  set(CMAKE_C_STANDARD_REQUIRED TRUE)
-else()
-  set(cxx_standard -std=c++14)
-  set(c_standard -std=gnu11) # For _POSIX_C_SOURCE >= 200809L
+endif()
+set(CMAKE_C_STANDARD_REQUIRED TRUE)
+
+if (CMAKE_VERSION VERSION_LESS 3.1)
+  if (${CMAKE_CXX_STANDARD} EQUAL 17)
+    set(cxx_standard -std=gnu1z)
+  else()
+    set(cxx_standard -std=${CMAKE_CXX_STANDARD})
+  endif()
+  set(c_standard -std=gnu${CMAKE_C_STANDARD}) # For _POSIX_C_SOURCE >= 200809L
 endif()
 
 # Set compiler flags
@@ -46,7 +54,7 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -g -fno-omit-frame-pointer ${CMAKE_C_FLAGS
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
 
 # Set include base directory.
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Set output locations
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
@@ -64,12 +72,20 @@ if (MPI_FOUND)
 endif()
 
 # HDF5
-find_package(HDF5 COMPONENTS C)
-if (NOT HDF5_FOUND)
-  message(FATAL_ERROR "Unable to find a suitable HDF5 distribution")
-endif()
+find_package(HDF5 REQUIRED COMPONENTS C)
 include_directories(${HDF5_INCLUDE_DIRS})
 
+# BOOST (C++11 only)
+if (CMAKE_CXX_STANDARD EQUAL 11)
+  set(BOOST_INCLUDEDIR $ENV{BOOST_INC})
+  set(BOOST_LIBRARYDIR $ENV{BOOST_LIB})
+  find_package(Boost REQUIRED)
+  message(STATUS "Found Boost version ${Boost_VERSION} headers at ${Boost_INCLUDE_DIRS}, libraries at ${Boost_LIBRARY_DIRS}.")
+  set(HEP_HPC_USE_BOOST_INDEX_SEQUENCE TRUE)
+  include_directories(${Boost_INCLUDE_DIRS})
+endif()
+
+# Testing facilities
 include (CTest)
 
 # Subdirectories.

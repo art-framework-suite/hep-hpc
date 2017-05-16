@@ -54,8 +54,8 @@ int main()
       "I gazed - and gazed - but little thought",
       "What wealth the show to me had brought:" };
 
-  std::vector<std::string> const stringdata (std::cbegin(sdata),
-                                             std::cend(sdata));
+  std::vector<std::string> const stringdata (std::begin(sdata),
+                                             std::end(sdata));
 
   fstring_t<6> factors[] = { "green", "red", "blue",
                              "green", "blue", "red",

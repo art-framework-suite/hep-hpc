@@ -142,6 +142,7 @@
 //   Flush the currently-buffered data to file.
 //
 ////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/Utilities/detail/index_sequence.hpp"
 #include "hep_hpc/hdf5/Column.hpp"
 #include "hep_hpc/hdf5/File.hpp"
 #include "hep_hpc/hdf5/detail/NtupleDataStructure.hpp"
@@ -157,6 +158,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace hep_hpc {
@@ -169,7 +171,7 @@ namespace hep_hpc {
 template <typename... Args>
 class hep_hpc::hdf5::Ntuple {
 public:
-  static constexpr auto nColumns() { return sizeof...(Args); }
+  static constexpr std::size_t nColumns() { return sizeof...(Args); }
 
   using column_info_t = std::tuple<detail::permissive_column<Args>...>;
 
@@ -218,8 +220,8 @@ public:
 private:
   static_assert(nColumns() > 0, "Ntuple with zero types is meaningless");
 
-  static constexpr auto iSequence()
-    { return std::make_index_sequence<nColumns()>(); }
+  static constexpr hep_hpc::detail::make_index_sequence<nColumns()> iSequence()
+    { return hep_hpc::detail::make_index_sequence<nColumns()>(); }
 
   // This is the c'tor that does all of the work. It exists so that the
   // Args... and column-names array can be expanded in parallel.
@@ -230,10 +232,10 @@ private:
          TranslationMode mode,
          bool overwriteContents,
          std::size_t bufsize,
-         std::index_sequence<I...>);
+         hep_hpc::detail::index_sequence<I...>);
 
   template <size_t... I>
-  int flush_(std::index_sequence<I...>);
+  int flush_(hep_hpc::detail::index_sequence<I...>);
 
   std::tuple<std::vector<Element_t<Args> >...> buffers_;
     
@@ -270,19 +272,19 @@ namespace hep_hpc {
       insert(TUPLE &, COLS const &) { }
 
       template <typename BUFFER, typename COL>
-      int flush_one(BUFFER & buf, Dataset & dset, COL const & col);
+      herr_t flush_one(BUFFER & buf, Dataset & dset, COL const & col);
 
       // Special case: shim for std::string.
       template <typename COL>
-      int flush_one(std::vector<std::string> & buf,
-                    Dataset & dset,
-                    COL const & col);
+      herr_t flush_one(std::vector<std::string> & buf,
+                       Dataset & dset,
+                       COL const & col);
 
       // Special case: shim for std::array.
       template <int SZ, typename COL>
-      int flush_one(std::vector<std::array<char, SZ> > & buf,
-                    Dataset & dset,
-                    COL const & col);
+      herr_t flush_one(std::vector<std::array<char, SZ> > & buf,
+                       Dataset & dset,
+                       COL const & col);
     } // Namespace NtupleDetail.
   } // Namespace hdf5.
 } // Namespace hep_hpc.
@@ -356,7 +358,7 @@ hep_hpc::hdf5::Ntuple<Args...>::Ntuple(File file,
                                   TranslationMode mode,
                                   bool const overwriteContents,
                                   std::size_t const bufsize,
-                                  std::index_sequence<I...>) :
+                                  hep_hpc::detail::index_sequence<I...>) :
   file_{NtupleDetail::verifiedFile(std::move(file))},
   name_{std::move(name)},
   max_{(std::get<I>(columns).elementSize() * bufsize)...},
@@ -429,21 +431,21 @@ hep_hpc::hdf5::Ntuple<Args...>::insert(T && ... args)
 template <typename... Args>
 template <size_t... I>
 int
-hep_hpc::hdf5::Ntuple<Args...>::flush_(std::index_sequence<I...>)
+hep_hpc::hdf5::Ntuple<Args...>::flush_(hep_hpc::detail::index_sequence<I...>)
 {
   using std::get;
   std::lock_guard<decltype(mutex_)> lock {mutex_};
   auto const results =
-    {0, NtupleDetail::flush_one(get<I>(buffers_),
-                                get<I>(dd_.dsets),
-                                get<I>(dd_.columns))...};
+    {(herr_t) 0, NtupleDetail::flush_one(get<I>(buffers_),
+                                         get<I>(dd_.dsets),
+                                         get<I>(dd_.columns))...};
   return std::any_of(std::begin(results),
                      std::end(results),
-                     [](auto const res) { return res != 0; });
+                     [](herr_t const res) { return res != 0; });
 }
 
 template <typename BUFFER, typename COL>
-int
+herr_t
 hep_hpc::hdf5::NtupleDetail::
 flush_one(BUFFER & buf, Dataset & dset, COL const & col)
 {
@@ -491,7 +493,7 @@ flush_one(BUFFER & buf, Dataset & dset, COL const & col)
 
 template <typename COL>
 inline
-int
+herr_t
 hep_hpc::hdf5::NtupleDetail::
 flush_one(std::vector<std::string> & buf,
           Dataset & dset,
@@ -512,7 +514,7 @@ flush_one(std::vector<std::string> & buf,
 
 template <int SZ, typename COL>
 inline
-int
+herr_t
 hep_hpc::hdf5::NtupleDetail::
 flush_one(std::vector<std::array<char, SZ> > & buf,
           Dataset & dset,

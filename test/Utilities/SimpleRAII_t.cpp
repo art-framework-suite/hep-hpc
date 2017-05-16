@@ -66,29 +66,11 @@ TEST(SimpleRAII_construction, td_void)
   ASSERT_EQ(iut, ref);
 }
 
-namespace {
-  decltype(auto) setup(std::ostream & os)
-  {
-    return
-      [&os](std::string const & s) noexcept
-    {
-      os << s;
-      return s.length();
-    };
-  }
-  decltype(auto) teardown(std::ostream & os)
-  {
-    return
-      [&os](auto x) noexcept
-    {
-      os << x;
-    };
-  }
-  decltype(auto) stVoid(std::ostream &os, std::string const & msg)
-  {
-    return [&os, &msg](){ os << msg; };
-  }
-}
+// These macros should be decltype(auto) functions returning a lambda,
+// but since we're supporting C++11 they will need to be macros. Ick.
+#define SR_SETUP(os) [&os](std::string const & s) noexcept { os << s; return s.length(); }
+#define SR_TEARDOWN(os, xtype) [&os](xtype x) noexcept { os << x; }
+#define SR_STVOID(os, msg) [&os, &msg]() { os << msg; }
 
 TEST(SimpleRAII_Simple, non_owning)
 {
@@ -107,7 +89,7 @@ TEST(SimpleRAII_simple, size_t)
   std::ostringstream os(std::ios_base::ate);
   std::string const ref = "Antidisestablishmentarianism";
   {
-    SimpleRAII<size_t> const raii_a(setup(os), teardown(os), ref);
+    SimpleRAII<size_t> const raii_a(SR_SETUP(os), SR_TEARDOWN(os, size_t), ref);
     ASSERT_EQ(os.str(), ref);
     os.str("");
   }
@@ -120,7 +102,7 @@ TEST(SimpleRAII_simple, void)
   auto const tref = "Bye";
   std::ostringstream os(std::ios_base::ate);
   {
-    SimpleRAII<void> const raii_a(stVoid(os, sref), stVoid(os, tref));
+    SimpleRAII<void> const raii_a(SR_STVOID(os, sref), SR_STVOID(os, tref));
     ASSERT_EQ(os.str(), sref);
     os.str("");
   }
@@ -135,11 +117,11 @@ TEST(SimpleRAII, swap_size_t)
   std::string const ref1 = "Antidisestablishmentarianism";
   std::string const ref2 = "Internationalization";
   {
-    SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref1);
+    SimpleRAII<size_t> raii_a(SR_SETUP(os), SR_TEARDOWN(os, size_t), ref1);
     ASSERT_EQ(os.str(), ref1);
     os.str("");
     {
-      SimpleRAII<size_t> raii_b(setup(os), teardown(os), ref2);
+      SimpleRAII<size_t> raii_b(SR_SETUP(os), SR_TEARDOWN(os, size_t), ref2);
       ASSERT_EQ(os.str(), ref2);
       os.str("");
       swap(raii_a, raii_b);
@@ -159,11 +141,11 @@ TEST(SimpleRAII, swap_void)
   auto const sref2 = "Hi2";
   auto const tref2 = "Bye2";
   {
-    SimpleRAII<void> raii_a(stVoid(os, sref1), stVoid(os, tref1));
+    SimpleRAII<void> raii_a(SR_STVOID(os, sref1), SR_STVOID(os, tref1));
     ASSERT_EQ(os.str(), sref1);
     os.str("");
     {
-      SimpleRAII<void> raii_b(stVoid(os, sref2), stVoid(os, tref2));
+      SimpleRAII<void> raii_b(SR_STVOID(os, sref2), SR_STVOID(os, tref2));
       ASSERT_EQ(os.str(), sref2);
       os.str("");
       swap(raii_a, raii_b);
@@ -180,7 +162,7 @@ TEST(SimpleRAII, move_construct_size_t)
   std::ostringstream os(std::ios_base::ate);
   std::string const ref = "Antidisestablishmentarianism";
   {
-    SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
+    SimpleRAII<size_t> raii_a(SR_SETUP(os), SR_TEARDOWN(os, size_t), ref);
     ASSERT_EQ(os.str(), ref);
     os.str("");
     {
@@ -199,7 +181,7 @@ TEST(SimpleRAII, move_construct_void)
   auto const sref = "Hi";
   auto const tref = "Bye";
   {
-    SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref));
+    SimpleRAII<void> raii_a(SR_STVOID(os, sref), SR_STVOID(os, tref));
     ASSERT_EQ(os.str(), sref);
     os.str("");
     {
@@ -218,7 +200,7 @@ TEST(SimpleRAII, move_assign_size_t)
   std::ostringstream os(std::ios_base::ate);
   std::string const ref = "Antidisestablishmentarianism";
   {
-    SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
+    SimpleRAII<size_t> raii_a(SR_SETUP(os), SR_TEARDOWN(os, size_t), ref);
     ASSERT_EQ(os.str(), ref);
     os.str("");
     {
@@ -239,7 +221,7 @@ TEST(SimpleRAII, move_assign_void)
   auto const sref = "Hi";
   auto const tref = "Bye";
   {
-    SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref));
+    SimpleRAII<void> raii_a(SR_STVOID(os, sref), SR_STVOID(os, tref));
     ASSERT_EQ(os.str(), sref);
     os.str("");
     {
@@ -259,7 +241,7 @@ TEST(SimpleRAII, release_size_t)
   std::ostringstream os(std::ios_base::ate);
   std::string const ref = "Antidisestablishmentarianism";
   {
-    SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
+    SimpleRAII<size_t> raii_a(SR_SETUP(os), SR_TEARDOWN(os, size_t), ref);
     ASSERT_EQ(os.str(), ref);
     os.str("");
     ASSERT_EQ(raii_a.release(), ref.size());
@@ -273,7 +255,7 @@ TEST(SimpleRAII, release_void)
   auto const tref = "Bye";
   std::ostringstream os(std::ios_base::ate);
   {
-    SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref));
+    SimpleRAII<void> raii_a(SR_STVOID(os, sref), SR_STVOID(os, tref));
     ASSERT_EQ(os.str(), sref);
     os.str("");
     raii_a.release();
@@ -287,7 +269,7 @@ TEST(SimpleRAII_reset1, size_t)
   std::ostringstream os(std::ios_base::ate);
   std::string const ref = "Antidisestablishmentarianism";
   {
-    SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
+    SimpleRAII<size_t> raii_a(SR_SETUP(os), SR_TEARDOWN(os, size_t), ref);
     ASSERT_EQ(os.str(), ref);
     os.str("");
     raii_a.reset();
@@ -304,10 +286,10 @@ TEST(SimpleRAII_reset2, size_t)
   std::string const ref = "Antidisestablishmentarianism";
   size_t const r2 = 34ull;
   {
-    SimpleRAII<size_t> raii_a(setup(os), teardown(os), ref);
+    SimpleRAII<size_t> raii_a(SR_SETUP(os), SR_TEARDOWN(os, size_t), ref);
     ASSERT_EQ(os.str(), ref);
     os.str("");
-    raii_a.reset(int{r2}, teardown(os));
+    raii_a.reset(int{r2}, SR_TEARDOWN(os, size_t));
     ASSERT_EQ(os.str(), to_string(ref.size()));
     os.str("");
   }
@@ -320,7 +302,7 @@ TEST(SimpleRAII_reset1, void)
   auto const tref = "Bye";
   std::ostringstream os(std::ios_base::ate);
   {
-    SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref));
+    SimpleRAII<void> raii_a(SR_STVOID(os, sref), SR_STVOID(os, tref));
     ASSERT_EQ(os.str(), sref);
     os.str("");
     raii_a.reset();
@@ -337,10 +319,10 @@ TEST(SimpleRAII_reset2, void)
   auto const tref2 = "Bye2";
   std::ostringstream os(std::ios_base::ate);
   {
-    SimpleRAII<void> raii_a(stVoid(os, sref), stVoid(os, tref1));
+    SimpleRAII<void> raii_a(SR_STVOID(os, sref), SR_STVOID(os, tref1));
     ASSERT_EQ(os.str(), sref);
     os.str("");
-    raii_a.reset(stVoid(os, tref2));
+    raii_a.reset(SR_STVOID(os, tref2));
     ASSERT_EQ(os.str(), tref1);
     os.str("");
   }

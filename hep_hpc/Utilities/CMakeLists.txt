@@ -19,3 +19,7 @@ install(TARGETS hep_hpc_Utilities
 install(FILES ${headers}
   DESTINATION "include/hep_hpc/Utilities"
 )
+
+install(FILES detail/index_sequence.hpp
+  DESTINATION "include/hep_hpc/Utilities/detail"
+)
