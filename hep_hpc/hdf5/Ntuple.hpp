@@ -48,8 +48,9 @@
 //   support). However, see the notes for insert() below.
 //
 // N.B. We recommend using hep_hpc::hdf5::make_ntuple (see
-// hep_hpc/hdf5/make_ntuple.hpp) with hep_hpc::hdf5::make_column (see
-// hep_hpc/hdf5/make_column.hpp) for all but the very simplest of
+// hep_hpc/hdf5/make_ntuple.hpp) with hep_hpc::hdf5::make_column() (see
+// hep_hpc/hdf5/make_column.hpp) and/or
+// hep_hpc::hdf5::make_scalar_column() for all but the very simplest of
 // ntuples. Reviewing the interface below, however, remains useful for
 // understanding the features of the Ntuple class so created and how it
 // should be used.

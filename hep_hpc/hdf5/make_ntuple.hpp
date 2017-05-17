@@ -4,7 +4,8 @@
 // hep_hpc::hdf5::make_ntuple()
 //
 // Along with its supporting class, hep_hpc::hdf5::NtupleInitializer
-// (described below), and hep_hpc::hdf5::make_column() (see
+// (described below), and hep_hpc::hdf5::make_column() /
+// hep_hpc::hdf5::make_scalar_column() (see
 // hep_hpc/hdf5/make_column.hpp) this function template is intended to
 // simplify the construction of an hep_hpc::hdf5::Ntuple.
 //
@@ -21,7 +22,8 @@
 // where {...} is a brace-enclosed-initializer-list of constructor
 // arguments to NtupleInitializer (see below) specifying general Ntuple
 // attributes, and <column-specifier> is a Column<<type>, <ndims>>
-// specified either directly or by use of hep_hpc::hdf5::make_column().
+// specified either directly or by use of
+// hep_hpc::hdf5::make_{,scalar_}column().
 //
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::hdf5::NtupleInitializer

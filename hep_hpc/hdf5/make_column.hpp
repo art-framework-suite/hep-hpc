@@ -2,8 +2,9 @@
 #define hep_hpc_hdf5_make_column_hpp
 ////////////////////////////////////////////////////////////////////////
 // hep_hpc::hdf5::make_column()
+// hep_hpc::hdf5::make_scalar_column()
 //
-// An overload set of function templates to facilitate the in-place
+// A pair of function templates to facilitate the in-place
 // construction of column description entities (Column) required to
 // describe the structure of an hep_hpc::hdf5::Ntuple. Recommended for
 // use, especially in conjunction with hep_hpc::hdf5::make_ntuple() as
@@ -22,10 +23,10 @@
 //
 // template <typename T>
 // Column<T, NDIMS>
-// make_column(std::string name,
-//             PropertyList linkCreationProperties,
-//             PropertyList datasetCreationProperties,
-//             PropertyList datasetAccessProperties)
+// make_scalar_column(std::string name,
+//                    PropertyList linkCreationProperties,
+//                    PropertyList datasetCreationProperties,
+//                    PropertyList datasetAccessProperties)
 //
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/Column.hpp"
@@ -42,10 +43,10 @@ namespace hep_hpc {
 
     template <typename T>
     Column<T, 1ull>
-    make_column(std::string name,
-                PropertyList linkCreationProperties = {},
-                PropertyList datasetCreationProperties = {},
-                PropertyList datasetAccessProperties = {});
+    make_scalar_column(std::string name,
+                       PropertyList linkCreationProperties = {},
+                       PropertyList datasetCreationProperties = {},
+                       PropertyList datasetAccessProperties = {});
   }
 }
 
@@ -69,10 +70,10 @@ hep_hpc::hdf5::make_column(std::string name,
 template <typename T>
 inline
 hep_hpc::hdf5::Column<T, 1ull>
-hep_hpc::hdf5::make_column(std::string name,
-                           PropertyList linkCreationProperties,
-                           PropertyList datasetCreationProperties,
-                           PropertyList datasetAccessProperties)
+hep_hpc::hdf5::make_scalar_column(std::string name,
+                                  PropertyList linkCreationProperties,
+                                  PropertyList datasetCreationProperties,
+                                  PropertyList datasetAccessProperties)
 {
   hep_hpc::hdf5::Column<T, 1ull>
     result(std::move(name), 1ull);

@@ -8,9 +8,11 @@
 //   specified at construction time; the rank is specified at compile
 //   time.
 //
-//   Consider using hep_hpc::hdf5::make_column() for all but the
-//   simplest columns (see hep_hpc/hdf5/make_column.hpp), and especially
-//   in conjunction with make_ntuple (see hep_hpc/hdf5/make_ntuple.hpp).
+//   Consider using hep_hpc::hdf5::make_column() or
+//   hep_hpc::hdf5::make_scalar_column() (see
+//   hep_hpc/hdf5/make_column.hpp) for all but the simplest columns, and
+//   especially in conjunction with make_ntuple (see
+//   hep_hpc/hdf5/make_ntuple.hpp).
 //
 //   Every supported T requires a specialization.
 //
