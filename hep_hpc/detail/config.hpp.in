@@ -1,0 +1,4 @@
+#ifndef hep_hpc_detail_config_hpp_in
+#define hep_hpc_detail_config_hpp_in
+#cmakedefine HEP_HPC_USE_BOOST_INDEX_SEQUENCE
+#endif /* hep_hpc_detail_config_hpp_in */

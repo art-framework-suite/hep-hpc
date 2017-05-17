@@ -14,7 +14,7 @@
 
 namespace hep_hpc {
   namespace hdf5 {
-    using HID_t = detail::DefaultedSimpleType<hid_t, -1ll>;
+    using HID_t = hep_hpc::detail::DefaultedSimpleType<hid_t, -1ll>;
   }
 }
 

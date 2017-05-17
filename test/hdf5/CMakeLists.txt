@@ -61,6 +61,10 @@ add_executable(Ntuple_03_t Ntuple_03_t.cpp)
 add_test(NAME Ntuple_03_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_03_t)
 target_link_libraries(Ntuple_03_t hep_hpc_hdf5)
 
+add_executable(Ntuple_04_t Ntuple_04_t.cpp)
+add_test(NAME Ntuple_04_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_04_t)
+target_link_libraries(Ntuple_04_t hep_hpc_hdf5)
+
 add_executable(Ntuple_t Ntuple_t.cpp)
 add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)
 target_link_libraries(Ntuple_t hep_hpc_hdf5)

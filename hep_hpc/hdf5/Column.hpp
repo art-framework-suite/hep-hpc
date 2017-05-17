@@ -8,6 +8,10 @@
 //   specified at construction time; the rank is specified at compile
 //   time.
 //
+//   Consider using hep_hpc::hdf5::make_column() for all but the
+//   simplest columns (see hep_hpc/hdf5/make_column.hpp), and especially
+//   in conjunction with make_ntuple (see hep_hpc/hdf5/make_ntuple.hpp).
+//
 //   Every supported T requires a specialization.
 //
 ////////////////////////////////////
@@ -27,27 +31,6 @@
 //   * IEEE_STD_LE
 //
 //   * IEEE_STD_BE
-//
-////////////////////////////////////
-// template <typename T, size_t NDIMS = 1>
-// <column-type>
-// make_column(std::string name,
-//             <dimensions> dims
-//             PropertyList linkCreationProperties,
-//             PropertyList datasetCreationProperties,
-//             PropertyList datasetAccessProperties)
-//
-// template <typename T>
-// <column-type>
-// make_column(std::string name,
-//             PropertyList linkCreationProperties,
-//             PropertyList datasetCreationProperties,
-//             PropertyList datasetAccessProperties)
-//
-//   Helper function to facilitate the creation of columns with
-//   particular HDF5 properties. The second signature is specifically
-//   for columns of scalars, where specifying the dimensions is
-//   unnecessary.
 //
 ////////////////////////////////////
 // hep_hpc::hdf5::Column details.
@@ -214,6 +197,8 @@ namespace hep_hpc {
       template <>
       class column_base<1ull> {
     public:
+        using dims_t = std::size_t;
+
         column_base(std::string colName, hsize_t dim = 1ull) : name_{colName}, dim_{dim}
           { }
         column_base(char const * colName, hsize_t dim = 1ull) : name_{colName}, dim_{dim}
@@ -507,6 +492,20 @@ namespace hep_hpc {
       template <typename T, size_t NDIMS = 1ull>
       struct permissive_column : Column<T, NDIMS> {
         using Column<T, NDIMS>::Column;
+
+        // Extra constructors to allow for the construction of
+        // permissive_column directly from Column.
+        permissive_column(Column<T, NDIMS> && column)
+          :
+          Column<T, NDIMS>::Column(std::move(column))
+          {
+          }
+        permissive_column(Column<T, NDIMS> const & column)
+          :
+          Column<T, NDIMS>::Column(column)
+          {
+          }
+
         using element_type = T;
       };
 
@@ -522,57 +521,9 @@ namespace hep_hpc {
 
     } // Namespace detail.
 
-    template <typename T, size_t NDIMS = 1>
-    detail::permissive_column<T, NDIMS>
-    make_column(std::string name,
-                typename detail::permissive_column<T, NDIMS>::dims_t const & dims,
-                PropertyList linkCreationProperties = {},
-                PropertyList datasetCreationProperties = {},
-                PropertyList datasetAccessProperties = {});
-
-    template <typename T>
-    detail::permissive_column<T, 1ull>
-    make_column(std::string name,
-                PropertyList linkCreationProperties = {},
-                PropertyList datasetCreationProperties = {},
-                PropertyList datasetAccessProperties = {});
-
   } // Namespace hdf5.
 
 } // Namespace hep_hpc.
-
-template <typename T, size_t NDIMS>
-inline
-hep_hpc::hdf5::detail::permissive_column<T, NDIMS>
-hep_hpc::hdf5::make_column(std::string name,
-                           typename detail::permissive_column<T, NDIMS>::dims_t const & dims,
-                           PropertyList linkCreationProperties,
-                           PropertyList datasetCreationProperties,
-                           PropertyList datasetAccessProperties)
-{
-  hep_hpc::hdf5::detail::permissive_column<T, NDIMS>
-    result(std::move(name), std::move(dims));
-  result.setLinkCreationProperties(std::move(linkCreationProperties));
-  result.setDatasetCreationProperties(std::move(datasetCreationProperties));
-  result.setDatasetAccessProperties(std::move(datasetAccessProperties));
-  return result;
-}
-
-template <typename T>
-inline
-hep_hpc::hdf5::detail::permissive_column<T, 1ull>
-hep_hpc::hdf5::make_column(std::string name,
-                           PropertyList linkCreationProperties,
-                           PropertyList datasetCreationProperties,
-                           PropertyList datasetAccessProperties)
-{
-  hep_hpc::hdf5::detail::permissive_column<T, 1ull>
-    result(std::move(name), 1ull);
-  result.setLinkCreationProperties(std::move(linkCreationProperties));
-  result.setDatasetCreationProperties(std::move(datasetCreationProperties));
-  result.setDatasetAccessProperties(std::move(datasetAccessProperties));
-  return result;
-}
 
 #endif /* hep_hpc_hdf5_Column_hpp */
 

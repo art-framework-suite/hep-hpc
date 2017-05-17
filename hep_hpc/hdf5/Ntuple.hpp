@@ -16,6 +16,20 @@
 // * Insertions are row-wise, storage is column-wise.
 //
 ////////////////////////////////////
+// Defined types
+//
+// column_info_t
+//
+//   This type may be considered to be defined as an
+//   std::tuple<<column-type>...>, where <column-type> is determined by
+//   the template arguments to Ntuple.
+//
+//   column_info_t is used to describe all of the column information for
+//   the Ntuple. It enables the use of a brace-enclosed initializer to
+//   describe the column information in the constructor of Ntuple (see
+//   below).
+//
+////////////////////////////////////
 // Interface
 //
 // Template arguments should be specified as the data element type
@@ -33,20 +47,28 @@
 // * std::string, char const * or char * (variable-length string
 //   support). However, see the notes for insert() below.
 //
+// N.B. We recommend using hep_hpc::hdf5::make_ntuple (see
+// hep_hpc/hdf5/make_ntuple.hpp) with hep_hpc::hdf5::make_column (see
+// hep_hpc/hdf5/make_column.hpp) for all but the very simplest of
+// ntuples. Reviewing the interface below, however, remains useful for
+// understanding the features of the Ntuple class so created and how it
+// should be used.
+//
 ////////////////////////////////////
+// Constructors
 //
 // Ntuple<Args...>(hid_t file,
 //                 std::string tablename,
 //                 column_info_t columns,
 //                 [TranslationMode mode,]
-//                 bool overwriteContents,
-//                 std::size_t bufsize); // or ...
+//                 bool overwriteContents = <default>,
+//                 std::size_t bufsize = <default>);
 //
 // Ntuple<Args...>(std::string filename,
 //                 std::string tablename,
 //                 column_info_t columns,
 //                 [TranslationMode mode,]
-//                 std::size_t bufsize);
+//                 std::size_t bufsize = <default>);
 //
 //   Create an Ntuple tied to an HDF5 file with column types specified
 //   by Args and column information specified by columns. A valid
@@ -87,26 +109,35 @@
 //   Insertion is row-wise; storage is column-wise.
 //
 ////////////////////////////////////
+// ~Ntuple() noexcept
 //
+//   This nontrivial destructor will ensure that all existing buffered
+//   data have been flushed to the HDF5, and the file and all associated
+//   HDF5 entities have been closed
+//
+////////////////////////////////////
 // std::string name() const;
 //
 //   Return the name of the group containing the Ntuple data.
 //
 ////////////////////////////////////
-//
 // Group const & group() const;
 //
 //   Give access to the HDF5 group encapsulating the datasets for this
 //   Ntuple.
 //
 ////////////////////////////////////
+// static constexpr std::size_t nColumns();
 //
+//    Static function returning the number of columns defined for the
+//    ntuple.
+//
+////////////////////////////////////
 // std::array<Dataset, ncolumns()> const & datasets() const;
 //
 //   Give access to the HDF5 datasets representing the data in the file.
 //
 ////////////////////////////////////
-//
 // template <typename T>
 // void insert(T...);
 //
@@ -171,12 +202,7 @@ namespace hep_hpc {
 template <typename... Args>
 class hep_hpc::hdf5::Ntuple {
 public:
-  static constexpr std::size_t nColumns() { return sizeof...(Args); }
-
   using column_info_t = std::tuple<detail::permissive_column<Args>...>;
-
-  template <typename T>
-  using Element_t = typename detail::permissive_column<T>::element_type;
 
   Ntuple(hid_t file,
          std::string tablename,
@@ -207,18 +233,26 @@ public:
   File const & file() const;
   std::string const & name() const;
   Group const &  group() const;
+  static constexpr std::size_t nColumns() { return sizeof...(Args); }
   std::array<Dataset, nColumns()> const & datasets() const;
 
   template <typename... T>
   void insert(T && ...);
   void flush();
 
+  // Enable moving
+  Ntuple(Ntuple &&) = default;
+  Ntuple & operator=(Ntuple &&) = default;
+
   // Disable copying
   Ntuple(Ntuple const&) = delete;
-  Ntuple& operator=(Ntuple const&) = delete;
+  Ntuple & operator=(Ntuple const&) = delete;
 
 private:
   static_assert(nColumns() > 0, "Ntuple with zero types is meaningless");
+
+  template <typename T>
+  using Element_t = typename detail::permissive_column<T>::element_type;
 
   static constexpr hep_hpc::detail::make_index_sequence<nColumns()> iSequence()
     { return hep_hpc::detail::make_index_sequence<nColumns()>(); }
@@ -242,7 +276,7 @@ private:
   File file_;
   std::string name_;
   std::array<size_t, nColumns()> max_;
-  std::recursive_mutex mutex_ {};
+  std::unique_ptr<std::recursive_mutex> mutex_ {};
   detail::NtupleDataStructure<Args...> dd_;
 };
 
@@ -362,6 +396,7 @@ hep_hpc::hdf5::Ntuple<Args...>::Ntuple(File file,
   file_{NtupleDetail::verifiedFile(std::move(file))},
   name_{std::move(name)},
   max_{(std::get<I>(columns).elementSize() * bufsize)...},
+  mutex_{new std::recursive_mutex},
   dd_(file_, name_, mode, overwriteContents, std::move(std::get<I>(columns))...)
 {
   // Reserve buffer space.
@@ -421,7 +456,7 @@ hep_hpc::hdf5::Ntuple<Args...>::insert(T && ... args)
                 "Number of arguments to insert() must match nColumns().");
 
   using std::get;
-  std::lock_guard<decltype(mutex_)> lock {mutex_};
+  std::lock_guard<decltype(*mutex_)> lock {*mutex_};
   if (get<0>(buffers_).size() == max_[0]) {
     flush();
   }
@@ -434,7 +469,7 @@ int
 hep_hpc::hdf5::Ntuple<Args...>::flush_(hep_hpc::detail::index_sequence<I...>)
 {
   using std::get;
-  std::lock_guard<decltype(mutex_)> lock {mutex_};
+  std::lock_guard<decltype(*mutex_)> lock {*mutex_};
   auto const results =
     {(herr_t) 0, NtupleDetail::flush_one(get<I>(buffers_),
                                          get<I>(dd_.dsets),

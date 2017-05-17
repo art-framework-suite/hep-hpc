@@ -1,5 +1,5 @@
-#include "hep_hpc/hdf5/Ntuple.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
+#include "hep_hpc/hdf5/make_ntuple.hpp"
 
 using namespace hep_hpc::hdf5;
 
@@ -9,20 +9,14 @@ using namespace hep_hpc::hdf5;
 int main()
 {
   ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
-  using ntuple_t = Ntuple<int, double, Column<int, 2>, char const *, std::string, fstring_t<6> >;
-  // Type specifier for argument #3 below (ntuple_t::column_info_t)
-  // necessary for clang (defect?) but not g++.
-  ntuple_t
-    data("test-ntuple.hdf5", "g1",
-         ntuple_t::column_info_t {{"A", 2},
-             "B",
-             {"C", {2, 3}},
-             {"D", 2},
-             {"E", 2},
-               make_column<fstring_t<6> >("F",
-                 {},
-                 PropertyList{H5P_DATASET_CREATE}(&H5Pset_deflate, 7u))},
-         2);
+  auto data = make_ntuple({"test-ntuple.hdf5", "g1", 2},
+                          make_column<int>("A", 2),
+                          make_column<double>("B"),
+                          make_column<int, 2>("C", {2, 3}),
+                          make_column<char const *>("D", 2),
+                          make_column<std::string>("E", 2),
+                          make_column<fstring_t<6>>("F", PropertyList{},
+                                                    PropertyList{H5P_DATASET_CREATE}(&H5Pset_deflate, 7u)));
   int i1data[] = { 1, 1, 2, 4, 3, 6, 5, 10, 7, 14, 11, 22, 13, 26, 17, 34, 23, 46};
   double d1data[] = { 1.01, 2.02, 3.03, 5.05, 7.07, 11.11, 13.13, 19.17, 23.23 };
   int i2data[] = { 0,   1,  2,  5,  6,  7,

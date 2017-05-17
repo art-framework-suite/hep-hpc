@@ -21,7 +21,9 @@ set (headers
   Ntuple.hpp
   PropertyList.hpp
   Resource.hpp
-  errorHandling.hpp  
+  errorHandling.hpp
+  make_column.hpp
+  make_ntuple.hpp
   )
 
 add_library(hep_hpc_hdf5 SHARED ${source_files})
