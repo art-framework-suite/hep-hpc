@@ -16,7 +16,7 @@ throwMPIError(std::string const & funcString, int status)
   (void) MPI_Error_class(status, &eClass);
   (void) MPI_Error_string(eClass, eClassString, &len);
   (void) MPI_Error_string(status, eString, &len);
-  throw std::runtime_error("MPI Error: " +
+  throw std::runtime_error(std::string("MPI Error: ") +
                            eString + "(" +
                            to_string(status) +
                            ") of class " +

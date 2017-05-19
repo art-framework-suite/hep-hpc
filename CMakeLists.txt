@@ -63,7 +63,9 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${EXECUTABLE_OUTPUT_P
   COMMAND ${CMAKE_COMMAND} -E make_directory ${LIBRARY_OUTPUT_PATH})
 
 # MPI
-if (WANT_MPI) # Set at CMake invocation time.
+if (WANT_MPI)
+  find_package(MPI REQUIRED)
+else()
   find_package(MPI QUIET)
 endif()
 
