@@ -135,7 +135,7 @@ Use your OS' package manager wherever possible.
 
 N.B. If you wish to update gtest with respect to Google, use a modern git to do the following:  
     ```
-    git submodule update --remote --merge
+    git submodule update --remote --merge gtest
     ```  
     This will cause the index representing the gtest "head" to be
     updated in your local repository. This can be committed if you wish.
