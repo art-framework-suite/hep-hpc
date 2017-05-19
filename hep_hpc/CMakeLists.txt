@@ -2,7 +2,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/detail/config.hpp.in
   ${CMAKE_CURRENT_BINARY_DIR}/detail/config.hpp
   @ONLY)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/detail/config.h
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/detail/config.hpp
   DESTINATION "include/hep_hpc/detail"
   )
 
