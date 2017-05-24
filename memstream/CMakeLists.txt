@@ -4,7 +4,7 @@ add_library(memstream SHARED memstream.c)
 # Make sure that asserts are evaluated in test.c, and we are permissive
 # about known warnings.
 
-if (CMAKE_CXX_COMPILER MATCHES clang)
+if (CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   set_source_files_properties(test.c PROPERTIES COMPILE_FLAGS
     "-UNDEBUG -Wno-error=sign-compare -Wno-error=format-pedantic")
 else()
