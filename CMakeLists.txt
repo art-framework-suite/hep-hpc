@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
 
-project(hdffilestructurestudy)
+project(hep_hpc)
 
-set(HDFFILESTRUCTURESTUDY_VERSION 0.1.0)
+set(HEP_HPC_VERSION 0.03.00)
 
 if (POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW) # @rpath on OS X.
@@ -12,7 +12,6 @@ set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules
   ${CMAKE_MODULE_PATH}
   )
-
 
 # Ensure out-of-source build.
 include(EnsureOutOfSourceBuild)
@@ -32,9 +31,9 @@ set(CMAKE_C_STANDARD_REQUIRED TRUE)
 
 if (CMAKE_VERSION VERSION_LESS 3.1)
   if (${CMAKE_CXX_STANDARD} EQUAL 17)
-    set(cxx_standard -std=gnu1z)
+    set(cxx_standard -std=gnu++1z)
   else()
-    set(cxx_standard -std=${CMAKE_CXX_STANDARD})
+    set(cxx_standard -std=gnu++${CMAKE_CXX_STANDARD})
   endif()
   set(c_standard -std=gnu${CMAKE_C_STANDARD}) # For _POSIX_C_SOURCE >= 200809L
 endif()
@@ -87,6 +86,10 @@ if (CMAKE_CXX_STANDARD EQUAL 11)
   include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
+# Configuration variables.
+include(SetConfigVariables)
+set_config_variables(${CMAKE_PROJECT_NAME} ${HEP_HPC_VERSION})
+
 # Testing facilities
 include (CTest)
 
@@ -95,6 +98,7 @@ add_subdirectory(memstream)
 add_subdirectory(hep_hpc)
 add_subdirectory(gtest EXCLUDE_FROM_ALL)
 add_subdirectory(test)
+add_subdirectory(ups)
 #add_subdirectory(doc)
 
 install(FILES LICENSE README.md

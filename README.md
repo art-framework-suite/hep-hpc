@@ -110,7 +110,8 @@ Use your OS' package manager wherever possible.
     -DCMAKE_INSTALL_PREFIX=<install-area> \
     [-DCMAKE_CXX_STANDARD=<11|14|17>] \
     [-DWANT_MPI=1] \
-      <path-to-repository-top-dir>
+    [-DWANT_UPS=1] \
+    <path-to-repository-top-dir>
     ```  
     The `CMakeLists.txt` file includes a safeguard against invoking
     CMake from within the source directory, but you may still have to
@@ -118,7 +119,7 @@ Use your OS' package manager wherever possible.
     appropriately to activate MPI, if it is available and desired. Note
     that your own code may still use MPI even if `WANT_MPI` is not set,
     but the (as yet, very basic) MPI facilities of this package will not
-    be available.
+    be available. Define WANT_UPS if you wish to build a UPS-capable package.
     
 1. Build the code:   
     ```
