@@ -106,6 +106,8 @@ namespace hep_hpc {
     template<typename T, size_t NDIMS = 1>
     struct Column;
 
+    constexpr size_t DEFAULT_CHUNKING = 128ull;
+
     template <size_t SZ>
     using fstring_t = std::array<char, SZ>;
 

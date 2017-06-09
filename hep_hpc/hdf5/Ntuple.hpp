@@ -273,7 +273,7 @@ private:
   int flush_(hep_hpc::detail::index_sequence<I...>);
 
   std::tuple<std::vector<Element_t<Args> >...> buffers_;
-    
+
   File file_;
   std::string name_;
   std::array<size_t, nColumns()> max_;

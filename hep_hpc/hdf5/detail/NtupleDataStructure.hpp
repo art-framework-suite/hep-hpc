@@ -111,7 +111,7 @@ setDefaultChunking(PropertyList & cprops,
                    dims_t<NDIMS> const & dims)
 {
   auto chunking = dims;
-  chunking[0] = 128ull;
+  chunking[0] = DEFAULT_CHUNKING;
   // Set chunking.
   return ErrorController::call(&H5Pset_chunk, cprops, chunking.size(), chunking.data());
 }
