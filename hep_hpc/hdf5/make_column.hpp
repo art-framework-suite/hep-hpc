@@ -4,31 +4,29 @@
 // hep_hpc::hdf5::make_column()
 // hep_hpc::hdf5::make_scalar_column()
 //
-// A pair of function templates to facilitate the in-place
-// construction of column description entities (Column) required to
-// describe the structure of an hep_hpc::hdf5::Ntuple. Recommended for
-// use, especially in conjunction with hep_hpc::hdf5::make_ntuple() as
+// A pair of function templates to facilitate the in-place construction
+// of column description entities (Column) required to describe the
+// structure of an hep_hpc::hdf5::Ntuple. Recommended for use,
+// especially in conjunction with hep_hpc::hdf5::make_ntuple() as
 // described in hep_hpc/hdf5/make_ntuple.hpp. Particularly useful for
 // the creation of columns with particular HDF5 properties. The second
 // signature is specifically for columns of scalars, where specifying
-// the dimensions is unnecessary.
+// the dimensions is unnecessary. Note that in either case, the number and order of
+// specification of the properties (link creation, dataset creation,
+// dataset access)
 //
 // template <typename T, size_t NDIMS = 1>
 // Column<T, NDIMS>
 // make_column(std::string name,
 //             <dimensions> dims,
 //             [size_t elementsPerChunk,]
-//             PropertyList linkCreationProperties = {},
-//             PropertyList datasetCreationProperties = {},
-//             PropertyList datasetAccessProperties = {})
+//             std::initializer_list<PropertyList> props = {})
 //
 // template <typename T>
 // Column<T, NDIMS>
 // make_scalar_column(std::string name,
 //                    [size_t elementsPerChunk,]
-//                    PropertyList linkCreationProperties = {},
-//                    PropertyList datasetCreationProperties = {},
-//                    PropertyList datasetAccessProperties = {})
+//                    std::initializer_list<PropertyList> props = {})
 //
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/Column.hpp"
@@ -42,33 +40,33 @@ namespace hep_hpc {
     Column<T, NDIMS>
     make_column(std::string name,
                 typename Column<T, NDIMS>::dims_t dims,
-                PropertyList linkCreationProperties = {},
-                PropertyList datasetCreationProperties = {},
-                PropertyList datasetAccessProperties = {});
+                std::initializer_list<PropertyList> props = {});
 
     template <typename T, size_t NDIMS = 1>
     Column<T, NDIMS>
     make_column(std::string name,
                 typename Column<T, NDIMS>::dims_t dims,
                 size_t elementsPerChunk,
-                PropertyList linkCreationProperties = {},
-                PropertyList datasetCreationProperties = {},
-                PropertyList datasetAccessProperties = {});
+                std::initializer_list<PropertyList> props = {});
 
     template <typename T>
     Column<T, 1ull>
     make_scalar_column(std::string name,
-                       PropertyList linkCreationProperties = {},
-                       PropertyList datasetCreationProperties = {},
-                       PropertyList datasetAccessProperties = {});
+                       std::initializer_list<PropertyList> props = {});
 
     template <typename T>
     Column<T, 1ull>
     make_scalar_column(std::string name,
                        size_t elementsPerChunk,
-                       PropertyList linkCreationProperties = {},
-                       PropertyList datasetCreationProperties = {},
-                       PropertyList datasetAccessProperties = {});
+                       std::initializer_list<PropertyList> props = {});
+
+    namespace detail {
+      template <typename COL>
+      void setColumnProperties(COL & col,
+                               std::initializer_list<PropertyList> props,
+                               std::size_t ndims = 0ull,
+                               hsize_t * chunking = nullptr);
+    }
   }
 }
 
@@ -77,15 +75,10 @@ inline
 hep_hpc::hdf5::Column<T, NDIMS>
 hep_hpc::hdf5::make_column(std::string name,
                            typename Column<T, NDIMS>::dims_t dims,
-                           PropertyList linkCreationProperties,
-                           PropertyList datasetCreationProperties,
-                           PropertyList datasetAccessProperties)
+                           std::initializer_list<PropertyList> props)
 {
-  hep_hpc::hdf5::Column<T, NDIMS>
-    result(std::move(name), std::move(dims));
-  result.setLinkCreationProperties(std::move(linkCreationProperties));
-  result.setDatasetCreationProperties(std::move(datasetCreationProperties));
-  result.setDatasetAccessProperties(std::move(datasetAccessProperties));
+  hep_hpc::hdf5::Column<T, NDIMS> result(std::move(name), std::move(dims));
+  detail::setColumnProperties(result, std::move(props));
   return result;
 }
 
@@ -119,37 +112,25 @@ hep_hpc::hdf5::Column<T, NDIMS>
 hep_hpc::hdf5::make_column(std::string name,
                            typename Column<T, NDIMS>::dims_t dims,
                            size_t const elementsPerChunk,
-                           PropertyList linkCreationProperties,
-                           PropertyList datasetCreationProperties,
-                           PropertyList datasetAccessProperties)
+                           std::initializer_list<PropertyList> props)
 {
   detail::dims_t<NDIMS + 1ull> chunking;
   chunking[0] = elementsPerChunk;
   detail::fill_dims(dims, std::begin(chunking) + 1ull);
-  (void) ErrorController::call(&H5Pset_chunk,
-                               datasetCreationProperties,
-                               chunking.size(),
-                               chunking.data());
-  return make_column<T, NDIMS>(std::move(name),
-                               std::move(dims),
-                               std::move(linkCreationProperties),
-                               std::move(datasetCreationProperties),
-                               std::move(datasetAccessProperties));
+  hep_hpc::hdf5::Column<T, NDIMS> result(std::move(name), std::move(dims));
+  detail::setColumnProperties(result, std::move(props),
+                              chunking.size(), chunking.data());
+  return result;
 }
 
 template <typename T>
 inline
 hep_hpc::hdf5::Column<T, 1ull>
 hep_hpc::hdf5::make_scalar_column(std::string name,
-                                  PropertyList linkCreationProperties,
-                                  PropertyList datasetCreationProperties,
-                                  PropertyList datasetAccessProperties)
+                                  std::initializer_list<PropertyList> props)
 {
-  hep_hpc::hdf5::Column<T, 1ull>
-    result(std::move(name), 1ull);
-  result.setLinkCreationProperties(std::move(linkCreationProperties));
-  result.setDatasetCreationProperties(std::move(datasetCreationProperties));
-  result.setDatasetAccessProperties(std::move(datasetAccessProperties));
+  hep_hpc::hdf5::Column<T, 1ull> result(std::move(name), 1ull);
+  detail::setColumnProperties(result, std::move(props));
   return result;
 }
 
@@ -158,19 +139,73 @@ inline
 hep_hpc::hdf5::Column<T, 1ull>
 hep_hpc::hdf5::make_scalar_column(std::string name,
                                   size_t const elementsPerChunk,
-                                  PropertyList linkCreationProperties,
-                                  PropertyList datasetCreationProperties,
-                                  PropertyList datasetAccessProperties)
+                                  std::initializer_list<PropertyList> props)
 {
   detail::dims_t<2ull> chunking {elementsPerChunk, 1ull};
-  (void) ErrorController::call(&H5Pset_chunk,
-                               datasetCreationProperties,
-                               chunking.size(),
-                               chunking.data());
-  return make_scalar_column<T>(std::move(name),
-                               std::move(linkCreationProperties),
-                               std::move(datasetCreationProperties),
-                               std::move(datasetAccessProperties));
+  hep_hpc::hdf5::Column<T, 1ull> result(std::move(name), 1ull);
+  detail::setColumnProperties(result, std::move(props),
+                              chunking.size(), chunking.data());
+  return result;
+}
+
+template <typename COL>
+void
+hep_hpc::hdf5::detail::
+setColumnProperties(COL & col,
+                    std::initializer_list<PropertyList> const props,
+                    std::size_t ndims,
+                    hsize_t * chunking)
+{
+  using namespace std::string_literals;
+  static auto const throwDup =
+    [](std::string const & propertyClass) [[noreturn]] {
+    throw std::runtime_error("setColumnProperties: props contains multiple properties of class "s + propertyClass);
+  };
+  if (props.size() == 0ull) {
+    return; // Nothing to do.
+  }
+  PropertyList lcp, dcp, dap;
+  for (auto && prop : props) {
+    if (prop.isClass(H5P_LINK_CREATE)) {
+      if (!lcp) {
+        lcp = std::move(prop);
+      } else {
+        throwDup("H5P_LINK_CREATE"s);
+      }
+    } else if (prop.isClass(H5P_DATASET_CREATE)) {
+      if (!dcp) {
+        dcp = std::move(prop);
+      } else {
+        throwDup("H5P_DATASET_CREATE"s);
+      }
+    } else if (prop.isClass(H5P_DATASET_ACCESS)) {
+      if (dap) {
+        dap = std::move(prop);
+      } else {
+        throwDup("H5P_DATASET_ACCESS"s);
+      }
+    } else {
+      throw std::logic_error("setColumnProperties received a property list of unrecognized class.");
+    }
+  }
+  if (lcp) {
+    col.setLinkCreationProperties(std::move(lcp));
+  }
+  if (ndims > 0ull) {
+    if (!dcp) {
+      dcp = PropertyList(H5P_DATASET_CREATE);
+    }
+    (void) ErrorController::call(&H5Pset_chunk,
+                                 dcp,
+                                 ndims,
+                                 chunking);
+  }
+  if (dcp) {
+    col.setDatasetCreationProperties(std::move(dcp));
+  }
+  if (dap) {
+    col.setDatasetAccessProperties(std::move(dap));
+  }
 }
 
 #endif /* hep_hpc_hdf5_make_column_hpp */
