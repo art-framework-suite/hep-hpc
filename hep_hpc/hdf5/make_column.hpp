@@ -156,10 +156,9 @@ setColumnProperties(COL & col,
                     std::size_t ndims,
                     hsize_t * chunking)
 {
-  using namespace std::string_literals;
   static auto const throwDup =
-    [](std::string const & propertyClass) [[noreturn]] {
-    throw std::runtime_error("setColumnProperties: props contains multiple properties of class "s + propertyClass);
+    [](std::string const & propertyClass) {
+    throw std::runtime_error(std::string("setColumnProperties: props contains multiple properties of class ") + propertyClass);
   };
   if (props.size() == 0ull) {
     return; // Nothing to do.
@@ -170,19 +169,19 @@ setColumnProperties(COL & col,
       if (!lcp) {
         lcp = std::move(prop);
       } else {
-        throwDup("H5P_LINK_CREATE"s);
+        throwDup("H5P_LINK_CREATE");
       }
     } else if (prop.isClass(H5P_DATASET_CREATE)) {
       if (!dcp) {
         dcp = std::move(prop);
       } else {
-        throwDup("H5P_DATASET_CREATE"s);
+        throwDup("H5P_DATASET_CREATE");
       }
     } else if (prop.isClass(H5P_DATASET_ACCESS)) {
       if (dap) {
         dap = std::move(prop);
       } else {
-        throwDup("H5P_DATASET_ACCESS"s);
+        throwDup("H5P_DATASET_ACCESS");
       }
     } else {
       throw std::logic_error("setColumnProperties received a property list of unrecognized class.");
