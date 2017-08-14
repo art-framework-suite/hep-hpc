@@ -106,7 +106,7 @@ private:
   std::string filename_{};
   std::string tablename_{};
   TranslationMode mode_{TranslationMode::NONE};
-  bool overwriteContents_{false};
+  NtupleOverwriteFlag overwriteContents_{NtupleOverwriteFlag::NO};
   std::size_t bufsize_{0ull};
 };
 
@@ -126,7 +126,7 @@ NtupleInitializer(hid_t file, std::string tablename,
   cflag_(1),
   file_(file),
   tablename_(std::move(tablename)),
-  overwriteContents_(overwriteContents)
+  overwriteContents_(static_cast<NtupleOverwriteFlag>(overwriteContents))
 {
 }
 
@@ -138,7 +138,7 @@ NtupleInitializer(hid_t file, std::string tablename,
   cflag_(2),
   file_(file),
   tablename_(std::move(tablename)),
-  overwriteContents_(overwriteContents),
+  overwriteContents_(static_cast<NtupleOverwriteFlag>(overwriteContents)),
   bufsize_(bufsize)
 {
 }
@@ -163,7 +163,7 @@ NtupleInitializer(hid_t file, std::string tablename,
   file_(file),
   tablename_(std::move(tablename)),
   mode_(mode),
-  overwriteContents_(overwriteContents)
+  overwriteContents_(static_cast<NtupleOverwriteFlag>(overwriteContents))
 {
 }
 
@@ -177,7 +177,7 @@ NtupleInitializer(hid_t file, std::string tablename,
   file_(file),
   tablename_(std::move(tablename)),
   mode_(mode),
-  overwriteContents_(overwriteContents),
+  overwriteContents_(static_cast<NtupleOverwriteFlag>(overwriteContents)),
   bufsize_(bufsize)
 {
 }
