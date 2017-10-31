@@ -4,6 +4,33 @@ Product = hep_hpc
 Group:
 
 Flavor=ANY
+Qualifiers=e9:mpich:prof
+
+  Action=DefineFQ
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e9-mpich-prof)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_10_1a -q+e9:+mpich:+prof)
+
+Flavor=ANY
+Qualifiers=e9:mvapich2:prof
+
+  Action=DefineFQ
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e9-mvapich2-prof)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_10_1a -q+e9:+mvapich2:+prof)
+
+Flavor=ANY
+Qualifiers=e9:prof
+
+  Action=DefineFQ
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e9-prof)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_10_1a -q+e9)
+
+Flavor=ANY
 Qualifiers=e10:mpich:prof
 
   Action=DefineFQ
