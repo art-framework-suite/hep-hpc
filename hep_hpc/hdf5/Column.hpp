@@ -162,7 +162,7 @@ namespace hep_hpc {
         column_base(std::string colName, dims_t dims)
           :
           name_{std::move(colName)},
-          dims_{dims},
+          dims_(dims),
           elementSize_{std::accumulate(std::begin(dims_),
                                        std::end(dims_),
                                        1ull,

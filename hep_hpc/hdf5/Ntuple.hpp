@@ -176,6 +176,7 @@
 //   Flush the currently-buffered data to file.
 //
 ////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/Utilities/detail/compiler_macros.hpp"
 #include "hep_hpc/Utilities/detail/index_sequence.hpp"
 #include "hep_hpc/hdf5/Column.hpp"
 #include "hep_hpc/hdf5/File.hpp"
@@ -624,7 +625,15 @@ insert(TUPLE & buffers,
                   head,
                   head + col.elementSize());
   } else { // Insert empty
+#pragma GCC diagnostic push
+#if (defined __GNUC__) && ! GCC_IS_AT_LEAST(5,0,0)
+    // Overaggressive warning with GCC < 5.0
+    // (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=36750,
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61489).
+    _Pragma("GCC diagnostic ignored \"-Wmissing-field-initializers\"")
+#endif
     buffer.insert(buffer.end(), col.elementSize(), {});
+#pragma GCC diagnostic pop
   }
   insert<I + 1>(buffers, cols, std::forward<Tail>(tail)...);
 }
