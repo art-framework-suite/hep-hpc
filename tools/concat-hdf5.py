@@ -114,10 +114,10 @@ class HDF5FileConcatenator:
             print("INFO: Ignoring unrecognized item with name {} and type {}".format(name, obj.__class__.name__))
 
     def _handle_dataset(self, path, ds_in):
-        # 3. Discover dataset shape and row size.
+        # 3. Discover incoming dataset shape and size.
         shape = ds_in.shape
-        len_in = ds_in.len()
-        n_rows_written = 0
+        input_ds_size = ds_in.len()
+
         if path not in self._ds_out: # Not seen this dataset before.
             # 4. If first file, create dataset with expansible outer dimension.
             max_shape = list(shape)
@@ -142,24 +142,29 @@ class HDF5FileConcatenator:
             if ds_in.attrs:
                 self._ds_out[path]["ds"].attrs = ds_in.attrs
 
-        # 5. Iterate over buffer-sized chunks.
-        while n_rows_written < len_in:
-            output_current_size = self._ds_out[path]["ds"].len()
+        # Initialize cursors.
+        output_current_size = self._ds_out[path]["ds"].len()
+        n_rows_written = 0
+
+        # 5. Do the resize for the whole input dataset.
+        if self._verbose > 0:
+            print("DEBUG(1): Resize {} from {} to {} rows.".\
+                  format(path, output_current_size, \
+                         output_current_size + input_ds_size))
+        self._ds_out[path]["ds"].resize(output_current_size + input_ds_size, 0)
+
+        # 6.  Iterate over buffer-sized chunks.
+        while n_rows_written < input_ds_size:
             rows_to_write = min(ds_in.len() - n_rows_written, \
                                 self._ds_out[path]["buffer_size_rows"])
-            # 6. Resize the output dataset appropriately.
-            if self._verbose > 1:
-                print("DEBUG(2): Resize {} from {} to {} rows.".\
-                      format(path, output_current_size, \
-                             output_current_size + rows_to_write))
-            self._ds_out[path]["ds"].resize(output_current_size + rows_to_write, 0)
             # 7. Write the output slice in the appropriate place 
             if self._verbose > 1:
                 print("DEBUG(2): Writing {} rows to dataset {}.".format(rows_to_write, path))
             self._ds_out[path]["ds"][output_current_size : output_current_size + rows_to_write, ...] \
                 = ds_in[n_rows_written : n_rows_written + rows_to_write, ...]
-            # Update cursor.
+            # Update cursors.
             n_rows_written += rows_to_write
+            output_current_size += rows_to_write
 
 if __name__ == "__main__":
     """Concatenate compatible files into a single output file, combining datasets where appropriate."""
