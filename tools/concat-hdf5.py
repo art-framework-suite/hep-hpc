@@ -195,8 +195,10 @@ class HDF5FileConcatenator:
             rows_to_write = min(ds_in.len() - n_rows_written, \
                                 self._ds_out[path]["buffer_size_rows"])
             # If we have more than one chunk to write, thunk to avoid
-            # leaving an incomplete chunk.
-            if rows_to_write > self._ds_out[path]["rows_left_this_chunk"]:
+            # leaving an incomplete chunk unless we are writing the
+            # whole dataset.
+            if rows_to_write > self._ds_out[path]["rows_left_this_chunk"] and \
+               rows_to_write == ds_in.len():
                 rtw_old = rows_to_write
                 rows_to_write -= (rows_to_write - self._ds_out[path]["rows_left_this_chunk"]) % \
                                  chunk_rows
@@ -209,8 +211,13 @@ class HDF5FileConcatenator:
                              " from rank {}".format(my_rank) if WANT_MPI else ""))
             # If we're using MPI, only write if we're interested.
             if (not WANT_MPI) or iter_number % n_ranks == my_rank:
-                self._ds_out[path]["ds"][output_current_size : output_current_size + rows_to_write, ...] \
-                    = ds_in[n_rows_written : n_rows_written + rows_to_write, ...]
+                if WANT_MPI and self._want_filters:
+                    with self._ds_out[path]["ds"].collective:
+                        self._ds_out[path]["ds"][output_current_size : output_current_size + rows_to_write, ...] \
+                            = ds_in[n_rows_written : n_rows_written + rows_to_write, ...]
+                else:
+                    self._ds_out[path]["ds"][output_current_size : output_current_size + rows_to_write, ...] \
+                        = ds_in[n_rows_written : n_rows_written + rows_to_write, ...]
             # Update cursors.
             n_rows_written += rows_to_write
             output_current_size += rows_to_write
