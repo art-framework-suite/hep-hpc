@@ -211,13 +211,8 @@ class HDF5FileConcatenator:
                              " from rank {}".format(my_rank) if WANT_MPI else ""))
             # If we're using MPI, only write if we're interested.
             if (not WANT_MPI) or iter_number % n_ranks == my_rank:
-                if WANT_MPI and self._want_filters:
-                    with self._ds_out[path]["ds"].collective:
-                        self._ds_out[path]["ds"][output_current_size : output_current_size + rows_to_write, ...] \
-                            = ds_in[n_rows_written : n_rows_written + rows_to_write, ...]
-                else:
-                    self._ds_out[path]["ds"][output_current_size : output_current_size + rows_to_write, ...] \
-                        = ds_in[n_rows_written : n_rows_written + rows_to_write, ...]
+                self._ds_out[path]["ds"][output_current_size : output_current_size + rows_to_write, ...] \
+                    = ds_in[n_rows_written : n_rows_written + rows_to_write, ...]
             # Update cursors.
             n_rows_written += rows_to_write
             output_current_size += rows_to_write
@@ -238,6 +233,9 @@ if __name__ == "__main__":
 
     if args.output is None:
         raise RuntimeError("Output file specification is obligatory.")
+
+    if args.filters and WANT_MPI:
+        raise RuntimeError("Output filters is not currently supported for MPI executions.")
 
     # For debug.
     np.set_printoptions(threshold = np.inf, linewidth = np.inf)
