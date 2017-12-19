@@ -35,7 +35,8 @@ if __name__ == "__main__":
 
     for index, nrows in enumerate(args.nrows):
         nrows = int(nrows)
-        output_file = h5py.File(output_file_stem.format(index), 'w-')
+        output_file_name = output_file_stem.format(index)
+        output_file = h5py.File(output_file_name, 'w')
 
         output_file.create_dataset('data',
                                    maxshape = (None,),
@@ -47,5 +48,7 @@ if __name__ == "__main__":
                                                       num=nrows,
                                                       endpoint=False,
                                                       dtype=np.int32))
+
+        print output_file_name
 
         starting_value += nrows
