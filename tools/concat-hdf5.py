@@ -2,13 +2,14 @@
 """Concatenate HDF5 files, combining compatible datasets (those with the
 same structure)."""
 
+from __future__ import print_function
+
 import h5py
 import numpy as np
 import string
 import sys
 import re
 import os
-from collections import namedtuple
 import argparse
 
 try:
@@ -51,14 +52,26 @@ class HDF5FileConcatenator:
         self._ds_out = {}
         # Need tuple keyword to avoid unwanted generator expression!
         self._only_groups = tuple(re.compile(r, re.DEBUG if self._verbose > 3 else 0) for r in only_groups) if only_groups else ()
-        if self._verbose > 2:
-            print("DEBUG(3): Filters in output are {}".format("enabled" if self._want_filters else "disabled"))
+        self._report(3, "Filters in output are {}".format("enabled" if self._want_filters else "disabled"))
 
     def __enter__(self):
         return self;
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._output_file.close()
+
+    def _report(self, level, msg):
+        if self._verbose < level: return
+        if level == -2:
+            LEVEL = "ERROR"
+        elif level == -1:
+            LEVEL = "WARNING"
+        elif level == 0:
+            LEVEL = "INFO"
+        else:
+            LEVEL = "DEBUG({})".format(level)
+        print("{}{}: {}".format("({}) ".format(my_rank) if WANT_MPI else "", LEVEL, msg),
+              file=sys.stdout if level > -1 else sys.stderr)
 
     def concatFiles(self, file_list):
         # Define the parameters of the filename column, if we want one.
@@ -75,13 +88,13 @@ class HDF5FileConcatenator:
         for input_file_name in file_list:
             self._groups_with_datasets = {}
             filename_column_value = filename_column_values.pop(0) if self._filename_column is not None else None
-            if self._verbose > 2 and self._filename_column is not None:
-                print("DEBUG(3): Calculated value for filename column dataset {} of {} for input file {}.".format(self._filename_column[0], filename_column_value, input_file_name))
+            if self._filename_column is not None:
+                self._report(3, "Calculated value for filename column dataset {} of {} for input file {}.".format(self._filename_column[0], filename_column_value, input_file_name))
             # 1. Open input file.
             input_file = h5py.File(input_file_name, 'r', driver = 'mpio', comm = MPI.COMM_WORLD) \
                          if WANT_MPI else h5py.File(input_file_name, 'r')
             # 2. Discover and iterate over items.
-            print("INFO: Processing input file {}.".format(input_file_name))
+            self._report(0, "Processing input file {}.".format(input_file_name))
             input_file.visititems(self._visit_item)
             # 3. For each group in the output file with datasets with
             #    new rows, populate the appropriate number of rows in
@@ -93,8 +106,7 @@ class HDF5FileConcatenator:
                         continue
                     ds_group = self._output_file[ds_group_name]
                     if self._filename_column[0] not in ds_group: # Need output filename column
-                        if self._verbose > 0:
-                            print("DEBUG(1): Creating filename_column dataset {} in group {}.".format(self._filename_column[0], ds_group_name))
+                        self._report(1, "Creating filename_column dataset {} in group {}.".format(self._filename_column[0], ds_group_name))
                         ds_group.create_dataset(self._filename_column[0],
                                                 (0,),
                                                 "S{}".format(maxchars),
@@ -113,27 +125,23 @@ class HDF5FileConcatenator:
         # Group or dataset?
         if type(obj) == h5py.Group:
             if self._only_groups and not any(r.match(obj.name) for r in self._only_groups):
-                if self._verbose > 2:
-                    print("DEBUG(3): Ignoring group {} due to failure to match only_groups regexes.".format(obj.name))
+                self._report (3, "Ignoring group {} due to failure to match only_groups regexes.".format(obj.name))
                 return
             # Ensure the output file has a corresponding group.
-            if self._verbose > 1:
-                print("DEBUG(2): Ensuring existence of group {} in output file.".format(obj.name))
+            self._report(2, "Ensuring existence of group {} in output file.".format(obj.name))
             self._output_file.require_group(name)
         elif type(obj) == h5py.Dataset:
             if self._only_groups and not any(r.match(obj.parent.name) for r in self._only_groups):
-                if self._verbose > 2:
-                    print("DEBUG(3): Ignoring dataset {} due to failure to match only_groups regexes for group {}.".format(obj.name, obj.parent.name))
+                self._report(3, "Ignoring dataset {} due to failure to match only_groups regexes for group {}.".format(obj.name, obj.parent.name))
                 return
-            if self._verbose > 0:
-                print("DEBUG(1): Found dataset {} with {} rows.".format(obj.name, obj.len()))
+                self._report(1, "Found dataset {} with {} rows.".format(obj.name, obj.len()))
             if self._filename_column is not None and \
                string.split(obj.name, '/')[-1] == self._filename_column[0]:
                 raise RuntimeError("Input dataset {} clashes with specified filename column.".format(obj.name))
             self._groups_with_datasets[obj.parent.name] = True
             self._handle_dataset(obj.name, obj)
         else:
-            print("INFO: Ignoring unrecognized item with name {} and type {}".format(name, obj.__class__.name__))
+            self._report(0, "Ignoring unrecognized item with name {} and type {}".format(name, obj.__class__.name__))
 
     def _handle_dataset(self, path, ds_in):
         # 3. Discover incoming dataset shape and size.
@@ -177,65 +185,131 @@ class HDF5FileConcatenator:
         n_rows_written = 0
 
         # 5. Do the resize for the whole input dataset.
-        if self._verbose > 0:
-            print("DEBUG(1): Resize {} from {} to {} rows.".\
-                  format(path, output_current_size, \
-                         output_current_size + input_ds_size))
+        self._report(1, "Resize {} from {} to {} rows.".\
+                     format(path, output_current_size, \
+                            output_current_size + input_ds_size))
         self._ds_out[path]["ds"].resize(output_current_size + input_ds_size, 0)
-
-        if WANT_MPI:
-            # Synchronize after resize.
-            MPI.COMM_WORLD.Barrier()
+        self._report(2, "Resize complete.")
 
         # 6.  Iterate over buffer-sized chunks.
-        iter_number = 0
-        chunk_rows = self._ds_out[path]["chunk_rows"]
         while n_rows_written < input_ds_size:
-            # Calculate how many rows to write.
-            rows_to_write = min(ds_in.len() - n_rows_written, \
-                                self._ds_out[path]["buffer_size_rows"])
-            # If we have more than one chunk to write, thunk to avoid
-            # leaving an incomplete chunk unless we are writing the
-            # whole dataset.
-            if rows_to_write > self._ds_out[path]["rows_left_this_chunk"] and \
-               rows_to_write == ds_in.len():
-                rtw_old = rows_to_write
-                rows_to_write -= (rows_to_write - self._ds_out[path]["rows_left_this_chunk"]) % \
-                                 chunk_rows
-                if self._verbose > 2:
-                    print("DEBUG(3): Thunked rows_to_write from {} to {}, including {} rows remaining in current chunk.".format(rtw_old, rows_to_write, self._ds_out[path]["rows_left_this_chunk"]))
-            # 7. Write the output slice in the appropriate place 
-            if self._verbose > 1:
-                print("DEBUG(2): Writing {} rows to dataset {}{}.".
-                      format(rows_to_write, path,
-                             " from rank {}".format(my_rank) if WANT_MPI else ""))
-            # If we're using MPI, only write if we're interested.
-            if (not WANT_MPI) or iter_number % n_ranks == my_rank:
-                self._ds_out[path]["ds"][output_current_size : output_current_size + rows_to_write, ...] \
-                    = ds_in[n_rows_written : n_rows_written + rows_to_write, ...]
-            # Update cursors.
-            n_rows_written += rows_to_write
-            output_current_size += rows_to_write
-            ++iter_number
-            # Keep track of how we're filling chunks.
-            self._ds_out[path]["rows_left_this_chunk"] -= (rows_to_write % chunk_rows)
-            if self._ds_out[path]["rows_left_this_chunk"] == 0:
-                self._ds_out[path]["rows_left_this_chunk"] = chunk_rows
+            # Calculate row numerology.
+            (rows_to_write_this_iteration,
+             rows_to_write_this_rank,
+             input_start_row_this_rank,
+             output_start_row_this_rank) \
+                = self._row_numerology(self._ds_out[path],
+                                       output_current_size,
+                                       n_rows_written,
+                                       input_ds_size)
+            self._report(4, "Received (rows_to_write_this_iteration, " + \
+                         "rows_to_write_this_rank, input_start_row_this_rank, " + \
+                         "output_start_row_this_rank = ({}, {}, {}, {}).".\
+                         format(rows_to_write_this_iteration,
+                                rows_to_write_this_rank,
+                                input_start_row_this_rank,
+                                output_start_row_this_rank))
 
-        if WANT_MPI:
-            # Synchronize after dataset write.
-            MPI.COMM_WORLD.Barrier()
+            # 7. Write the output slice in the appropriate place 
+            self._report(2, "Writing {} rows to dataset {}.".
+                         format(rows_to_write_this_rank, path))
+            with self._ds_out[path]["ds"].collective:
+                self._ds_out[path]["ds"][output_start_row_this_rank : output_start_row_this_rank + rows_to_write_this_rank, ...] \
+                    = ds_in[input_start_row_this_rank : input_start_row_this_rank + rows_to_write_this_rank, ...]
+            self._report(3, "Write complete.")
+
+            # Update cursors.
+            n_rows_written += rows_to_write_this_iteration
+            output_current_size += rows_to_write_this_iteration
+
+    def _row_numerology(self, ds_out, output_current_size, n_rows_written, input_ds_size):
+        # Calculate numerology for piecewise dataset copy.
+        chunk_size_rows = ds_out["chunk_rows"]
+        self._report(4, "chunk_size_rows = {}".format(chunk_size_rows))
+        buffer_size_rows \
+            = ds_out["buffer_size_rows"] - \
+            (ds_out["buffer_size_rows"] % chunk_size_rows)
+        self._report(4, "buffer_size_rows = {}".format(buffer_size_rows))
+        # Need to take account of an incomplete chunk from a previous file.
+        incomplete_chunk_size = output_current_size % chunk_size_rows
+        self._report(4, "incomplete_chunk_size = {}".format(incomplete_chunk_size))
+        remaining_rows_this_file = input_ds_size - n_rows_written
+        self._report(4, "remaining_rows_this_file (A) = {}".format(remaining_rows_this_file))
+        rows_to_write_this_iteration \
+            = min(remaining_rows_this_file - (remaining_rows_this_file % chunk_size_rows),
+                  buffer_size_rows * n_ranks - incomplete_chunk_size)
+        self._report(4, "rows_to_write_this_iteration = {}".format(rows_to_write_this_iteration))
+        # Each rank will get either minsize or minsize+1 chunks to work on.
+        minsize, leftovers \
+            = divmod(rows_to_write_this_iteration / chunk_size_rows, n_ranks)
+        # Ranks [0, leftovers) get minsize+1 chunks.
+        # Ranks [leftovers, nranks) get minsize chunks.
+        chunks_to_write_this_rank \
+            = minsize + 1 if my_rank < leftovers else minsize
+        self._report(4, "chunks_to_write_this_rank = {}".format(chunks_to_write_this_rank))
+        # Complete an incomplete chunk at the end of output if we need.
+        rows_to_write_this_rank = chunks_to_write_this_rank * chunk_size_rows
+        self._report(4, "rows_to_write_this_rank = {}".format(rows_to_write_this_rank))
+        if incomplete_chunk_size:
+            extra_rows = chunk_size_rows - incomplete_chunk_size
+            rows_to_write_this_iteration += extra_rows
+            if my_rank == 0:
+                self._report(3, "Thunking rows_to_write from {} to {}, including {} rows remaining to complete a previous chunk.".\
+                             format(rows_to_write_this_rank,
+                                    rows_to_write_this_rank + extra_rows,
+                                    extra_rows))
+                rows_to_write_this_rank += extra_rows
+        # Tack on some extra rows if it's what we need to complete the file.
+        remaining_rows_this_file \
+            = input_ds_size - (n_rows_written + rows_to_write_this_iteration)
+        self._report(4, "remaining_rows_this_file (B) = {}".format(remaining_rows_this_file))
+        if remaining_rows_this_file > 0 and remaining_rows_this_file < chunk_size_rows:
+            rows_to_write_this_iteration += remaining_rows_this_file
+            if rows_to_write_this_iteration == 0:
+                rank_to_write_remaining_rows = 0
+            elif leftovers == 0:
+                rank_to_write_remaining_rows = n_ranks - 1
+            else:
+                rank_to_write_remaining_rows = leftovers
+            self._report(4, "rank_to_write_remaining_rows = {}".format(rank_to_write_remaining_rows))
+            if my_rank == rank_to_write_remaining_rows:
+                self._report(3, "Thunking rows to write from {} to {}, including {} rows required to complete the current input file.".\
+                             format(rows_to_write_this_rank,
+                                    rows_to_write_this_rank + remaining_rows_this_file,
+                                    remaining_rows_this_file))
+                rows_to_write_this_rank += remaining_rows_this_file
+        self._report(4, "Checkpoint.")
+        # Calculate start rows for input and output.
+        if my_rank == 0:
+            input_start_row_this_rank = n_rows_written
+            output_start_row_this_rank = output_current_size
+        else:
+            input_start_row_this_rank \
+                = (n_rows_written - incomplete_chunk_size) \
+                + (((my_rank * (minsize + 1)) if my_rank < leftovers else \
+                    (leftovers + my_rank * minsize))) * chunk_size_rows
+            if incomplete_chunk_size: # Correction.
+                input_start_row_this_rank += chunk_size_rows
+            output_start_row_this_rank \
+                = input_start_row_this_rank - n_rows_written \
+                + output_current_size
+        self._report(4, "_row_numerology returning (rows_to_write_this_iteration, " + \
+                     "rows_to_write_this_rank, input_start_row_this_rank, " + \
+                     "output_start_row_this_rank = ({}, {}, {}, {}).".\
+                     format(rows_to_write_this_iteration,
+                            rows_to_write_this_rank,
+                            input_start_row_this_rank,
+                            output_start_row_this_rank))
+        return (rows_to_write_this_iteration,
+                rows_to_write_this_rank,
+                input_start_row_this_rank,
+                output_start_row_this_rank)
+
 
 if __name__ == "__main__":
     """Concatenate compatible files into a single output file, combining datasets where appropriate."""
 
     args = parse_args()
-
-    if args.output is None:
-        raise RuntimeError("Output file specification is obligatory.")
-
-    if args.filters and WANT_MPI:
-        raise RuntimeError("Output filters is not currently supported for MPI executions.")
 
     # For debug.
     np.set_printoptions(threshold = np.inf, linewidth = np.inf)
