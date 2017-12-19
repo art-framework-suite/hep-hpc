@@ -26,12 +26,14 @@ except ImportError:
 def parse_args():
     parser = argparse.ArgumentParser(description='Tabular file concatenator.', prefix_chars='-+')
     parser.add_argument('--output', '-o', help='Name of HDF5 output file.', required=True)
-    parser.add_argument('--append', help='Append to an existing HDF5 file.', action='store_true', default=False)
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument('--with-filters', '-F', help='Use HDF5 filters as appropriate in output',
-                       dest='filters', action='store_const', const=True)
-    group.add_argument('--without-filters', '+F', help='Do not use HDF5 filters in output',
-                       dest='filters', action='store_const', const=False)
+    write_group = parser.add_mutually_exclusive_group()
+    write_group.add_argument('--append', '-a', help='Append to an existing HDF5 file.', action='store_true', default=False)
+    write_group.add_argument('--overwrite', '-f',  help='Overwrite an existing HDF5 file.', action='store_true', default=False)
+    filter_group = parser.add_mutually_exclusive_group()
+    filter_group.add_argument('--with-filters', '-F', help='Use HDF5 filters as appropriate in output',
+                              dest='filters', action='store_const', const=True)
+    filter_group.add_argument('--without-filters', '+F', help='Do not use HDF5 filters in output',
+                              dest='filters', action='store_const', const=False)
     parser.set_defaults(filters=(not WANT_MPI))
     parser.add_argument('--filename-column', help='Add a column whose value is extracted from the full input path by the provided regex replacement (to groups matching regexes only, if provided): args = <column-name> [<regex> [<replacement-expression> [<group-regex>+]]].', nargs='+')
     parser.add_argument('--mem-max', help='Maximum amount of memory to use to buffer input (MiB).', type=int, default=100)
@@ -41,14 +43,20 @@ def parse_args():
     parser.add_argument('inputs', help='Input files to concatenate (use -- to separate from option arguments if necessary)', nargs='+')
     return parser.parse_args()
 
+class dummy_context_mgr:
+    def __enter__(self):
+        return None
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
 class HDF5FileConcatenator:
-    def __init__(self, output, append, mem_max, filename_column, only_groups, filters, verbose):
+    def __init__(self, output, write_mode, mem_max, filename_column, only_groups, filters, verbose):
         self._mem_max_bytes = mem_max * 1024 * 1024
         self._filename_column = filename_column
         self._want_filters = filters
         self._verbose = verbose
-        self._output_file = h5py.File(output, 'a' if append else 'w-', driver = 'mpio', comm=MPI.COMM_WORLD) \
-                            if WANT_MPI else h5py.File(output, 'a' if append else 'w-')
+        self._output_file = h5py.File(output, write_mode, driver = 'mpio', comm=MPI.COMM_WORLD) \
+                            if WANT_MPI else h5py.File(output, write_mode)
         self._ds_out = {}
         # Need tuple keyword to avoid unwanted generator expression!
         self._only_groups = tuple(re.compile(r, re.DEBUG if self._verbose > 3 else 0) for r in only_groups) if only_groups else ()
@@ -77,7 +85,10 @@ class HDF5FileConcatenator:
         # Define the parameters of the filename column, if we want one.
         if self._filename_column is not None:
             fn_regex = re.compile(self._filename_column[1]) if len(self._filename_column) > 1 else None
-            filename_column_values = [ fn_regex.sub(self._filename_column[2] if len(self._filename_column) > 2 else "", f) for f in file_list ] if fn_regex is not None else file_list
+            filename_column_values \
+                = [ fn_regex.sub(self._filename_column[2] \
+                                 if len(self._filename_column) > 2 else "", f) \
+                    for f in file_list ] if fn_regex is not None else file_list
             maxchars = max(len(x) for x in filename_column_values)
 
             filename_column_group_patterns \
@@ -91,8 +102,10 @@ class HDF5FileConcatenator:
             if self._filename_column is not None:
                 self._report(3, "Calculated value for filename column dataset {} of {} for input file {}.".format(self._filename_column[0], filename_column_value, input_file_name))
             # 1. Open input file.
-            input_file = h5py.File(input_file_name, 'r', driver = 'mpio', comm = MPI.COMM_WORLD) \
-                         if WANT_MPI else h5py.File(input_file_name, 'r')
+            input_file = h5py.File(input_file_name, 'r',
+                                   driver = 'mpio',
+                                   comm = MPI.COMM_WORLD) \
+                if WANT_MPI else h5py.File(input_file_name, 'r')
             # 2. Discover and iterate over items.
             self._report(0, "Processing input file {}.".format(input_file_name))
             input_file.visititems(self._visit_item)
@@ -102,7 +115,8 @@ class HDF5FileConcatenator:
             if filename_column_value is not None:
                 for ds_group_name in self._groups_with_datasets.keys():
                     if filename_column_group_patterns \
-                       and not any(r.match(ds_group_name) for r in filename_column_group_patterns):
+                       and not any(r.match(ds_group_name) \
+                                   for r in filename_column_group_patterns):
                         continue
                     ds_group = self._output_file[ds_group_name]
                     if self._filename_column[0] not in ds_group: # Need output filename column
@@ -213,7 +227,7 @@ class HDF5FileConcatenator:
             # 7. Write the output slice in the appropriate place 
             self._report(2, "Writing {} rows to dataset {}.".
                          format(rows_to_write_this_rank, path))
-            with self._ds_out[path]["ds"].collective:
+            with self._ds_out[path]["ds"].collective if WANT_MPI else dummy_context_mgr():
                 self._ds_out[path]["ds"][output_start_row_this_rank : output_start_row_this_rank + rows_to_write_this_rank, ...] \
                     = ds_in[input_start_row_this_rank : input_start_row_this_rank + rows_to_write_this_rank, ...]
             self._report(3, "Write complete.")
@@ -237,7 +251,7 @@ class HDF5FileConcatenator:
         self._report(4, "remaining_rows_this_file (A) = {}".format(remaining_rows_this_file))
         rows_to_write_this_iteration \
             = min(remaining_rows_this_file - (remaining_rows_this_file % chunk_size_rows),
-                  buffer_size_rows * n_ranks - incomplete_chunk_size)
+                  buffer_size_rows * n_ranks)
         self._report(4, "rows_to_write_this_iteration = {}".format(rows_to_write_this_iteration))
         # Each rank will get either minsize or minsize+1 chunks to work on.
         minsize, leftovers \
@@ -250,27 +264,25 @@ class HDF5FileConcatenator:
         # Complete an incomplete chunk at the end of output if we need.
         rows_to_write_this_rank = chunks_to_write_this_rank * chunk_size_rows
         self._report(4, "rows_to_write_this_rank = {}".format(rows_to_write_this_rank))
-        if incomplete_chunk_size:
-            extra_rows = chunk_size_rows - incomplete_chunk_size
-            rows_to_write_this_iteration += extra_rows
+        if incomplete_chunk_size and rows_to_write_this_iteration >= incomplete_chunk_size:
+            rows_to_write_this_iteration -= incomplete_chunk_size
             if my_rank == 0:
-                self._report(3, "Thunking rows_to_write from {} to {}, including {} rows remaining to complete a previous chunk.".\
+                self._report(3, "Thunking rows_to_write from {} to {}, to account for {} rows in an incomplete previous chunk.".\
                              format(rows_to_write_this_rank,
-                                    rows_to_write_this_rank + extra_rows,
-                                    extra_rows))
-                rows_to_write_this_rank += extra_rows
+                                    rows_to_write_this_rank - incomplete_chunk_size, 
+                                    incomplete_chunk_size))
+                rows_to_write_this_rank -= incomplete_chunk_size
         # Tack on some extra rows if it's what we need to complete the file.
         remaining_rows_this_file \
             = input_ds_size - (n_rows_written + rows_to_write_this_iteration)
         self._report(4, "remaining_rows_this_file (B) = {}".format(remaining_rows_this_file))
-        if remaining_rows_this_file > 0 and remaining_rows_this_file < chunk_size_rows:
+        remaining_rows_threshold = (2 * chunk_size_rows - incomplete_chunk_size) if incomplete_chunk_size else chunk_size_rows
+        if remaining_rows_this_file > 0 and remaining_rows_this_file <= remaining_rows_threshold:
             rows_to_write_this_iteration += remaining_rows_this_file
-            if rows_to_write_this_iteration == 0:
-                rank_to_write_remaining_rows = 0
-            elif leftovers == 0:
-                rank_to_write_remaining_rows = n_ranks - 1
-            else:
+            if minsize == 0:
                 rank_to_write_remaining_rows = leftovers
+            else:
+                rank_to_write_remaining_rows = n_ranks - 1
             self._report(4, "rank_to_write_remaining_rows = {}".format(rank_to_write_remaining_rows))
             if my_rank == rank_to_write_remaining_rows:
                 self._report(3, "Thunking rows to write from {} to {}, including {} rows required to complete the current input file.".\
@@ -288,8 +300,6 @@ class HDF5FileConcatenator:
                 = (n_rows_written - incomplete_chunk_size) \
                 + (((my_rank * (minsize + 1)) if my_rank < leftovers else \
                     (leftovers + my_rank * minsize))) * chunk_size_rows
-            if incomplete_chunk_size: # Correction.
-                input_start_row_this_rank += chunk_size_rows
             output_start_row_this_rank \
                 = input_start_row_this_rank - n_rows_written \
                 + output_current_size
@@ -315,7 +325,7 @@ if __name__ == "__main__":
     np.set_printoptions(threshold = np.inf, linewidth = np.inf)
 
     with HDF5FileConcatenator(args.output,
-                              args.append,
+                              'a' if args.append else 'w' if args.overwrite else 'w-',
                               args.mem_max,
                               args.filename_column,
                               args.only_groups,
