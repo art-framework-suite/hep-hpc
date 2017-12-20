@@ -23,7 +23,7 @@ except ImportError:
     WANT_MPI = False
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Tabular file concatenator.', prefix_chars='-+')
+    parser = argparse.ArgumentParser(description='Collective write hang demonstrator.', prefix_chars='-+')
     parser.add_argument('output', help='Name of HDF5 output file.')
     parser.add_argument('nrows', help='number_of_rows', type=int, default=n_ranks-1, nargs='?')
     return parser.parse_args()
