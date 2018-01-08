@@ -1,12 +1,17 @@
-set (source_files
+set(source_files
   demangle_symbol.cpp
   )
 
-set (headers
+set(headers
   DefaultedSimpleType.hpp
   SimpleRAII.hpp
   demangle_symbol.hpp
   is_nothrow_swappable_all.hpp
+  )
+
+set(detail_headers
+  detail/index_sequence.hpp
+  detail/compiler_macros.hpp
   )
 
 add_library(hep_hpc_Utilities SHARED ${source_files})
@@ -20,6 +25,6 @@ install(FILES ${headers}
   DESTINATION "include/hep_hpc/Utilities"
 )
 
-install(FILES detail/index_sequence.hpp
+install(FILES ${detail_headers}
   DESTINATION "include/hep_hpc/Utilities/detail"
 )
