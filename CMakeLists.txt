@@ -64,19 +64,17 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${EXECUTABLE_OUTPUT_P
 # MPI
 if (WANT_MPI)
   find_package(MPI REQUIRED)
-else()
-  find_package(MPI QUIET)
-endif()
-
-if (MPI_FOUND)
-  include_directories(${MPI_C_INCLUDE_PATH})
+  if (MPI_FOUND)
+    include_directories(${MPI_C_INCLUDE_PATH})
+    set (HEP_HPC_USE_MPI TRUE)
+  endif()
 endif()
 
 # HDF5
 find_package(HDF5 REQUIRED COMPONENTS C)
 include_directories(${HDF5_INCLUDE_DIRS})
 
-# BOOST (C++11 only)
+# BOOST (C++11 only, not needed for C++ >11)
 if (CMAKE_CXX_STANDARD EQUAL 11)
   set(BOOST_INCLUDEDIR $ENV{BOOST_INC})
   set(BOOST_LIBRARYDIR $ENV{BOOST_LIB})
