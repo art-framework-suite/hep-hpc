@@ -10,6 +10,7 @@
 #include "hep_hpc/hdf5/Dataspace.hpp"
 #include "hep_hpc/hdf5/PropertyList.hpp"
 #include "hep_hpc/hdf5/Resource.hpp"
+#include "hep_hpc/hdf5/ResourceStrategy.hpp"
 
 #include "hdf5.h"
 
@@ -22,6 +23,9 @@ namespace hep_hpc {
 class hep_hpc::hdf5::Dataset {
 public:
   Dataset() = default;
+
+  // Use an existing HDF5 dataset ID, and manage as specified.
+  Dataset(hid_t dataset, ResourceStrategy strategy);
 
   // Create. Data spaces and property lists, if provided, will be consumed.
   Dataset(hid_t fileOrGroup,
@@ -69,6 +73,15 @@ private:
   Resource<HID_t> h5dset_;
 };
 #endif /* hep_hpc_hdf5_Dataset_hpp */
+
+inline
+hep_hpc::hdf5::Dataset::
+Dataset(hid_t const dataset, ResourceStrategy strategy)
+  : h5dset_((strategy == ResourceStrategy::handle_tag) ?
+            Resource<HID_t>(HID_t(dataset), &H5Dclose) :
+            Resource<HID_t>(dataset))
+{
+}
 
 inline
 hep_hpc::hdf5::Dataset::

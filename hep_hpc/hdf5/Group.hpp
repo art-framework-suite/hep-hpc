@@ -11,6 +11,7 @@
 #include "hep_hpc/hdf5/PropertyList.hpp"
 #include "hep_hpc/hdf5/HID_t.hpp"
 #include "hep_hpc/hdf5/Resource.hpp"
+#include "hep_hpc/hdf5/ResourceStrategy.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
 
 #include "hdf5.h"
@@ -29,6 +30,9 @@ public:
   enum group_mode_t : uint8_t { CREATE_MODE, OPEN_MODE, OPEN_OR_CREATE_MODE };
 
   Group() = default;
+
+  // Use an existing HDF5 group ID, and manage as specified.
+  Group(hid_t group, ResourceStrategy strategy);
 
   // Create or open a group. Note that the PropertyList objects (if specified)
   // will be consumed.
@@ -59,6 +63,15 @@ private:
   static HID_t const INVALID_GROUP_;
   Resource<HID_t> h5group_;
 };
+
+inline
+hep_hpc::hdf5::Group::
+Group(hid_t group, ResourceStrategy strategy)
+  : h5group_((strategy == ResourceStrategy::handle_tag) ?
+             Resource<HID_t>(HID_t(group), &H5Gclose) :
+             Resource<HID_t>(group))
+{
+}
 
 inline
 hep_hpc::hdf5::Group::

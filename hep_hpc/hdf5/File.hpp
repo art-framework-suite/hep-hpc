@@ -7,6 +7,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/PropertyList.hpp"
+#include "hep_hpc/hdf5/ResourceStrategy.hpp"
 #include "hep_hpc/hdf5/HID_t.hpp"
 #include "hep_hpc/hdf5/Resource.hpp"
 
@@ -22,11 +23,11 @@ class hep_hpc::hdf5::File {
 public:
   File() = default;
 
-  // Non-owning.
-  //
-  // Caller is responsible for ensuring file is a valid HDF5 file
-  // handle, and for ensuring that it is closed afterwards.
-  explicit File(hid_t file);
+  // Adopt an existing HDF5 file ID, with the specified management
+  // strategy. If observing (default), caller is responsible for closing
+  // the file at the appropriate time.
+  explicit File(hid_t file,
+                ResourceStrategy strategy = ResourceStrategy::observer_tag);
 
   // Open or create an HDF5 file, as appropriate. Note that the
   // PropertyList objects (if specified) will be consumed.
@@ -50,9 +51,11 @@ private:
 };
 
 inline
-hep_hpc::hdf5::File::File(hid_t file)
+hep_hpc::hdf5::File::File(hid_t file, ResourceStrategy strategy)
   :
-  h5file_(file)
+  h5file_((strategy == ResourceStrategy::handle_tag) ?
+          Resource<HID_t>(HID_t(file), &H5Fclose) :
+          Resource<HID_t>(file))
 {
 }
 
