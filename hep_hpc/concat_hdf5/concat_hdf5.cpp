@@ -57,7 +57,7 @@ public:
     std::string const & filename_column() const { return filename_column_; }
     std::vector<std::string> const & only_groups() const { return only_groups_; }
     bool want_filters() const { return want_filters_; }
-    bool want_collective() const { return want_collective_;}
+    bool want_collective_writes() const { return want_collective_writes_;}
     std::size_t verbosity() const { return verbosity_; }
     std::vector<std::string> const & inputs() const { return inputs_; }
 
@@ -69,14 +69,17 @@ private:
     std::string filename_column_;
     std::vector<std::string> only_groups_;
     bool want_filters_ { true };
-    bool want_collective_ { true };
+    bool want_collective_writes_ { true };
     std::size_t verbosity_ { 3 };
     std::vector<std::string> inputs_;
   };
 
   ProgramOptions::ProgramOptions(int argc [[gnu::unused]],
                                  char **argv [[gnu::unused]])
+    : inputs_(argv+1, argv+argc) // FIXME. Temporary.
   {
+    // FIXME. Also need argument consistency checks e.g. with filters
+    // and collective with MPI status, etc., etc.
   }
 
 }
@@ -98,7 +101,7 @@ int main(int argc, char **argv)
                    program_options.filename_column(),
                    program_options.only_groups(),
                    program_options.want_filters(),
-                   program_options.want_collective(),
+                   program_options.want_collective_writes(),
                    program_options.verbosity());
     status = concatenator.concatFiles(program_options.inputs());
   }
