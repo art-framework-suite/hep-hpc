@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/Utilities/SimpleRAII.hpp"
 #include "hep_hpc/hdf5/Resource.hpp"
+#include "hep_hpc/hdf5/ResourceStrategy.hpp"
 
 #include "hdf5.h"
 
@@ -27,7 +28,13 @@ class hep_hpc::hdf5::PropertyList {
 public:
   PropertyList() = default;
 
+  // Create a defaulted property list of the specified class.
   explicit PropertyList(hid_t propClassID);
+
+  // Adopt an existing HDF5 property list ID with the specified
+  // management strategy. If observing, caller is responsible for
+  // closing at the appropriate time.
+  PropertyList(hid_t plist_id, ResourceStrategy strategy);
 
   // Copy operations.
   PropertyList(PropertyList const & other);
@@ -61,6 +68,15 @@ private:
   // (H5P_DEFAULT) is a reasonable default;
   Resource<hid_t> h5plist_;
 };
+
+inline
+hep_hpc::hdf5::PropertyList::
+PropertyList(hid_t const plist, ResourceStrategy const strategy)
+  : h5plist_((strategy == ResourceStrategy::handle_tag) ?
+             Resource<hid_t>(plist, &H5Pclose) :
+             Resource<hid_t>(plist))
+{
+}
 
 inline
 hep_hpc::hdf5::PropertyList::

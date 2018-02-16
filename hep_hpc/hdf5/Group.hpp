@@ -31,7 +31,9 @@ public:
 
   Group() = default;
 
-  // Use an existing HDF5 group ID, and manage as specified.
+  // Adopt an existing HDF5 group ID with the specified management
+  // strategy. If observing, caller is responsible for closing at the
+  // appropriate time.
   Group(hid_t group, ResourceStrategy strategy);
 
   // Create or open a group. Note that the PropertyList objects (if specified)
@@ -66,7 +68,7 @@ private:
 
 inline
 hep_hpc::hdf5::Group::
-Group(hid_t group, ResourceStrategy strategy)
+Group(hid_t const group, ResourceStrategy const strategy)
   : h5group_((strategy == ResourceStrategy::handle_tag) ?
              Resource<HID_t>(HID_t(group), &H5Gclose) :
              Resource<HID_t>(group))

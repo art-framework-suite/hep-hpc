@@ -72,11 +72,10 @@ private:
   static HID_t const INVALID_DSET_;
   Resource<HID_t> h5dset_;
 };
-#endif /* hep_hpc_hdf5_Dataset_hpp */
 
 inline
 hep_hpc::hdf5::Dataset::
-Dataset(hid_t const dataset, ResourceStrategy strategy)
+Dataset(hid_t const dataset, ResourceStrategy const strategy)
   : h5dset_((strategy == ResourceStrategy::handle_tag) ?
             Resource<HID_t>(HID_t(dataset), &H5Dclose) :
             Resource<HID_t>(dataset))
@@ -116,6 +115,10 @@ Dataset(hid_t const fileOrGroup,
           fullPathName.c_str(),
           std::move(datasetAccessProperties))
 {
+  if (*h5dset_ < 0) { // Error that we didn't throw over.
+    h5dset_.release();
+    reset();
+  }
 }
 
 inline
@@ -188,3 +191,5 @@ hep_hpc::hdf5::Dataset::
 reset() {
   h5dset_.reset();
 }
+
+#endif /* hep_hpc_hdf5_Dataset_hpp */

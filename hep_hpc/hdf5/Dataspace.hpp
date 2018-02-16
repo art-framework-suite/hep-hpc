@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/Resource.hpp"
+#include "hep_hpc/hdf5/ResourceStrategy.hpp"
 
 #include "hdf5.h"
 
@@ -22,7 +23,7 @@ namespace hep_hpc {
 
     namespace Dataspace_detail {
       template <typename IN_ITER, typename DISTANCE>
-      IN_ITER copy_advance(IN_ITER i, DISTANCE n)
+      IN_ITER copy_advance(IN_ITER i, DISTANCE const n)
       {
         std::advance(i, n);
         return i;
@@ -36,8 +37,11 @@ public:
   Dataspace() = default;
   explicit Dataspace(H5S_class_t classID);
 
-  // Take ownership.
-  explicit Dataspace(hid_t dspace);
+  // Adopt an existing HDF5 dataspace ID with the specified management
+  // strategy. If observing, caller is responsible for closing at the
+  // appropriate time.
+  explicit Dataspace(hid_t dspace,
+                     ResourceStrategy strategy = ResourceStrategy::handle_tag);
 
   // Basic
   Dataspace(int rank, hsize_t const * dims, hsize_t const * maxdims = nullptr);
@@ -90,9 +94,11 @@ Dataspace(H5S_class_t const classID)
 
 inline
 hep_hpc::hdf5::Dataspace::
-Dataspace(hid_t const dspace)
+Dataspace(hid_t const dspace, ResourceStrategy const strategy)
   :
-  h5dspace_(dspace, &H5Sclose)
+  h5dspace_((strategy == ResourceStrategy::handle_tag) ?
+            Resource<hid_t>(dspace, &H5Sclose) :
+            Resource<hid_t>(dspace))
 {
 }
 

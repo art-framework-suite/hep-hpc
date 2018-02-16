@@ -51,7 +51,7 @@ private:
 };
 
 inline
-hep_hpc::hdf5::File::File(hid_t file, ResourceStrategy strategy)
+hep_hpc::hdf5::File::File(hid_t const file, ResourceStrategy const strategy)
   :
   h5file_((strategy == ResourceStrategy::handle_tag) ?
           Resource<HID_t>(HID_t(file), &H5Fclose) :
@@ -88,4 +88,5 @@ hep_hpc::hdf5::File::
 close() {
   h5file_.reset();
 }
+
 #endif /* hep_hpc_hdf5_File_hpp */
