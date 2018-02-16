@@ -33,7 +33,6 @@ public:
 
   int concatFiles(std::vector<std::string> const & inputs);
 
-
 private:
   herr_t visit_item_(hid_t root_id,
                      char const * obj_name,
@@ -46,6 +45,9 @@ private:
   bool want_collective_writes_;
 
   // Other state.
+
+  // N.B. Relative order of h5out_ and ds_info_ should result in output
+  // datasets being closed before the output file.
   hdf5::File h5out_;
   std::unordered_map<std::string, ConcatenatedDSInfo> ds_info_;
 };

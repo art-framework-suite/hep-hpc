@@ -1,5 +1,10 @@
 #include "hep_hpc/concat_hdf5/HDF5FileConcatenator.hpp"
 
+#include "hep_hpc/detail/config.hpp"
+#ifdef HEP_HPC_USE_MPI
+#include "hep_hpc/MPI/MPICommunicator.hpp"
+#endif
+
 #include "hep_hpc/concat_hdf5/maybe_report_rank.hpp"
 #include "hep_hpc/hdf5/Dataset.hpp"
 #include "hep_hpc/hdf5/Group.hpp"
@@ -13,6 +18,7 @@ extern "C" {
 #include "H5Spublic.h"
 }
 
+#include <cstdlib>
 #include <iostream>
 #include <numeric>
 #include <vector>
@@ -20,13 +26,16 @@ extern "C" {
 using namespace hep_hpc::hdf5;
 
 namespace {
+  // File-scope parameters.
+  int verbosity;
+  int n_ranks;
+  int my_rank;
+
   bool file_exists(std::string file_name)
   {
     struct stat buffer;
     return (stat(file_name.c_str(), &buffer) == 0);
   }
-
-  int verbosity;
 
   void report(int level, std::string const & msg)
   {
@@ -102,6 +111,88 @@ namespace {
                                  maxshape.data());
     return result;
   }
+
+  struct NumerologyInfo {
+    std::size_t rows_to_write_this_iteration {0ull};
+    std::size_t rows_to_write_this_rank {0ull};
+    std::size_t input_start_row_this_rank {0ull};
+    std::size_t output_start_row_this_rank {0ull};
+  };
+
+  NumerologyInfo row_numerology(hep_hpc::ConcatenatedDSInfo const & out_ds_info,
+                                std::size_t n_rows_written,
+                                std::size_t in_ds_size)
+  {
+    using std::to_string;
+    NumerologyInfo result;
+    auto const output_current_size = out_ds_info.current_shape.front();
+    auto const incomplete_chunk_size = output_current_size % out_ds_info.chunk_rows;
+    auto remaining_rows_this_file = in_ds_size - n_rows_written;
+    result.rows_to_write_this_iteration =
+      std::min(remaining_rows_this_file - (remaining_rows_this_file % out_ds_info.chunk_rows),
+               out_ds_info.buffer_size_rows * n_ranks);
+    // Each rank will get either minsize or minsize + 1 chunks to work on.
+    auto const rankdiv =
+      std::div((long long) (result.rows_to_write_this_iteration / out_ds_info.chunk_rows),
+               (long long) n_ranks);
+    auto const & minsize = rankdiv.quot;
+    auto const & leftovers = rankdiv.rem;
+    // Ranks [0, leftovers) get minsize + 1 chunks.
+    // Ranks [leftovers, nranks) get minsize chunks.
+    auto const chunks_to_write_this_rank = (my_rank < leftovers) ? minsize + 1 : minsize;
+    result.rows_to_write_this_rank = chunks_to_write_this_rank * out_ds_info.chunk_rows;
+    // Complete an incomplete chunk at the end of output if we need.
+    if (incomplete_chunk_size > 0 &&
+        result.rows_to_write_this_iteration >= incomplete_chunk_size) {
+      // Decrease total rows to write.
+      result.rows_to_write_this_iteration -= incomplete_chunk_size;
+      if (my_rank == 0) {
+        report(3, std::string("Thunking rows_to_write_this_rank from ") +
+               to_string(result.rows_to_write_this_rank) + " to " +
+               to_string(result.rows_to_write_this_rank - incomplete_chunk_size) +
+               ", to account for " + to_string(incomplete_chunk_size) +
+               " rows in an incomplete previous chunk.");
+        // Decrease rows to write for this rank only.
+        result.rows_to_write_this_rank -= incomplete_chunk_size;
+      }
+    }
+    // Tack on some extra rows if that's what we need to complete the file.
+    auto const remaining_rows_threshold =
+      (incomplete_chunk_size > 0ull) ?
+      (2 * out_ds_info.chunk_rows - incomplete_chunk_size) :
+      out_ds_info.chunk_rows;
+    if (remaining_rows_this_file > 0ull &&
+        remaining_rows_this_file <= remaining_rows_threshold) {
+      result.rows_to_write_this_iteration += remaining_rows_this_file;
+      // Be compact in deciding which rank writes the extra rows.
+      auto const rank_to_write_remaining_rows =
+        (minsize == 0) ? leftovers : n_ranks - 1;
+      if (my_rank == rank_to_write_remaining_rows) {
+        report(3, std::string("Thunking rows_to_write_this_rank from ") +
+               to_string(result.rows_to_write_this_rank) + " to " +
+               to_string(result.rows_to_write_this_rank + remaining_rows_this_file) +
+               ", including " + to_string(remaining_rows_this_file) +
+               " rows required to complete the current input file.");
+        result.rows_to_write_this_rank += remaining_rows_this_file;
+      }
+    }
+
+    // Calculate start rows for input and output.
+    if (my_rank == 0) {
+      result.input_start_row_this_rank = n_rows_written;
+      result.output_start_row_this_rank = output_current_size;
+    } else {
+      result.input_start_row_this_rank =
+        (n_rows_written - incomplete_chunk_size) +
+        ((my_rank < leftovers) ?
+         (my_rank * (minsize + 1)) :
+         (leftovers + my_rank * minsize)) * out_ds_info.chunk_rows;
+      result.output_start_row_this_rank =
+        result.input_start_row_this_rank - n_rows_written + output_current_size;
+    }
+    return result;
+  }
+
 }
 
 hep_hpc::HDF5FileConcatenator::
@@ -118,7 +209,16 @@ HDF5FileConcatenator(std::string const & output,
   , want_collective_writes_(want_collective_writes)
   , h5out_(open_output_file(output, file_mode))
 {
+  // Set file-scope parameters.
   verbosity = in_verbosity;
+#ifdef HEP_HPC_USE_MPI
+  hep_hpc::MPICommunicator world;
+  n_ranks = world.size();
+  my_rank = world.rank();
+#else
+  n_ranks = 1;
+  my_rank = 0;
+#endif
 }
 
 int
@@ -237,7 +337,7 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
                                     ds_name,
                                     PropertyList(in_ds_access_plist));
   }
-  auto & out_ds = ds_info_[ds_name];
+  auto & out_ds_info = ds_info_[ds_name];
   if (!have_output_ds) { // Does not exist
     report(3, std::string("Creating dataset ") +
            ds_name + " in output.");
@@ -248,26 +348,28 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
                                    H5Z_FILTER_ALL);
     }
     auto in_type = ErrorController::call(&H5Dget_type, ds_in);
-    out_ds.row_size_bytes =
+    out_ds_info.row_size_bytes =
       std::accumulate(in_shape.cbegin() + 1,
                       in_shape.cend(),
                       ErrorController::call(&H5Tget_size, in_type),
                       std::multiplies<std::size_t>());
-    out_ds.buffer_size_rows = mem_max_bytes_ / out_ds.row_size_bytes;
-    (void) ErrorController::call(&H5Pget_chunk, in_ds_create_plist, 1, &out_ds.chunk_rows);
-    out_ds.current_shape = in_shape;
+    (void) ErrorController::call(&H5Pget_chunk, in_ds_create_plist, 1, &out_ds_info.chunk_rows);
+    out_ds_info.buffer_size_rows = mem_max_bytes_ / out_ds_info.row_size_bytes;
+    // buffer_size_rows should be a multiple of out_ds_info.chunk_rows.
+    out_ds_info.buffer_size_rows -= out_ds_info.buffer_size_rows % out_ds_info.chunk_rows;
+    out_ds_info.current_shape = in_shape;
     
-    out_ds.ds = Dataset(h5out_,
+    out_ds_info.ds = Dataset(h5out_,
                         ds_name,
                         in_type,
                         output_dataspace(in_dataspace),
                         {},
                         std::move(in_ds_create_plist),
                         std::move(in_ds_access_plist));
-    
   }
+
   if (have_output_ds) { // Resize existing dataset.
-    Dataspace out_dataspace(ErrorController::call(&H5Dget_space, out_ds.ds),
+    Dataspace out_dataspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
                             ResourceStrategy::handle_tag);
     auto const out_ndims = ErrorController::call(&H5Sget_simple_extent_ndims, out_dataspace);
     std::vector<hsize_t> out_shape(out_ndims), out_maxshape(out_ndims);
@@ -284,24 +386,31 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
       status = -1;
       return status;
     }
-    auto const new_size_rows = out_ds.current_shape.front() + in_ds_size;
+    auto const new_size_rows = out_ds_info.current_shape.front() + in_ds_size;
     report(1, std::string("resize ") + ds_name + " from " +
-           to_string(out_ds.current_shape.front()) + " to " +
+           to_string(out_ds_info.current_shape.front()) + " to " +
            to_string(new_size_rows));
-    out_ds.current_shape.front() = new_size_rows;
+    out_ds_info.current_shape.front() = new_size_rows;
     (void) ErrorController::call(&H5Dset_extent,
-                                 out_ds.ds,
-                                 out_ds.current_shape.data());
+                                 out_ds_info.ds,
+                                 out_ds_info.current_shape.data());
   }
 
   // 4. Iterate over buffer-sized chunks.
   std::size_t n_rows_written = 0ull;
   while (n_rows_written < in_ds_size) {
     // 4.1 Calculate row numerology.
-//    row_numerology(out_ds, n_rows_written, in_ds_size);
+    auto const numerology [[gnu::unused]] =
+      row_numerology(out_ds_info, n_rows_written, in_ds_size);
 
     // 4.2 Read the correct hyperslab of the input file and copy it to
-    //     the output.
+    //     the corresponding hyperslab of the output.
+
+
+    // 4.3 Update cursors.
+    n_rows_written += numerology.rows_to_write_this_iteration;
+    out_ds_info.current_shape.front() +=
+      numerology.rows_to_write_this_iteration;
   }
   return status;
 }
