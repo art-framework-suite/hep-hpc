@@ -17,15 +17,92 @@ extern "C" {
 #include <numeric>
 #include <vector>
 
+using namespace hep_hpc::hdf5;
+
 namespace {
   bool file_exists(std::string file_name)
   {
     struct stat buffer;
     return (stat(file_name.c_str(), &buffer) == 0);
   }
-}
 
-using namespace hep_hpc::hdf5;
+  int verbosity;
+
+  void report(int level, std::string const & msg)
+  {
+    using std::to_string;
+    if (verbosity < level) {
+      return;
+    }
+    std::string level_txt;
+    switch (level) {
+    case -2:
+      level_txt = "ERROR";
+      break;
+    case -1:
+      level_txt = "WARNING";
+      break;
+    case 0:
+      level_txt = "INFO";
+      break;
+    default:
+      level_txt = std::string("DEBUG(") + to_string(level) + ')';
+    }
+    std::ostream & os = (level > -1) ? std::cout : std::cerr;
+    os << maybe_report_rank
+       << level_txt
+       << ": "
+       << msg
+       << std::endl;
+  }
+
+  PropertyList
+  maybe_collective_access()
+  {
+    PropertyList file_access_properties(H5P_FILE_ACCESS);
+#ifdef HEP_HPC_USE_MPI
+    report(1, "Setting access properties to use MPI I/O.");
+    (void) ErrorController::call(&H5Pset_fapl_mpio,
+                                 file_access_properties,
+                                 MPI_COMM_WORLD,
+                                 MPI_INFO_NULL);
+#endif
+    return file_access_properties;
+  }
+
+  File
+  open_output_file(std::string file_name,
+                   unsigned int file_mode)
+  {
+    // We want a slightly different semantic for "append" (H5F_ACC_RDWR)
+    // than that provided by HDF5: if it exists, open it read/write; if it
+    // does not, create it.
+    if (file_mode == H5F_ACC_RDWR &&  ! file_exists(file_name)) {
+      file_mode = H5F_ACC_EXCL;
+    }
+    File output_file(file_name, file_mode, {}, maybe_collective_access());
+    return output_file;
+  }
+
+  Dataspace
+  output_dataspace(Dataspace const & in_dataspace)
+  {
+    Dataspace result = in_dataspace;
+    auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, result);
+    std::vector<hsize_t> shape(ndims), maxshape(ndims);
+    (void) ErrorController::call(&H5Sget_simple_extent_dims,
+                                 result,
+                                 shape.data(),
+                                 maxshape.data());
+    maxshape.front() = H5S_UNLIMITED;
+    (void) ErrorController::call(&H5Sset_extent_simple,
+                                 result,
+                                 ndims,
+                                 shape.data(),
+                                 maxshape.data());
+    return result;
+  }
+}
 
 hep_hpc::HDF5FileConcatenator::
 HDF5FileConcatenator(std::string const & output,
@@ -35,13 +112,13 @@ HDF5FileConcatenator(std::string const & output,
                      std::vector<std::string> const & only_groups [[gnu::unused]], // FIXME
                      bool want_filters,
                      bool want_collective_writes,
-                     int verbosity)
+                     int in_verbosity)
   : mem_max_bytes_(mem_max * 1024 * 1024)
   , want_filters_(want_filters)
   , want_collective_writes_(want_collective_writes)
-  , verbosity_(verbosity)
-  , h5out_(open_output_file_(output, file_mode))
+  , h5out_(open_output_file(output, file_mode))
 {
+  verbosity = in_verbosity;
 }
 
 int
@@ -53,11 +130,11 @@ concatFiles(std::vector<std::string> const & inputs [[gnu::unused]])
   // Iterate over files:
   for (auto const & input_file_name : inputs) {
     // 1. Open input file
-    report_(3, std::string("Attempting to open input file ") + input_file_name);
-    File input_file(input_file_name, H5F_ACC_RDONLY, {}, maybe_collective_access_());
+    report(3, std::string("Attempting to open input file ") + input_file_name);
+    File input_file(input_file_name, H5F_ACC_RDONLY, {}, maybe_collective_access());
 
     // 2. Discover and iterate over items.
-    report_(0, std::string("Processing input file ") + input_file_name);
+    report(0, std::string("Processing input file ") + input_file_name);
     // Note: the lambda wrapper is needed to make sure that the C
     // function sees a callback of the correct signature.
     (void) ErrorController::
@@ -75,68 +152,8 @@ concatFiles(std::vector<std::string> const & inputs [[gnu::unused]])
 
     // FIXME: fill filename_column here.
   }
-  report_(3, "Completed processing input files");
+  report(3, "Completed processing input files");
   return 0;
-}
-
-void
-hep_hpc::HDF5FileConcatenator::
-report_(int level, std::string const & msg) const
-{
-  using std::to_string;
-  if (verbosity_ < level) {
-    return;
-  }
-  std::string level_txt;
-  switch (level) {
-  case -2:
-    level_txt = "ERROR";
-    break;
-  case -1:
-    level_txt = "WARNING";
-    break;
-  case 0:
-    level_txt = "INFO";
-    break;
-  default:
-    level_txt = std::string("DEBUG(") + to_string(level) + ')';
-  }
-  std::ostream & os = (level > -1) ? std::cout : std::cerr;
-  os << maybe_report_rank
-     << level_txt
-     << ": "
-     << msg
-     << std::endl;
-}
-
-hep_hpc::hdf5::PropertyList
-hep_hpc::HDF5FileConcatenator::
-maybe_collective_access_() const
-{
-  PropertyList file_access_properties(H5P_FILE_ACCESS);
-#ifdef HEP_HPC_USE_MPI
-  report_(1, "Setting access properties to use MPI I/O.");
-  (void) ErrorController::call(&H5Pset_fapl_mpio,
-                                     file_access_properties,
-                                     MPI_COMM_WORLD,
-                                     MPI_INFO_NULL);
-#endif
-  return file_access_properties;
-}
-
-hep_hpc::hdf5::File
-hep_hpc::HDF5FileConcatenator::
-open_output_file_(std::string file_name,
-                  unsigned int file_mode) const
-{
-  // We want a slightly different semantic for "append" (H5F_ACC_RDWR)
-  // than that provided by HDF5: if it exists, open it read/write; if it
-  // does not, create it.
-  if (file_mode == H5F_ACC_RDWR &&  ! file_exists(file_name)) {
-    file_mode = H5F_ACC_EXCL;
-  }
-  File output_file(file_name, file_mode, {}, maybe_collective_access_());
-  return output_file;
 }
 
 herr_t
@@ -150,7 +167,7 @@ visit_item_(hid_t root_id,
   // FIXME: handle only_groups.
   switch (obj_info->type) {
   case H5O_TYPE_GROUP:
-    report_(2, std::string("Ensuring existence of group ") + obj_name + " in output file.");
+    report(2, std::string("Ensuring existence of group ") + obj_name + " in output file.");
     {
       Group in_g(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
                  ResourceStrategy::handle_tag);
@@ -171,11 +188,11 @@ visit_item_(hid_t root_id,
   }
   break;
   case H5O_TYPE_NAMED_DATATYPE:
-    report_(-1, std::string("Ignoring named datatype ") + obj_name);
+    report(-1, std::string("Ignoring named datatype ") + obj_name);
     break;
   default:
-    report_(-2, std::string("Unrecognized HDF5 object type ") +
-            to_string(obj_info->type));
+    report(-2, std::string("Unrecognized HDF5 object type ") +
+           to_string(obj_info->type));
     status = -1;
   }
   return status;
@@ -189,12 +206,12 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
   herr_t status = 0;
 
   // 1. Discover incoming dataset shape and size.
-  report_(2, std::string("Examining shape for input dataset ") + ds_name);
+  report(2, std::string("Examining shape for input dataset ") + ds_name);
   Dataspace in_dataspace(ErrorController::call(&H5Dget_space, ds_in),
                          ResourceStrategy::handle_tag);
   
   if (ErrorController::call(&H5Sis_simple, in_dataspace) <= 0) {
-    report_(-1, std::string("Ignoring incoming non-simple dataset ") + ds_name);
+    report(-1, std::string("Ignoring incoming non-simple dataset ") + ds_name);
     return status;
   }
 
@@ -214,16 +231,16 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
                        ResourceStrategy::handle_tag);
   bool have_output_ds = false;
   { ScopedErrorHandler disable_hdf5_exceptions;
-    report_(3, std::string("Checking for existence of dataset ") +
-            ds_name + " in output.");
+    report(3, std::string("Checking for existence of dataset ") +
+           ds_name + " in output.");
     have_output_ds = (bool) Dataset(h5out_,
                                     ds_name,
                                     PropertyList(in_ds_access_plist));
   }
   auto & out_ds = ds_info_[ds_name];
   if (!have_output_ds) { // Does not exist
-    report_(3, std::string("Creating dataset ") +
-            ds_name + " in output.");
+    report(3, std::string("Creating dataset ") +
+           ds_name + " in output.");
     if (!want_filters_) {
       // Deactivate filters in outgoing dataset.
       (void) ErrorController::call(&H5Premove_filter,
@@ -243,7 +260,7 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
     out_ds.ds = Dataset(h5out_,
                         ds_name,
                         in_type,
-                        output_dataspace_(in_dataspace),
+                        output_dataspace(in_dataspace),
                         {},
                         std::move(in_ds_create_plist),
                         std::move(in_ds_access_plist));
@@ -261,16 +278,16 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
     if (!(ndims == out_ndims || std::equal(in_shape.cbegin() + 1,
                                            in_shape.cend(),
                                            out_shape.cbegin() + 1))) {
-      report_(-2,
-              std::string("incoming dataset dimensions are incompatible with outgoing dimensions for dataset ") +
-              ds_name);
+      report(-2,
+             std::string("incoming dataset dimensions are incompatible with outgoing dimensions for dataset ") +
+             ds_name);
       status = -1;
       return status;
     }
     auto const new_size_rows = out_ds.current_shape.front() + in_ds_size;
-    report_(1, std::string("resize ") + ds_name + " from " +
-            to_string(out_ds.current_shape.front()) + " to " +
-            to_string(new_size_rows));
+    report(1, std::string("resize ") + ds_name + " from " +
+           to_string(out_ds.current_shape.front()) + " to " +
+           to_string(new_size_rows));
     out_ds.current_shape.front() = new_size_rows;
     (void) ErrorController::call(&H5Dset_extent,
                                  out_ds.ds,
@@ -289,22 +306,3 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
   return status;
 }
 
-hep_hpc::hdf5::Dataspace
-hep_hpc::HDF5FileConcatenator::
-output_dataspace_(Dataspace const & in_dataspace)
-{
-  Dataspace result = in_dataspace;
-  auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, result);
-  std::vector<hsize_t> shape(ndims), maxshape(ndims);
-  (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                               result,
-                               shape.data(),
-                               maxshape.data());
-  maxshape.front() = H5S_UNLIMITED;
-  (void) ErrorController::call(&H5Sset_extent_simple,
-                               result,
-                               ndims,
-                               shape.data(),
-                               maxshape.data());
-  return result;
-}

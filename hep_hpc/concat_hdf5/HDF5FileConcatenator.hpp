@@ -35,21 +35,15 @@ public:
 
 
 private:
-  void report_(int level, std::string const & msg) const;
-  hdf5::PropertyList maybe_collective_access_() const;
-  hdf5::File open_output_file_(std::string file_name,
-                               unsigned int file_mode) const;
   herr_t visit_item_(hid_t root_id,
                      char const * obj_name,
                      H5O_info_t const * obj_info);
   herr_t handle_dataset_(hdf5::Dataset ds_in, const char * ds_name);
-  hdf5::Dataspace output_dataspace_(hdf5::Dataspace const & in_dataspace);
 
   // Parameters.
   std::size_t mem_max_bytes_;
   bool want_filters_;
   bool want_collective_writes_;
-  int verbosity_;
 
   // Other state.
   hdf5::File h5out_;
