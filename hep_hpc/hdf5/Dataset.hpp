@@ -70,15 +70,15 @@ public:
 
 private:
   static HID_t const INVALID_DSET_;
-  Resource<HID_t> h5dset_;
+  Resource h5dset_;
 };
 
 inline
 hep_hpc::hdf5::Dataset::
 Dataset(hid_t const dataset, ResourceStrategy const strategy)
   : h5dset_((strategy == ResourceStrategy::handle_tag) ?
-            Resource<HID_t>(HID_t(dataset), &H5Dclose) :
-            Resource<HID_t>(dataset))
+            Resource(dataset, &H5Dclose) :
+            Resource(dataset))
 {
 }
 

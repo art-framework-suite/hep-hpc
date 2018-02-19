@@ -13,11 +13,6 @@
 // hep_hpc::hdf5::ErrorController::call(...)) to clean up the
 // previously-allocated resource.
 //
-////////////////////////////////////
-// NOTES
-//
-// * Valid only for hid_t and HID_t types.
-//
 /////////////////////////////////////////////////////////////////////////
 
 #include "hep_hpc/Utilities/SimpleRAII.hpp"
@@ -30,33 +25,35 @@
 
 namespace hep_hpc {
   namespace hdf5 {
-    template <typename RH,
-              typename = typename std::enable_if<std::is_same<RH, HID_t>::value ||
-                                                 std::is_same<RH, hid_t>::value>::type >
     class Resource;
 
-    template <typename RH>
-    void swap(Resource<RH> & left, Resource<RH> & right);
+    void swap(Resource & left, Resource & right);
 
   }
 }
 
-template <typename RH, typename>
-  class hep_hpc::hdf5::Resource : hep_hpc::detail::SimpleRAII<RH> {
+class hep_hpc::hdf5::Resource : hep_hpc::detail::SimpleRAII<HID_t> {
 public:
-  using base = hep_hpc::detail::SimpleRAII<RH>;
+  using base = hep_hpc::detail::SimpleRAII<HID_t>;
 
   // Construct with resource handle (non-owning).
-  explicit Resource(RH rh = {})
+  explicit Resource(HID_t rh = {})
     : base(rh)
     {
     }
 
   // Construct with resource handle and teardown function.
   template <typename TEARDOWN_FUNC>
-  Resource(RH rh, TEARDOWN_FUNC teardown)
+  Resource(HID_t rh, TEARDOWN_FUNC teardown)
     : base(rh,
-           [teardown](RH rh) { return ErrorController::call(teardown, rh); })
+           [teardown](HID_t rh) { return ErrorController::call(teardown, rh); })
+    {
+    }
+
+  template <typename TEARDOWN_FUNC>
+  Resource(hid_t rh, TEARDOWN_FUNC teardown)
+    : base(HID_t(rh),
+           [teardown](HID_t rh) { return ErrorController::call(teardown, rh); })
     {
     }
 
@@ -64,19 +61,19 @@ public:
   template <typename SETUP_FUNC, typename TEARDOWN_FUNC, typename... Args>
   Resource(SETUP_FUNC setup, TEARDOWN_FUNC teardown, Args && ... args)
     : base([&]() { return ErrorController::call(setup, std::forward<Args>(args)...); },
-           [teardown](RH rh) { return ErrorController::call(teardown, rh); })
+           [teardown](HID_t rh) { return ErrorController::call(teardown, rh); })
     {
     }
 
   // Move constructor.
-  Resource(Resource<RH> && other)
+  Resource(Resource && other)
     : base(std::move(other))
     {
     }
 
   // Move assignment.
-  Resource<RH> &
-  operator = (Resource<RH> && other)
+  Resource &
+  operator = (Resource && other)
     {
       using std::swap;
       swap(*this, other);
@@ -88,16 +85,16 @@ public:
   using base::release;
   using base::reset;
 
-  friend void swap<>(Resource<RH> & left, Resource<RH> & right);
+  friend void swap(Resource & left, Resource & right);
 
 };
 
-template <typename RH>
+inline
 void
-hep_hpc::hdf5::swap(Resource<RH> & left, Resource<RH> & right)
+hep_hpc::hdf5::swap(Resource & left, Resource & right)
 {
-  swap(dynamic_cast<typename Resource<RH>::base &>(left),
-       dynamic_cast<typename Resource<RH>::base &>(right));
+  swap(static_cast<typename Resource::base &>(left),
+       static_cast<typename Resource::base &>(right));
 }
 
 

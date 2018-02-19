@@ -66,15 +66,15 @@ public:
 private:
   // Note we are using a plain hid_t here rather than HID_t, because 0
   // (H5P_DEFAULT) is a reasonable default;
-  Resource<hid_t> h5plist_;
+  Resource h5plist_ {0};
 };
 
 inline
 hep_hpc::hdf5::PropertyList::
 PropertyList(hid_t const plist, ResourceStrategy const strategy)
   : h5plist_((strategy == ResourceStrategy::handle_tag) ?
-             Resource<hid_t>(plist, &H5Pclose) :
-             Resource<hid_t>(plist))
+             Resource(plist, &H5Pclose) :
+             Resource(plist))
 {
 }
 

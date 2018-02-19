@@ -63,15 +63,15 @@ public:
 
 private:
   static HID_t const INVALID_GROUP_;
-  Resource<HID_t> h5group_;
+  Resource h5group_;
 };
 
 inline
 hep_hpc::hdf5::Group::
 Group(hid_t const group, ResourceStrategy const strategy)
   : h5group_((strategy == ResourceStrategy::handle_tag) ?
-             Resource<HID_t>(HID_t(group), &H5Gclose) :
-             Resource<HID_t>(group))
+             Resource(group, &H5Gclose) :
+             Resource(group))
 {
 }
 

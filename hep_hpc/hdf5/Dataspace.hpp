@@ -81,7 +81,7 @@ public:
 private:
   // Note we are using a plain hid_t here rather than HID_t, because 0
   // (H5S_ALL) is a reasonable default;
-  Resource<hid_t> h5dspace_;
+  Resource h5dspace_ {0};
 };
 
 inline
@@ -97,8 +97,8 @@ hep_hpc::hdf5::Dataspace::
 Dataspace(hid_t const dspace, ResourceStrategy const strategy)
   :
   h5dspace_((strategy == ResourceStrategy::handle_tag) ?
-            Resource<hid_t>(dspace, &H5Sclose) :
-            Resource<hid_t>(dspace))
+            Resource(dspace, &H5Sclose) :
+            Resource(dspace))
 {
 }
 

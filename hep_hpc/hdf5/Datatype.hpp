@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/Resource.hpp"
+#include "hep_hpc/hdf5/ResourceStrategy.hpp"
 
 #include "hdf5.h"
 
@@ -25,8 +26,11 @@ class hep_hpc::hdf5::Datatype {
 public:
   Datatype() = default;
 
-  // Take ownership.
-  explicit Datatype(HID_t dtype);
+  // Adopt an existing HDF5 datatype ID with the specified management
+  // strategy. If observing, caller is responsible for closing at the
+  // appropriate time.
+  explicit Datatype(HID_t dtype,
+                    ResourceStrategy strategy = ResourceStrategy::handle_tag);
 
   // Copy operations.
   Datatype(Datatype const & other);
@@ -47,14 +51,17 @@ public:
 
 private:
   static HID_t const INVALID_DTYPE_;
-  Resource<HID_t> h5dtype_;
+  Resource h5dtype_;
 };
 
 inline
 hep_hpc::hdf5::Datatype::
-Datatype(HID_t const dtype)
+Datatype(HID_t const dtype,
+         ResourceStrategy const strategy)
   :
-  h5dtype_(dtype, &H5Tclose)
+  h5dtype_((strategy == ResourceStrategy::handle_tag) ?
+           Resource(dtype, &H5Tclose) :
+           Resource(dtype))
 {
 }
 

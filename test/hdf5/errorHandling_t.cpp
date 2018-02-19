@@ -185,9 +185,9 @@ TEST_F(ErrorHandling, nested_errors)
 {
   ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
   try {
-    Resource<hid_t> r1((hid_t)1101, &H5Fclose);
+    Resource r1((hid_t)1101, &H5Fclose);
     {
-      Resource<hid_t> r2((hid_t)1102, &H5Fclose);
+      Resource r2((hid_t)1102, &H5Fclose);
     }
     FAIL();
   }

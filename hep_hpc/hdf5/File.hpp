@@ -47,15 +47,15 @@ public:
   void close();
 
 private:
-  Resource<HID_t> h5file_;
+  Resource h5file_;
 };
 
 inline
 hep_hpc::hdf5::File::File(hid_t const file, ResourceStrategy const strategy)
   :
   h5file_((strategy == ResourceStrategy::handle_tag) ?
-          Resource<HID_t>(HID_t(file), &H5Fclose) :
-          Resource<HID_t>(file))
+          Resource(file, &H5Fclose) :
+          Resource(file))
 {
 }
 
