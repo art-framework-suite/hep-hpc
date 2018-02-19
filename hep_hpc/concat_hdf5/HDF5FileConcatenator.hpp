@@ -34,10 +34,15 @@ public:
   int concatFiles(std::vector<std::string> const & inputs);
 
 private:
+  // Visitor callback for use by H5Ovisit().
   herr_t visit_item_(hid_t root_id,
                      char const * obj_name,
                      H5O_info_t const * obj_info);
+  // Handle the data movement for one dataset.
   herr_t handle_dataset_(hdf5::Dataset ds_in, const char * ds_name);
+  // Return a suitably-set property list specifying properties for read
+  // and write.
+  hdf5::PropertyList transfer_properties_();
 
   // Parameters.
   std::size_t mem_max_bytes_;
@@ -45,6 +50,7 @@ private:
   bool want_collective_writes_;
 
   // Other state.
+  std::vector<uint8_t> buffer_;
 
   // N.B. Relative order of h5out_ and ds_info_ should result in output
   // datasets being closed before the output file.

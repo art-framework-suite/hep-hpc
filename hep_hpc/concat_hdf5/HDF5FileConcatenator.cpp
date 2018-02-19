@@ -7,6 +7,7 @@
 
 #include "hep_hpc/concat_hdf5/maybe_report_rank.hpp"
 #include "hep_hpc/hdf5/Dataset.hpp"
+#include "hep_hpc/hdf5/Datatype.hpp"
 #include "hep_hpc/hdf5/Group.hpp"
 #include "hep_hpc/hdf5/PropertyList.hpp"
 #include "hep_hpc/hdf5/ResourceStrategy.hpp"
@@ -18,6 +19,7 @@ extern "C" {
 #include "H5Spublic.h"
 }
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <numeric>
@@ -112,6 +114,33 @@ namespace {
     return result;
   }
 
+  std::vector<hsize_t>
+  prepare_dataspace(Dataspace & dataspace,
+                    std::size_t const start_row,
+                    std::size_t const rows_to_write)
+  {
+    auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, dataspace);
+    std::vector<hsize_t> shape(ndims), maxshape(ndims);
+    (void) ErrorController::call(&H5Sget_simple_extent_dims,
+                                 dataspace,
+                                 shape.data(),
+                                 maxshape.data());
+    std::vector<hsize_t> offsets(ndims),
+      block_count(ndims),
+      n_elements(shape);
+    offsets.front() = start_row;
+    std::fill(block_count.begin(), block_count.end(), 1);
+    n_elements.front() = rows_to_write;
+    (void) ErrorController::call(&H5Sselect_hyperslab,
+                                 dataspace,
+                                 H5S_SELECT_SET,
+                                 offsets.data(),
+                                 nullptr,
+                                 block_count.data(),
+                                 n_elements.data());    
+    return n_elements;
+  }
+
   struct NumerologyInfo {
     std::size_t rows_to_write_this_iteration {0ull};
     std::size_t rows_to_write_this_rank {0ull};
@@ -120,14 +149,13 @@ namespace {
   };
 
   NumerologyInfo row_numerology(hep_hpc::ConcatenatedDSInfo const & out_ds_info,
-                                std::size_t n_rows_written,
-                                std::size_t in_ds_size)
+                                std::size_t const n_rows_written_this_input,
+                                std::size_t const in_ds_size)
   {
     using std::to_string;
     NumerologyInfo result;
-    auto const output_current_size = out_ds_info.current_shape.front();
-    auto const incomplete_chunk_size = output_current_size % out_ds_info.chunk_rows;
-    auto remaining_rows_this_file = in_ds_size - n_rows_written;
+    auto const incomplete_chunk_size = out_ds_info.n_rows_written_total % out_ds_info.chunk_rows;
+    auto remaining_rows_this_file = in_ds_size - n_rows_written_this_input;
     result.rows_to_write_this_iteration =
       std::min(remaining_rows_this_file - (remaining_rows_this_file % out_ds_info.chunk_rows),
                out_ds_info.buffer_size_rows * n_ranks);
@@ -158,16 +186,18 @@ namespace {
     }
     // Tack on some extra rows if that's what we need to complete the file.
     auto const remaining_rows_threshold =
-      (incomplete_chunk_size > 0ull) ?
-      (2 * out_ds_info.chunk_rows - incomplete_chunk_size) :
-      out_ds_info.chunk_rows;
+      out_ds_info.chunk_rows - incomplete_chunk_size;
     if (remaining_rows_this_file > 0ull &&
-        remaining_rows_this_file <= remaining_rows_threshold) {
+        remaining_rows_this_file < remaining_rows_threshold) {
       result.rows_to_write_this_iteration += remaining_rows_this_file;
       // Be compact in deciding which rank writes the extra rows.
       auto const rank_to_write_remaining_rows =
         (minsize == 0) ? leftovers : n_ranks - 1;
-      if (my_rank == rank_to_write_remaining_rows) {
+      // If there's room in the buffer for the remaining rows, write
+      // them, otherwise we get to do another iteration.
+      if (my_rank == rank_to_write_remaining_rows &&
+          ! (result.rows_to_write_this_rank + remaining_rows_this_file >
+             out_ds_info.buffer_size_rows)) {
         report(3, std::string("Thunking rows_to_write_this_rank from ") +
                to_string(result.rows_to_write_this_rank) + " to " +
                to_string(result.rows_to_write_this_rank + remaining_rows_this_file) +
@@ -179,20 +209,19 @@ namespace {
 
     // Calculate start rows for input and output.
     if (my_rank == 0) {
-      result.input_start_row_this_rank = n_rows_written;
-      result.output_start_row_this_rank = output_current_size;
+      result.input_start_row_this_rank = n_rows_written_this_input;
+      result.output_start_row_this_rank = out_ds_info.n_rows_written_total;
     } else {
       result.input_start_row_this_rank =
-        (n_rows_written - incomplete_chunk_size) +
+        (n_rows_written_this_input - incomplete_chunk_size) +
         ((my_rank < leftovers) ?
          (my_rank * (minsize + 1)) :
          (leftovers + my_rank * minsize)) * out_ds_info.chunk_rows;
       result.output_start_row_this_rank =
-        result.input_start_row_this_rank - n_rows_written + output_current_size;
+        result.input_start_row_this_rank - n_rows_written_this_input + out_ds_info.n_rows_written_total;
     }
     return result;
   }
-
 }
 
 hep_hpc::HDF5FileConcatenator::
@@ -207,7 +236,9 @@ HDF5FileConcatenator(std::string const & output,
   : mem_max_bytes_(mem_max * 1024 * 1024)
   , want_filters_(want_filters)
   , want_collective_writes_(want_collective_writes)
+  , buffer_(mem_max_bytes_)
   , h5out_(open_output_file(output, file_mode))
+  , ds_info_()
 {
   // Set file-scope parameters.
   verbosity = in_verbosity;
@@ -282,9 +313,9 @@ visit_item_(hid_t root_id,
     break;
   case H5O_TYPE_DATASET:
   {
-    Dataset ds_in(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
+    Dataset in_ds(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
                   ResourceStrategy::handle_tag);
-    status = handle_dataset_(std::move(ds_in), obj_name);
+    status = handle_dataset_(std::move(in_ds), obj_name);
   }
   break;
   case H5O_TYPE_NAMED_DATATYPE:
@@ -300,14 +331,14 @@ visit_item_(hid_t root_id,
 
 herr_t
 hep_hpc::HDF5FileConcatenator::
-handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
+handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
 {
   using std::to_string;
   herr_t status = 0;
 
   // 1. Discover incoming dataset shape and size.
   report(2, std::string("Examining shape for input dataset ") + ds_name);
-  Dataspace in_dataspace(ErrorController::call(&H5Dget_space, ds_in),
+  Dataspace in_dataspace(ErrorController::call(&H5Dget_space, in_ds),
                          ResourceStrategy::handle_tag);
   
   if (ErrorController::call(&H5Sis_simple, in_dataspace) <= 0) {
@@ -315,7 +346,8 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
     return status;
   }
 
-  auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, in_dataspace);
+  auto const ndims =
+    ErrorController::call(&H5Sget_simple_extent_ndims, in_dataspace);
   std::vector<hsize_t> in_shape(ndims), in_maxshape(ndims);
   (void) ErrorController::call(&H5Sget_simple_extent_dims,
                                in_dataspace,
@@ -325,9 +357,9 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
 
   // 2. Check if dataset exists in output. Create and store datasets and
   //    associated information in class state.
-  PropertyList in_ds_create_plist(ErrorController::call(&H5Dget_create_plist, ds_in),
+  PropertyList in_ds_create_plist(ErrorController::call(&H5Dget_create_plist, in_ds),
                                   ResourceStrategy::handle_tag),
-    in_ds_access_plist(ErrorController::call(&H5Dget_access_plist, ds_in),
+    in_ds_access_plist(ErrorController::call(&H5Dget_access_plist, in_ds),
                        ResourceStrategy::handle_tag);
   bool have_output_ds = false;
   { ScopedErrorHandler disable_hdf5_exceptions;
@@ -338,6 +370,7 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
                                     PropertyList(in_ds_access_plist));
   }
   auto & out_ds_info = ds_info_[ds_name];
+  Datatype in_type (ErrorController::call(&H5Dget_type, in_ds));
   if (!have_output_ds) { // Does not exist
     report(3, std::string("Creating dataset ") +
            ds_name + " in output.");
@@ -347,30 +380,32 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
                                    in_ds_create_plist,
                                    H5Z_FILTER_ALL);
     }
-    auto in_type = ErrorController::call(&H5Dget_type, ds_in);
     out_ds_info.row_size_bytes =
       std::accumulate(in_shape.cbegin() + 1,
                       in_shape.cend(),
                       ErrorController::call(&H5Tget_size, in_type),
                       std::multiplies<std::size_t>());
-    (void) ErrorController::call(&H5Pget_chunk, in_ds_create_plist, 1, &out_ds_info.chunk_rows);
+    (void) ErrorController::call(&H5Pget_chunk,
+                                 in_ds_create_plist,
+                                 1,
+                                 &out_ds_info.chunk_rows);
     out_ds_info.buffer_size_rows = mem_max_bytes_ / out_ds_info.row_size_bytes;
     // buffer_size_rows should be a multiple of out_ds_info.chunk_rows.
-    out_ds_info.buffer_size_rows -= out_ds_info.buffer_size_rows % out_ds_info.chunk_rows;
-    out_ds_info.current_shape = in_shape;
-    
+    out_ds_info.buffer_size_rows -=
+      out_ds_info.buffer_size_rows % out_ds_info.chunk_rows;
     out_ds_info.ds = Dataset(h5out_,
-                        ds_name,
-                        in_type,
-                        output_dataspace(in_dataspace),
-                        {},
-                        std::move(in_ds_create_plist),
-                        std::move(in_ds_access_plist));
+                             ds_name,
+                             in_type,
+                             output_dataspace(in_dataspace),
+                             {},
+                             std::move(in_ds_create_plist),
+                             std::move(in_ds_access_plist));
   }
 
   if (have_output_ds) { // Resize existing dataset.
     Dataspace out_dataspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
                             ResourceStrategy::handle_tag);
+
     auto const out_ndims = ErrorController::call(&H5Sget_simple_extent_ndims, out_dataspace);
     std::vector<hsize_t> out_shape(out_ndims), out_maxshape(out_ndims);
     (void) ErrorController::call(&H5Sget_simple_extent_dims,
@@ -386,32 +421,97 @@ handle_dataset_(hdf5::Dataset ds_in, const char * const ds_name)
       status = -1;
       return status;
     }
-    auto const new_size_rows = out_ds_info.current_shape.front() + in_ds_size;
+    auto const new_size_rows = out_shape.front() + in_ds_size;
     report(1, std::string("resize ") + ds_name + " from " +
-           to_string(out_ds_info.current_shape.front()) + " to " +
+           to_string(out_shape.front()) + " to " +
            to_string(new_size_rows));
-    out_ds_info.current_shape.front() = new_size_rows;
+    out_shape.front() = new_size_rows;
     (void) ErrorController::call(&H5Dset_extent,
                                  out_ds_info.ds,
-                                 out_ds_info.current_shape.data());
+                                 out_shape.data());
   }
 
+  // Get an up-to-date copy of the output dataset.
+  Dataspace out_dataspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
+                          ResourceStrategy::handle_tag);
+
+
   // 4. Iterate over buffer-sized chunks.
-  std::size_t n_rows_written = 0ull;
-  while (n_rows_written < in_ds_size) {
+  std::size_t n_rows_written_this_input = 0ull;
+  while (n_rows_written_this_input < in_ds_size) {
     // 4.1 Calculate row numerology.
-    auto const numerology [[gnu::unused]] =
-      row_numerology(out_ds_info, n_rows_written, in_ds_size);
+    auto const numerology =
+      row_numerology(out_ds_info,
+                     n_rows_written_this_input,
+                     in_ds_size);
 
     // 4.2 Read the correct hyperslab of the input file and copy it to
     //     the corresponding hyperslab of the output.
 
+    // 4.2.1 Prepare the input dataspace.
+    auto const in_n_elements =
+      prepare_dataspace(in_dataspace,
+                        numerology.input_start_row_this_rank,
+                        numerology.rows_to_write_this_rank);
+
+    // 4.2.2 Execute the read.
+    report(4, std::string("Reading ") +
+           to_string(numerology.rows_to_write_this_rank) + 
+           " rows from [" +
+           to_string(numerology.input_start_row_this_rank) +
+           ", " +
+           to_string(numerology.input_start_row_this_rank +
+                     numerology.rows_to_write_this_rank) +
+           ").");
+    (void) in_ds.read(in_type,
+                      buffer_.data(),
+                      Dataspace{ndims,
+                          in_n_elements.data(),
+                          in_n_elements.data()},
+                      Dataspace(in_dataspace),
+                      transfer_properties_());
+
+    // 4.2.3 Prepare the output dataspace.
+    auto const out_n_elements =
+      prepare_dataspace(out_dataspace,
+                        numerology.output_start_row_this_rank,
+                        numerology.rows_to_write_this_rank);
+    
+    // 4.2.4 Execute the write.
+    report(4, std::string("Writing ") +
+           to_string(numerology.rows_to_write_this_rank) + 
+           " rows to [" +
+           to_string(numerology.output_start_row_this_rank) +
+           ", " +
+           to_string(numerology.output_start_row_this_rank +
+                     numerology.rows_to_write_this_rank) +
+           ").");
+    out_ds_info.ds.write(in_type,
+                         buffer_.data(),
+                         Dataspace{ndims,
+                             out_n_elements.data(),
+                             out_n_elements.data()},
+                         Dataspace(out_dataspace),
+                         transfer_properties_());
 
     // 4.3 Update cursors.
-    n_rows_written += numerology.rows_to_write_this_iteration;
-    out_ds_info.current_shape.front() +=
-      numerology.rows_to_write_this_iteration;
+    n_rows_written_this_input += numerology.rows_to_write_this_iteration;
+    out_ds_info.n_rows_written_total +=  numerology.rows_to_write_this_iteration;
   }
   return status;
 }
 
+PropertyList
+hep_hpc::HDF5FileConcatenator::
+transfer_properties_()
+{
+  PropertyList xfer_properties(H5P_DATASET_XFER);
+#ifdef HEP_HPC_USE_MPI
+  if (want_collective_writes_) {
+    (void) ErrorController::call(&H5Pset_dxpl_mpio,
+                                 xfer_properties,
+                                 H5FD_MPIO_COLLECTIVE);
+  }
+#endif
+  return xfer_properties;
+}

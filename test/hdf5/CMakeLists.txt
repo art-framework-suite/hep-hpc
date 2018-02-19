@@ -68,6 +68,10 @@ target_link_libraries(Ntuple_04_t hep_hpc_hdf5)
 add_executable(Ntuple_t Ntuple_t.cpp)
 add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)
 target_link_libraries(Ntuple_t hep_hpc_hdf5)
+
+add_executable(concat_test_file concat_test_file.cpp)
+target_link_libraries(concat_test_file hep_hpc_hdf5)
+
 ####################################
 
 install(TARGETS Ntuple_t

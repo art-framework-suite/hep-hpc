@@ -13,7 +13,7 @@
 // This program is certainly usable in a non-MPI environment, but
 // scaling with MPI is highly desirable for large filesets.
 //
-// For usage see concat_h5py -h.
+// For usage see concat_hdf5 -h.
 //
 // 2017-02-13 CHG.
 ////////////////////////////////////////////////////////////////////////
@@ -21,6 +21,7 @@
 #include "hep_hpc/detail/config.hpp"
 #include "hep_hpc/concat_hdf5/HDF5FileConcatenator.hpp"
 #include "hep_hpc/concat_hdf5/maybe_report_rank.hpp"
+#include "hep_hpc/hdf5/errorHandling.hpp"
 
 #ifdef HEP_HPC_USE_MPI
 #include "hep_hpc/MPI/MPIInstance.hpp"
@@ -65,12 +66,12 @@ private:
     std::string output_ { "test.hdf5" };
     bool append_ { false };
     bool overwrite_ { true };
-    std::size_t mem_max_;
+    std::size_t mem_max_ { 100 };
     std::string filename_column_;
     std::vector<std::string> only_groups_;
     bool want_filters_ { true };
     bool want_collective_writes_ { true };
-    std::size_t verbosity_ { 3 };
+    std::size_t verbosity_ { 4 };
     std::vector<std::string> inputs_;
   };
 
@@ -84,6 +85,8 @@ private:
 
 }
 
+
+
 int main(int argc, char **argv)
 {
   int status = 0;
@@ -92,11 +95,17 @@ int main(int argc, char **argv)
                      argv,
                      MPIInstance::world_errors_return_tag);
 #endif
+  // Make sure we throw exceptions on HDF5 call errors.
+  hdf5::ErrorController::setErrorHandler(hdf5::ErrorMode::EXCEPTION);
+
+  // Do the work with the appropriate protections.
   try {
     ProgramOptions program_options(argc, argv);
     HDF5FileConcatenator
       concatenator(program_options.output(),
-                   program_options.append() ? H5F_ACC_RDWR : program_options.overwrite() ? H5F_ACC_TRUNC : H5F_ACC_EXCL,
+                   program_options.append() ?
+                   H5F_ACC_RDWR :
+                   program_options.overwrite() ? H5F_ACC_TRUNC : H5F_ACC_EXCL,
                    program_options.mem_max(),
                    program_options.filename_column(),
                    program_options.only_groups(),
