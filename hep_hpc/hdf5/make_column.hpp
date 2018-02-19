@@ -160,9 +160,6 @@ setColumnProperties(COL & col,
     [](std::string const & propertyClass) {
     throw std::runtime_error(std::string("setColumnProperties: props contains multiple properties of class ") + propertyClass);
   };
-  if (props.size() == 0ull) {
-    return; // Nothing to do.
-  }
   PropertyList lcp, dcp, dap;
   for (auto && prop : props) {
     if (prop.isClass(H5P_LINK_CREATE)) {
