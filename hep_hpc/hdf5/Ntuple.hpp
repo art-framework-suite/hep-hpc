@@ -506,7 +506,9 @@ flush_one(BUFFER & buf, Dataset & dset, COL const & col)
   herr_t rc = -1;
   // Obtain the current dataspace for this dataset.
   auto dspace = Dataspace{ErrorController::call(&H5Dget_space, dset)};
-  std::array<hsize_t, COL::nDims() + 1ull> filedims, filemaxdims, offsets {0}, nElements;
+  std::array<hsize_t, COL::nDims() + 1ull>
+    filedims, filemaxdims, offsets {0}, nElements, blockCount;
+  blockCount.fill(1);
   if (H5Sget_simple_extent_dims(dspace, filedims.data(), filemaxdims.data()) !=
       COL::nDims() + 1ull) {
     return rc;
@@ -528,8 +530,8 @@ flush_one(BUFFER & buf, Dataset & dset, COL const & col)
                                   H5S_SELECT_SET,
                                   offsets.data(),
                                   nullptr,
-                                  nElements.data(),
-                                  nullptr)) != 0) {
+                                  blockCount.data(),
+                                  nElements.data())) != 0) {
     return rc;
   }
   // Write the data.
