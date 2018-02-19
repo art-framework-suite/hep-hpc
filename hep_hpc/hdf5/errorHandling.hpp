@@ -22,14 +22,14 @@
 //
 //   * EXCEPTION: this will cause (suitably wrapped) HDF5 functions in
 //     the current thread to throw an exception (see
-//     hdf5study::hdf5::ErrorController::call(...) for details and
+//     hep_hpc::hdf5::ErrorController::call(...) for details and
 //     general notes, below.
 //
 //   * NONE: Error handling must be done on a case-by-case basis by the
 //     user based on return codes.
 //
 ////////////////////////////////////
-// class hdf5study::hdf5::ErrorController;
+// class hep_hpc::hdf5::ErrorController;
 //
 // A singleton class with only static members providing various
 // functions for controlling the behavior of the HDF5 library in a C++
