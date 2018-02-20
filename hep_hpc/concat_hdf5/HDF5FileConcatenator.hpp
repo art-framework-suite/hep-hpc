@@ -49,12 +49,14 @@ private:
   bool want_filters_;
   bool want_collective_writes_;
 
-  // Other state.
+  // I/O buffer.
   std::vector<uint8_t> buffer_;
 
   // N.B. Relative order of h5out_ and ds_info_ should result in output
   // datasets being closed before the output file.
+  // Output file.
   hdf5::File h5out_;
+  // Per-dataset info and state.
   std::unordered_map<std::string, ConcatenatedDSInfo> ds_info_;
 };
 

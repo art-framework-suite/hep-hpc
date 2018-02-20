@@ -3,7 +3,7 @@
 ////////////////////////////////////////////////////////////////////////
 // ConcatenatedDSInfo
 //
-// Hang on to concatenation state information for a dataset.
+// Concatenation state information for a dataset.
 ////////////////////////////////////////////////////////////////////////
 
 #include "hep_hpc/hdf5/Dataset.hpp"
@@ -19,7 +19,6 @@ struct hep_hpc::ConcatenatedDSInfo {
   hsize_t chunk_rows {0ul};
   hsize_t buffer_size_rows {0ull};
   hdf5::Dataset ds;
-  std::size_t rows_left_this_chunk {0ull};
   std::size_t n_rows_written_total {0ull};
 };
 

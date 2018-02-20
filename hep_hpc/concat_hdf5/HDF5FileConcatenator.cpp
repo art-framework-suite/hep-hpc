@@ -33,12 +33,14 @@ namespace {
   int n_ranks;
   int my_rank;
 
+  // Ascertain with minimum fuss whether a file exists.
   bool file_exists(std::string file_name)
   {
     struct stat buffer;
     return (stat(file_name.c_str(), &buffer) == 0);
   }
 
+  // Error and debug reporting.
   void report(int level, std::string const & msg)
   {
     using std::to_string;
@@ -67,6 +69,7 @@ namespace {
        << std::endl;
   }
 
+  // Set independent or collective access on the file.
   PropertyList
   maybe_collective_access()
   {
@@ -81,6 +84,7 @@ namespace {
     return file_access_properties;
   }
 
+  // Open the output file.
   File
   open_output_file(std::string file_name,
                    unsigned int file_mode)
@@ -95,6 +99,7 @@ namespace {
     return output_file;
   }
 
+  // Prepare the output dataspace based on the input dataspace.
   Dataspace
   output_dataspace(Dataspace const & in_dataspace)
   {
@@ -114,12 +119,14 @@ namespace {
     return result;
   }
 
+  // Select the correct hyperslab for IO in a dataspace.
   std::vector<hsize_t>
   prepare_dataspace(Dataspace & dataspace,
                     std::size_t const start_row,
-                    std::size_t const rows_to_write)
+                    std::size_t const rows_for_io)
   {
-    auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, dataspace);
+    auto const ndims =
+      ErrorController::call(&H5Sget_simple_extent_ndims, dataspace);
     std::vector<hsize_t> shape(ndims), maxshape(ndims);
     (void) ErrorController::call(&H5Sget_simple_extent_dims,
                                  dataspace,
@@ -130,7 +137,7 @@ namespace {
       n_elements(shape);
     offsets.front() = start_row;
     std::fill(block_count.begin(), block_count.end(), 1);
-    n_elements.front() = rows_to_write;
+    n_elements.front() = rows_for_io;
     (void) ErrorController::call(&H5Sselect_hyperslab,
                                  dataspace,
                                  H5S_SELECT_SET,
@@ -141,6 +148,7 @@ namespace {
     return n_elements;
   }
 
+  // Structure to hold the calculated numerology for an I/O operation.
   struct NumerologyInfo {
     std::size_t rows_to_write_this_iteration {0ull};
     std::size_t rows_to_write_this_rank {0ull};
@@ -148,37 +156,46 @@ namespace {
     std::size_t output_start_row_this_rank {0ull};
   };
 
-  NumerologyInfo row_numerology(hep_hpc::ConcatenatedDSInfo const & out_ds_info,
-                                std::size_t const n_rows_written_this_input,
-                                std::size_t const in_ds_size)
+  // Calculate the numerology for an I/O operation.
+  NumerologyInfo
+  row_numerology(hep_hpc::ConcatenatedDSInfo const & out_ds_info,
+                 std::size_t const n_rows_written_this_input,
+                 std::size_t const in_ds_size)
   {
     using std::to_string;
     NumerologyInfo result;
-    auto const incomplete_chunk_size = out_ds_info.n_rows_written_total % out_ds_info.chunk_rows;
-    auto remaining_rows_this_file = in_ds_size - n_rows_written_this_input;
+    auto const incomplete_chunk_size =
+      out_ds_info.n_rows_written_total % out_ds_info.chunk_rows;
+    auto remaining_rows_this_file =
+      in_ds_size - n_rows_written_this_input;
     result.rows_to_write_this_iteration =
       std::min(remaining_rows_this_file - (remaining_rows_this_file % out_ds_info.chunk_rows),
                out_ds_info.buffer_size_rows * n_ranks);
     // Each rank will get either minsize or minsize + 1 chunks to work on.
     auto const rankdiv =
-      std::div((long long) (result.rows_to_write_this_iteration / out_ds_info.chunk_rows),
+      std::div((long long) (result.rows_to_write_this_iteration /
+                            out_ds_info.chunk_rows),
                (long long) n_ranks);
     auto const & minsize = rankdiv.quot;
     auto const & leftovers = rankdiv.rem;
     // Ranks [0, leftovers) get minsize + 1 chunks.
     // Ranks [leftovers, nranks) get minsize chunks.
-    auto const chunks_to_write_this_rank = (my_rank < leftovers) ? minsize + 1 : minsize;
-    result.rows_to_write_this_rank = chunks_to_write_this_rank * out_ds_info.chunk_rows;
+    auto const chunks_to_write_this_rank =
+      (my_rank < leftovers) ? minsize + 1 : minsize;
+    result.rows_to_write_this_rank =
+      chunks_to_write_this_rank * out_ds_info.chunk_rows;
     // Complete an incomplete chunk at the end of output if we need.
     if (incomplete_chunk_size > 0 &&
         result.rows_to_write_this_iteration >= incomplete_chunk_size) {
       // Decrease total rows to write.
       result.rows_to_write_this_iteration -= incomplete_chunk_size;
       if (my_rank == 0) {
-        report(3, std::string("Thunking rows_to_write_this_rank from ") +
+        report(3,
+               std::string("Thunking rows_to_write_this_rank from ") +
                to_string(result.rows_to_write_this_rank) + " to " +
-               to_string(result.rows_to_write_this_rank - incomplete_chunk_size) +
-               ", to account for " + to_string(incomplete_chunk_size) +
+               to_string(result.rows_to_write_this_rank -
+                         incomplete_chunk_size) + ", to account for " +
+               to_string(incomplete_chunk_size) +
                " rows in an incomplete previous chunk.");
         // Decrease rows to write for this rank only.
         result.rows_to_write_this_rank -= incomplete_chunk_size;
@@ -210,15 +227,19 @@ namespace {
     // Calculate start rows for input and output.
     if (my_rank == 0) {
       result.input_start_row_this_rank = n_rows_written_this_input;
-      result.output_start_row_this_rank = out_ds_info.n_rows_written_total;
+      result.output_start_row_this_rank =
+        out_ds_info.n_rows_written_total;
     } else {
+      // Must take account of leftovers.
       result.input_start_row_this_rank =
         (n_rows_written_this_input - incomplete_chunk_size) +
         ((my_rank < leftovers) ?
          (my_rank * (minsize + 1)) :
          (leftovers + my_rank * minsize)) * out_ds_info.chunk_rows;
+      // Simplified calculation using above pre-calculated value.
       result.output_start_row_this_rank =
-        result.input_start_row_this_rank - n_rows_written_this_input + out_ds_info.n_rows_written_total;
+        out_ds_info.n_rows_written_total +
+        result.input_start_row_this_rank - n_rows_written_this_input;
     }
     return result;
   }
@@ -362,7 +383,9 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
     in_ds_access_plist(ErrorController::call(&H5Dget_access_plist, in_ds),
                        ResourceStrategy::handle_tag);
   bool have_output_ds = false;
-  { ScopedErrorHandler disable_hdf5_exceptions;
+  {
+    // Need to not be upset if we can't open the dataset.
+    ScopedErrorHandler disable_hdf5_exceptions;
     report(3, std::string("Checking for existence of dataset ") +
            ds_name + " in output.");
     have_output_ds = (bool) Dataset(h5out_,
