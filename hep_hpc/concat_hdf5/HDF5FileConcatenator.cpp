@@ -122,8 +122,8 @@ namespace {
   // Select the correct hyperslab for IO in a dataspace.
   std::vector<hsize_t>
   prepare_dataspace(Dataspace & dataspace,
-                    std::size_t const start_row,
-                    std::size_t const rows_for_io)
+                    hsize_t const start_row,
+                    hsize_t const rows_for_io)
   {
     auto const ndims =
       ErrorController::call(&H5Sget_simple_extent_ndims, dataspace);
@@ -150,17 +150,17 @@ namespace {
 
   // Structure to hold the calculated numerology for an I/O operation.
   struct NumerologyInfo {
-    std::size_t rows_to_write_this_iteration {0ull};
-    std::size_t rows_to_write_this_rank {0ull};
-    std::size_t input_start_row_this_rank {0ull};
-    std::size_t output_start_row_this_rank {0ull};
+    hsize_t rows_to_write_this_iteration {0ull};
+    hsize_t rows_to_write_this_rank {0ull};
+    hsize_t input_start_row_this_rank {0ull};
+    hsize_t output_start_row_this_rank {0ull};
   };
 
   // Calculate the numerology for an I/O operation.
   NumerologyInfo
   row_numerology(hep_hpc::ConcatenatedDSInfo const & out_ds_info,
-                 std::size_t const n_rows_written_this_input,
-                 std::size_t const in_ds_size)
+                 hsize_t const n_rows_written_this_input,
+                 hsize_t const in_ds_size)
   {
     using std::to_string;
     NumerologyInfo result;
@@ -407,7 +407,7 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
       std::accumulate(in_shape.cbegin() + 1,
                       in_shape.cend(),
                       ErrorController::call(&H5Tget_size, in_type),
-                      std::multiplies<std::size_t>());
+                      std::multiplies<hsize_t>());
     (void) ErrorController::call(&H5Pget_chunk,
                                  in_ds_create_plist,
                                  1,
@@ -460,7 +460,7 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
 
 
   // 4. Iterate over buffer-sized chunks.
-  std::size_t n_rows_written_this_input = 0ull;
+  auto n_rows_written_this_input = 0ull;
   while (n_rows_written_this_input < in_ds_size) {
     // 4.1 Calculate row numerology.
     auto const numerology =

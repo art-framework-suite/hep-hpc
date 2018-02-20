@@ -45,7 +45,7 @@ private:
   hdf5::PropertyList transfer_properties_();
 
   // Parameters.
-  std::size_t mem_max_bytes_;
+  hsize_t mem_max_bytes_;
   bool want_filters_;
   bool want_collective_writes_;
 
