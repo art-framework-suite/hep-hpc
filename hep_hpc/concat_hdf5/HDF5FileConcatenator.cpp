@@ -233,15 +233,16 @@ namespace {
         out_ds_info.n_rows_written_total;
     } else {
       // Must take account of leftovers.
-      result.input_start_row_this_rank =
-        (n_rows_written_this_input - incomplete_chunk_size) +
+      hsize_t const offset =
         ((my_rank < leftovers) ?
          (my_rank * (minsize + 1)) :
-         (leftovers + my_rank * minsize)) * out_ds_info.chunk_rows;
-      // Simplified calculation using above pre-calculated value.
+         (leftovers + my_rank * minsize)) * out_ds_info.chunk_rows -
+        incomplete_chunk_size;
+
+      result.input_start_row_this_rank =
+        n_rows_written_this_input + offset;
       result.output_start_row_this_rank =
-        out_ds_info.n_rows_written_total +
-        result.input_start_row_this_rank - n_rows_written_this_input;
+        out_ds_info.n_rows_written_total + offset;
     }
     return result;
   }
