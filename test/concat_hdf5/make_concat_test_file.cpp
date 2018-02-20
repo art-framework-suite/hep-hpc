@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////
-// concat_test_file -- Write a simple file for testing ntuple
+// make_concat_test_file -- Write a simple file for testing ntuple
 // concatenation.
 //
-// For usage see concat_test_file -h.
+// For usage see make_concat_test_file -h.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -93,8 +93,8 @@ private:
   void
   ProgramOptions::usage()
   {
-    std::cout << R"END(Usage: concat_test_file [-o <offset>] [-n <n-rows>] [<output-file>]
-       concat_test_file -h
+    std::cout << R"END(Usage: make_concat_test_file [-o <offset>] [-n <n-rows>] [<output-file>]
+       make_concat_test_file -h
 
 Options:
 
@@ -124,8 +124,12 @@ int main(int argc, char **argv)
   try {
     ProgramOptions program_options(argc, argv);
 
-    auto nt = make_ntuple({program_options.output(), "test_table", true},
-                          make_column<long, 2>("data", {2, 3}, program_options.chunk_size()));
+    auto nt =
+      make_ntuple({program_options.output(), "test_table", true},
+                  make_column<long, 2>("data",
+                    {2, 3},
+                    program_options.chunk_size(),
+                    {PropertyList(H5P_DATASET_CREATE)(H5Pset_deflate, 6)}));
 
     long const end_row = program_options.row_offset() + program_options.n_rows();
 
