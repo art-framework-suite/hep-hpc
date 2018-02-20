@@ -169,8 +169,11 @@ namespace {
     auto remaining_rows_this_file =
       in_ds_size - n_rows_written_this_input;
     result.rows_to_write_this_iteration =
-      std::min(remaining_rows_this_file - (remaining_rows_this_file % out_ds_info.chunk_rows),
+      std::min(remaining_rows_this_file,
                out_ds_info.buffer_size_rows * n_ranks);
+    // Trim to integral chunks and worry about the remainder later.
+    result.rows_to_write_this_iteration -=
+      (result.rows_to_write_this_iteration % out_ds_info.chunk_rows);
     // Each rank will get either minsize or minsize + 1 chunks to work on.
     auto const rankdiv =
       std::div((long long) (result.rows_to_write_this_iteration /
@@ -202,10 +205,9 @@ namespace {
       }
     }
     // Tack on some extra rows if that's what we need to complete the file.
-    auto const remaining_rows_threshold =
-      out_ds_info.chunk_rows - incomplete_chunk_size;
+    remaining_rows_this_file -= result.rows_to_write_this_iteration;
     if (remaining_rows_this_file > 0ull &&
-        remaining_rows_this_file < remaining_rows_threshold) {
+        remaining_rows_this_file < out_ds_info.chunk_rows) {
       result.rows_to_write_this_iteration += remaining_rows_this_file;
       // Be compact in deciding which rank writes the extra rows.
       auto const rank_to_write_remaining_rows =
@@ -413,9 +415,6 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
                                  1,
                                  &out_ds_info.chunk_rows);
     out_ds_info.buffer_size_rows = mem_max_bytes_ / out_ds_info.row_size_bytes;
-    // buffer_size_rows should be a multiple of out_ds_info.chunk_rows.
-    out_ds_info.buffer_size_rows -=
-      out_ds_info.buffer_size_rows % out_ds_info.chunk_rows;
     out_ds_info.ds = Dataset(h5out_,
                              ds_name,
                              in_type,
