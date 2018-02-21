@@ -382,7 +382,7 @@ int main(int argc, char **argv)
   bool want_abort = false;
 #endif
   // Make sure we throw exceptions on HDF5 call errors.
-  hdf5::ErrorController::setErrorHandler(hdf5::ErrorMode::EXCEPTION);
+//  hdf5::ErrorController::setErrorHandler(hdf5::ErrorMode::EXCEPTION);
 
   // Do the work with the appropriate protections.
   try {
