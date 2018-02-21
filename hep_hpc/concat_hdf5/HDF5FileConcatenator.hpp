@@ -24,7 +24,7 @@ class hep_hpc::HDF5FileConcatenator {
 public:
   HDF5FileConcatenator(std::string const & output,
                        unsigned int file_mode,
-                       std::size_t mem_max,
+                       std::size_t mem_max_bytes,
                        std::string filename_column,
                        std::vector<std::string> const & only_groups,
                        bool want_filters,

@@ -251,13 +251,13 @@ namespace {
 hep_hpc::HDF5FileConcatenator::
 HDF5FileConcatenator(std::string const & output,
                      unsigned int file_mode,
-                     std::size_t mem_max,
+                     std::size_t mem_max_bytes,
                      std::string filename_column [[gnu::unused]], // FIXME
                      std::vector<std::string> const & only_groups [[gnu::unused]], // FIXME
                      bool want_filters,
                      bool want_collective_writes,
                      int in_verbosity)
-  : mem_max_bytes_(mem_max * 1024 * 1024)
+  : mem_max_bytes_(mem_max_bytes)
   , want_filters_(want_filters)
   , want_collective_writes_(want_collective_writes)
   , buffer_(mem_max_bytes_)
@@ -406,16 +406,27 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
                                    in_ds_create_plist,
                                    H5Z_FILTER_ALL);
     }
+    // Calculate the size of a row in bytes.
     out_ds_info.row_size_bytes =
       std::accumulate(in_shape.cbegin() + 1,
                       in_shape.cend(),
                       ErrorController::call(&H5Tget_size, in_type),
                       std::multiplies<hsize_t>());
+    report(4, std::string("Calculated row_size_bytes = ") +
+           to_string(out_ds_info.row_size_bytes));
+
+    // Store the chunk size in rows.
     (void) ErrorController::call(&H5Pget_chunk,
                                  in_ds_create_plist,
                                  1,
                                  &out_ds_info.chunk_rows);
+
+    // Calculate the buffer size in rows.
     out_ds_info.buffer_size_rows = mem_max_bytes_ / out_ds_info.row_size_bytes;
+    report(4, std::string("Calculated buffer_size_rows = ") +
+           to_string(out_ds_info.buffer_size_rows));
+
+    // Create the dataset.
     out_ds_info.ds = Dataset(h5out_,
                              ds_name,
                              in_type,
