@@ -578,13 +578,15 @@ PropertyList
 hep_hpc::HDF5FileConcatenator::
 transfer_properties_()
 {
-  PropertyList xfer_properties(H5P_DATASET_XFER);
 #ifdef HEP_HPC_USE_MPI
+  PropertyList xfer_properties(H5P_DATASET_XFER);
   if (want_collective_writes_) {
     (void) ErrorController::call(&H5Pset_dxpl_mpio,
                                  xfer_properties,
                                  H5FD_MPIO_COLLECTIVE);
   }
+#else
+  PropertyList xfer_properties;
 #endif
   return xfer_properties;
 }
