@@ -278,6 +278,7 @@ private:
 
 Concatenate tabular HDF5 files, combining compatible datasets into one.
 
+
 OPTIONS
 
   --append
@@ -285,6 +286,7 @@ OPTIONS
 
     Append to an existing output file (default )END"
               << std::boolalpha << DEFAULT_APPEND << R"END().
+    Mutually exclusive with --overwrite.
 
   --collective-writes
   -C
@@ -342,7 +344,7 @@ OPTIONS
 
     Overwrite an existing output file of the same name (default )END"
               << DEFAULT_OVERWRITE << R"END().
-    Mutually-incompatible with --append.
+    Mutually exclusive with --append.
 
   --verbose+
   [-+]v+
@@ -360,6 +362,9 @@ OPTIONS
     Specify whether filters should be propagated from the first input
     file to the output (default )END"
               << std::boolalpha << DEFAULT_WANT_FILTERS << R"END().
+    Output filters require a modern  HDF5 library and collective writes
+    with MPI I/O (see --collective-writes above, and notes below).
+
 
 NOTES
 
@@ -375,8 +380,9 @@ NOTES
 * concat_hdf5 works best with files created with hep_hpc::hdf5::Ntuple.
 
 * If used with a modern-enough HDF5, it is capable of concatenating
-  compressed data into files while utilizing parallel I/O with MPI. With
-  older HDF5 (<=1.10), either deactivate MPI or deactivate filters.
+  filtered (e.g. compressed) data into files while utilizing parallel
+  I/O with MPI. With older HDF5 (<=1.10), either deactivate MPI or
+  deactivate filters.
 
 )END";
   }
@@ -410,7 +416,7 @@ int main(int argc, char **argv)
   bool want_abort = false;
 #endif
   // Make sure we throw exceptions on HDF5 call errors.
-//  hdf5::ErrorController::setErrorHandler(hdf5::ErrorMode::EXCEPTION);
+  hdf5::ErrorController::setErrorHandler(hdf5::ErrorMode::EXCEPTION);
 
   // Do the work with the appropriate protections.
   try {
