@@ -122,16 +122,17 @@ namespace {
   // Select the correct hyperslab for IO in a dataspace,
   // returning the corresponding memory dataspace.
   Dataspace
-  prepare_dataspace(Dataspace & dataspace,
+  prepare_dataspace(Dataspace & file_dataspace,
                     hsize_t const start_row,
                     hsize_t const rows_for_io)
   {
-    Dataspace mem_dataspace;
+    Dataspace mem_dataspace; // Result.
     auto const ndims =
-      ErrorController::call(&H5Sget_simple_extent_ndims, dataspace);
+      ErrorController::call(&H5Sget_simple_extent_ndims,
+                            file_dataspace);
     std::vector<hsize_t> shape(ndims), maxshape(ndims);
     (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                                 dataspace,
+                                 file_dataspace,
                                  shape.data(),
                                  maxshape.data());
     std::vector<hsize_t> offsets(ndims),
@@ -142,7 +143,7 @@ namespace {
     n_elements.front() = rows_for_io;
     if (rows_for_io > 0) {
       (void) ErrorController::call(&H5Sselect_hyperslab,
-                                   dataspace,
+                                   file_dataspace,
                                    H5S_SELECT_SET,
                                    offsets.data(),
                                    nullptr,
@@ -151,7 +152,7 @@ namespace {
       mem_dataspace =
         Dataspace(ndims, n_elements.data(), n_elements.data());
     } else {
-      (void) ErrorController::call(&H5Sselect_none, dataspace);
+      (void) ErrorController::call(&H5Sselect_none, file_dataspace);
       mem_dataspace = Dataspace(H5S_NULL);
     }
     return mem_dataspace;
@@ -490,10 +491,10 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
     //     the corresponding hyperslab of the output.
 
     // 4.2.1 Prepare the input dataspace.
-    Dataspace in_mem_dataspace
-    {prepare_dataspace(in_dataspace,
-                       numerology.input_start_row_this_rank,
-                       numerology.rows_to_write_this_rank)};
+    auto mem_dataspace =
+      prepare_dataspace(in_dataspace,
+                        numerology.input_start_row_this_rank,
+                        numerology.rows_to_write_this_rank);
 
     // 4.2.2 Execute the read.
     report(4, std::string("Reading ") +
@@ -506,16 +507,15 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
            ").");
     (void) in_ds.read(in_type,
                       buffer_.data(),
-                      std::move(in_mem_dataspace),
-                      Dataspace(in_dataspace),
+                      std::move(mem_dataspace),
+                      in_dataspace,
                       transfer_properties_());
-
     // 4.2.3 Prepare the dataspaces.
-    Dataspace out_mem_dataspace
-    {prepare_dataspace(out_dataspace,
-                       numerology.output_start_row_this_rank,
-                       numerology.rows_to_write_this_rank)};
-    
+    mem_dataspace =
+      prepare_dataspace(out_dataspace,
+                        numerology.output_start_row_this_rank,
+                        numerology.rows_to_write_this_rank);
+
     // 4.2.4 Execute the write.
     report(4, std::string("Writing ") +
            to_string(numerology.rows_to_write_this_rank) + 
@@ -527,8 +527,8 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
            ").");
     out_ds_info.ds.write(in_type,
                          buffer_.data(),
-                         std::move(out_mem_dataspace),
-                         std::move(out_dataspace),
+                         std::move(mem_dataspace),
+                         out_dataspace,
                          transfer_properties_());
 
     // 4.3 Update cursors.
