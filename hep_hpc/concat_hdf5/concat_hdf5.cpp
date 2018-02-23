@@ -211,10 +211,10 @@ private:
         append_ = true;
         break;
       case 'C':
-        want_collective_writes_ = (arg[0] = '-') ? true : false;
+        want_collective_writes_ = (arg[0] == '-') ? true : false;
         break;
       case 'F':
-        want_filters_ = (arg[0] = '-') ? true : false;
+        want_filters_ = (arg[0] == '-') ? true : false;
         break;
       case 'f':
         overwrite_ = true;
