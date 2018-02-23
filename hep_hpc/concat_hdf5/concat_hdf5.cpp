@@ -237,8 +237,36 @@ private:
       }
     }
 
-    // FIXME. Also need argument consistency checks e.g. with filters
-    // and collective with MPI status, etc., etc.
+    if (want_collective_writes_) {
+      if (n_ranks == 1) {
+        std::cerr << "WARNING: Collective writes require > 1 MPI processes.";
+        want_collective_writes_ = false;
+      }
+#if ! (H5_VERS_MAJOR > 1 || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 10))
+      else if (want_filters_) {
+        if (my_rank == 0) {
+          std::cerr << "WARNING: Collective writes not supported with filters for HDF5 version "
+                    << H5_VERS_INFO << ".\n";
+          std::cerr << "         Require HDF5 version >= 1.12.0.\n";
+        }
+      }
+#endif
+    } else if (want_filters_ && n_ranks > 1) {
+      if (my_rank == 0) {
+        std::cerr << "WARNING: Output filters require collective writes under MPI I/O."
+                  << "\nDeactivating output filters.";
+      }
+      want_filters_ = false;
+    }
+
+    if (append_ and overwrite_) {
+      throw ProgramOptionsException("Append and overwrite are mutually exclusive.", 2);
+    }
+
+    if (output_.empty()) {
+      throw ProgramOptionsException("Empty output file name", 2);
+    }
+
     inputs_.insert(inputs_.end(), iarg, eargs);
   }
 
