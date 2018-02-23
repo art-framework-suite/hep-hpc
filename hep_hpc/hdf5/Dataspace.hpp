@@ -9,6 +9,7 @@
 //      passing them to an HDF5 function.
 //
 ////////////////////////////////////////////////////////////////////////
+#include "hep_hpc/Utilities/detail/copy_advance.hpp"
 #include "hep_hpc/hdf5/Resource.hpp"
 #include "hep_hpc/hdf5/ResourceStrategy.hpp"
 
@@ -20,15 +21,6 @@
 namespace hep_hpc {
   namespace hdf5 {
     class Dataspace;
-
-    namespace Dataspace_detail {
-      template <typename IN_ITER, typename DISTANCE>
-      IN_ITER copy_advance(IN_ITER i, DISTANCE const n)
-      {
-        std::advance(i, n);
-        return i;
-      }
-    }
   }
 }
 
@@ -116,7 +108,7 @@ template <typename IN_ITER_1>
 hep_hpc::hdf5::Dataspace::
 Dataspace(int const rank, IN_ITER_1 const dim_begin)
   :
-  Dataspace(dim_begin, Dataspace_detail::copy_advance(dim_begin, rank))
+  Dataspace(dim_begin, hep_hpc::detail::copy_advance(dim_begin, rank))
 {
 }
 
@@ -138,9 +130,9 @@ Dataspace(int const rank,
           IN_ITER_2 const maxdim_begin)
   :
   Dataspace(dim_begin,
-            Dataspace_detail::copy_advance(dim_begin, rank),
+            hep_hpc::detail::copy_advance(dim_begin, rank),
             maxdim_begin,
-            Dataspace_detail::copy_advance(maxdim_begin, rank))
+            hep_hpc::detail::copy_advance(maxdim_begin, rank))
 {
 }
 
