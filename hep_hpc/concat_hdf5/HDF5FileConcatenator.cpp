@@ -276,14 +276,16 @@ hep_hpc::HDF5FileConcatenator::
 HDF5FileConcatenator(std::string const & output,
                      unsigned int file_mode,
                      std::size_t mem_max_bytes,
-                     std::string filename_column [[gnu::unused]], // FIXME
-                     std::vector<std::string> const & only_groups [[gnu::unused]], // FIXME
+                     FilenameColumnInfo filename_column_info,
+                     std::vector<std::regex> const & only_groups,
                      bool want_filters,
                      bool want_collective_writes,
                      int in_verbosity)
   : mem_max_bytes_(mem_max_bytes)
   , want_filters_(want_filters)
   , want_collective_writes_(want_collective_writes)
+  , filename_column_info_(std::move(filename_column_info))
+  , only_groups_(only_groups)
   , buffer_(mem_max_bytes_)
   , h5out_(open_output_file(output, file_mode))
   , ds_info_()
@@ -342,11 +344,12 @@ visit_item_(hid_t root_id,
 {
   using std::to_string;
   herr_t status = 0;
-  // FIXME: handle only_groups.
   switch (obj_info->type) {
   case H5O_TYPE_GROUP:
-    report(2, std::string("Ensuring existence of group ") + obj_name + " in output file.");
-    {
+    if (std::any_of(only_groups_.cbegin(),
+                    only_groups_.cend(),
+                    [obj_name](std::regex const & re) { return std::regex_match(obj_name, re); })) {
+      report(2, std::string("Ensuring existence of group ") + obj_name + " in output file.");
       Group in_g(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
                  ResourceStrategy::handle_tag);
       (void)

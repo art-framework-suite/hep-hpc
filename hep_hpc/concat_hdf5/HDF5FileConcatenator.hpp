@@ -2,6 +2,7 @@
 #define hep_hpc_concat_hdf5_HDF5FileConcatenator_hpp
 
 #include "hep_hpc/concat_hdf5/ConcatenatedDSInfo.hpp"
+#include "hep_hpc/concat_hdf5/FilenameColumnInfo.hpp"
 #include "hep_hpc/hdf5/Dataset.hpp"
 #include "hep_hpc/hdf5/Dataspace.hpp"
 #include "hep_hpc/hdf5/File.hpp"
@@ -12,6 +13,7 @@ extern "C" {
 #include "hdf5.h"
 }
 
+#include <regex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -25,8 +27,8 @@ public:
   HDF5FileConcatenator(std::string const & output,
                        unsigned int file_mode,
                        std::size_t mem_max_bytes,
-                       std::string filename_column,
-                       std::vector<std::string> const & only_groups,
+                       FilenameColumnInfo filename_column_info,
+                       std::vector<std::regex> const & only_groups,
                        bool want_filters,
                        bool want_collective_writes,
                        int verbosity);
@@ -48,6 +50,8 @@ private:
   hsize_t mem_max_bytes_;
   bool want_filters_;
   bool want_collective_writes_;
+  FilenameColumnInfo filename_column_info_;
+  std::vector<std::regex> only_groups_;
 
   // I/O buffer.
   std::vector<uint8_t> buffer_;

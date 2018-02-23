@@ -21,6 +21,7 @@
 #include "hep_hpc/detail/config.hpp"
 
 #include "hep_hpc/Utilities/detail/compiler_macros.hpp"
+#include "hep_hpc/concat_hdf5/FilenameColumnInfo.hpp"
 #include "hep_hpc/concat_hdf5/HDF5FileConcatenator.hpp"
 #include "hep_hpc/concat_hdf5/maybe_report_rank.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
@@ -104,14 +105,41 @@ private:
   };
 
   [[noreturn]]
+  void throw_poe(std::string msg,
+                 int status,
+                 std::string const & extra_msg = {})
+  {
+    if (!msg.empty()) {
+      if (!extra_msg.empty()) {
+        msg += ": ";
+      }
+    } else {
+      msg += extra_msg;
+    }
+    throw ProgramOptionsException(msg, status);
+  }
+
+  [[noreturn]]
   void throw_bad_argument(std::string const & opt,
                           std::string const & arg,
-                          int status)
+                          int const status,
+                          std::string const & extra_msg = {})
   {
-    throw
-      ProgramOptionsException(std::string("Bad argument \"") +
-                              arg + "\" to option \"" + opt + ".\"",
-                              status);
+    throw_poe(std::string("Bad argument \"") +
+              arg + "\" to option \"" + opt + ".\"",
+              status,
+              extra_msg);
+  }
+
+  [[noreturn]]
+  void
+  throw_bad_sub_args(std::string const & opt,
+                     int const status,
+                     std::string const & extra_msg = {})
+  {
+    throw_poe(std::string("Bad number of arguments to option \"") +
+              opt + ".\"",
+              status, extra_msg);
   }
 
   class ProgramOptions {
@@ -122,8 +150,9 @@ public:
     bool append() const { return append_; }
     bool overwrite() const { return overwrite_; }
     std::size_t mem_max_bytes() const { return mem_max_bytes_; }
-    std::string const & filename_column() const { return filename_column_; }
-    std::vector<std::string> const & only_groups() const { return only_groups_; }
+    FilenameColumnInfo const & filename_column_info() const { return filename_column_info_; }
+    FilenameColumnInfo & filename_column_info() { return filename_column_info_; }
+    std::vector<std::regex> const & only_groups() const { return only_groups_; }
     bool want_filters() const { return want_filters_; }
     bool want_collective_writes() const { return want_collective_writes_;}
     std::size_t verbosity() const { return verbosity_; }
@@ -144,8 +173,8 @@ private:
     bool append_ { DEFAULT_APPEND };
     bool overwrite_ { DEFAULT_OVERWRITE };
     std::size_t mem_max_bytes_ { DEFAULT_MEM_MAX * 1024 * 1024 };
-    std::string filename_column_;
-    std::vector<std::string> only_groups_;
+    FilenameColumnInfo filename_column_info_;
+    std::vector<std::regex> only_groups_;
     bool want_filters_ { DEFAULT_WANT_FILTERS };
     bool want_collective_writes_ { DEFAULT_WANT_COLLECTIVE_WRITES };
     int verbosity_ { DEFAULT_VERBOSITY };
@@ -154,6 +183,7 @@ private:
 
   ProgramOptions::ProgramOptions(int argc, char **argv)
   {
+    using std::to_string;
     std::vector<std::string> args(unbundle_args(argc, argv));
     std::size_t idx {0ull};
     auto const eargs = args.end();
@@ -169,6 +199,12 @@ private:
         ++iarg;
         break;
       }
+      auto next_arg_iter = detail::copy_advance(iarg, 1);
+      while (next_arg_iter != eargs &&
+             (*next_arg_iter)[0] != '-' &&
+             (*next_arg_iter)[0] != '+') {
+        ++next_arg_iter;
+      }
       if (arg[1] == '-') { // Long options.
         if (arg == "--append") {
           arg = "-a"; // Short option alias.
@@ -177,10 +213,51 @@ private:
         } else if (arg == "--no-collective-writes") {
           arg = "+C"; // Short option alias.
         } else if (arg == "--filename-column") {
+          auto const n_sub_args = std::distance(iarg + 1, next_arg_iter);
+          if (n_sub_args != 1 && n_sub_args < 3) {
+            throw_bad_sub_args(*iarg,
+                               2,
+                               std::string("expected 1 or 3+ sub-arguments, got ") +
+                               to_string(n_sub_args));
+          }
+          if (n_sub_args == 1) {
+            // Only filename column.
+            filename_column_info_ = FilenameColumnInfo(*(iarg + 1));
+          } else {
+            try {
+              // Filename column, regex and replacememt string.
+              filename_column_info_ =
+                FilenameColumnInfo(*(iarg + 1), std::regex(*(iarg + 2)), *(iarg + 3));
+            }
+            catch (std::regex_error const & e) {
+              throw_bad_argument(arg, *(iarg + 1), 2, e.what());
+            }
+            // Any group regexes.
+            std::vector<std::regex> group_regexes;
+            for (auto isubarg = iarg + 4;
+                 isubarg != next_arg_iter;
+                 ++isubarg) {
+              try {
+                group_regexes.emplace_back(*iarg);
+              }
+              catch (std::regex_error const & e) {
+                throw_bad_argument(arg, *isubarg, 2, e.what());
+              }
+            }
+            filename_column_info_.set_group_regexes(std::move(group_regexes));
+          }
+          iarg += n_sub_args;
           continue;
         } else if (arg == "--help") {
           arg = "-h"; // Short option alias.
         } else if (arg == "--mem-max") {
+          auto const n_sub_args = std::distance(iarg, next_arg_iter);
+          if (n_sub_args != 1) {
+            throw_bad_sub_args(*iarg,
+                               2,
+                               std::string("expected 1 sub-argument, got ") +
+                               to_string(n_sub_args));
+          }
           try {
             mem_max_bytes_ = std::stoull(*++iarg, &idx) * 1024 * 1024;
           }
@@ -203,6 +280,23 @@ private:
           }
           continue;
         } else if (arg == "--only-groups") {
+          auto const n_sub_args = std::distance(iarg + 1, next_arg_iter);
+          if (n_sub_args == 0) {
+            throw_bad_sub_args(*iarg,
+                               2,
+                               "expected at least one sub-argument");
+          }
+          for (auto isubarg = detail::copy_advance(iarg, 1);
+               isubarg != next_arg_iter;
+               ++isubarg) {
+            try {
+              only_groups_.emplace_back(*iarg);
+            }
+            catch (std::regex_error const & e) {
+              throw_bad_argument(arg, *isubarg, 2, e.what());
+            }
+          }
+          iarg += n_sub_args;
           continue;
         } else if (arg == "--output") {
           arg = "-o"; // Short option alias.
@@ -356,8 +450,8 @@ OPTIONS
 
   --only-groups <regex>+
 
-    Handle only groups matching these regexes, and the datasets within
-    them.
+    Handle only groups matching these ECMAScript regexes, and the
+    datasets within them.
 
   --output <output-file>
   -o <output-file>
@@ -458,7 +552,7 @@ int main(int argc, char **argv)
                    H5F_ACC_RDWR :
                    program_options.overwrite() ? H5F_ACC_TRUNC : H5F_ACC_EXCL,
                    program_options.mem_max_bytes(),
-                   program_options.filename_column(),
+                   std::move(program_options.filename_column_info()),
                    program_options.only_groups(),
                    program_options.want_filters(),
                    program_options.want_collective_writes(),
