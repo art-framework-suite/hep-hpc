@@ -309,7 +309,7 @@ concatFiles(std::vector<std::string> const & inputs)
   // Iterate over files:
   for (auto const & input_file_name : inputs) {
     // 1. Open input file
-    report(3, std::string("Attempting to open input file ") + input_file_name);
+    report(2, std::string("Attempting to open input file ") + input_file_name);
     File input_file(input_file_name, H5F_ACC_RDONLY, {}, maybe_collective_access());
 
     // 2. Discover and iterate over items.
@@ -414,7 +414,7 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
   {
     // Need to not be upset if we can't open the dataset.
     ScopedErrorHandler disable_hdf5_exceptions;
-    report(3, std::string("Checking for existence of dataset ") +
+    report(2, std::string("Checking for existence of dataset ") +
            ds_name + " in output.");
     have_output_ds = (bool) Dataset(h5out_,
                                     ds_name,
@@ -435,7 +435,7 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
                       in_shape.cend(),
                       ErrorController::call(&H5Tget_size, in_type),
                       std::multiplies<hsize_t>());
-    report(4, std::string("Calculated row_size_bytes = ") +
+    report(3, std::string("Calculated row_size_bytes = ") +
            to_string(out_ds_info.row_size_bytes));
 
     // Store the chunk size in rows.
@@ -446,7 +446,7 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
 
     // Calculate the buffer size in rows.
     out_ds_info.buffer_size_rows = mem_max_bytes_ / out_ds_info.row_size_bytes;
-    report(4, std::string("Calculated buffer_size_rows = ") +
+    report(3, std::string("Calculated buffer_size_rows = ") +
            to_string(out_ds_info.buffer_size_rows));
 
     if (out_ds_info.buffer_size_rows == 0) {
@@ -467,7 +467,7 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
               " rows).\n I/O will be restricted to rank 0 only!");
     }
 
-    report(3, std::string("Creating dataset ") +
+    report(2, std::string("Creating dataset ") +
            ds_name + " in output.");
     // Create the dataset.
     out_ds_info.ds = Dataset(h5out_,
