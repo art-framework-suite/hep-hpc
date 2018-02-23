@@ -32,6 +32,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <regex>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -43,21 +44,46 @@ namespace {
   int n_ranks;
   int my_rank;
 
-  // Produced an unbundled copy of the argument list.
+  // Produce an unbundled copy of the argument list.
   std::vector<std::string>
   unbundle_args(int argc, char **argv)
   {
+    // Regular expression to match --arg=[arg1[,arg2]+].
+    static std::regex
+      long_equals_arg("(--[-_[:alnum:]]+)=((?:(?:[^,]+),)*?(?:[^,]+))?");
+    std::cmatch lea_match;
     std::vector<std::string> result;
     result.reserve(argc);
     for (; ++argv, --argc;) {
       if ((*argv)[0] == '-' && (*argv)[1] != '-' && strlen(*argv) > 2) {
+        // Deal with bundled short option arguments (-).
         for (auto i = *argv + 1; *i != '\0'; ++i) {
           result.emplace_back(std::string("-") + *i);
         }
-// FIXME: complete this implementation. Don't forget to insert `--' if
-//        we're expanding the last argument.
-//
-//    } else if () { // Deal with --arg=... arguments
+      } else if ((*argv)[0] == '+' && strlen(*argv) > 2) {
+        // Deal with bundled short option arguments (+).
+        for (auto i = *argv + 1; *i != '\0'; ++i) {
+          result.emplace_back(std::string("+") + *i);
+        }
+      } else if (std::regex_match(*argv, lea_match, long_equals_arg)) {
+        // Deal with --arg=... arguments
+        result.emplace_back(lea_match[1].str()); // Argumemt name.
+        auto const & subargs = lea_match[2].str();
+        std::string::size_type pos = 0, last_pos = std::string::npos;
+        while ((pos = subargs.find(',', last_pos + 1)) != std::string::npos) {
+          result.emplace_back(subargs.substr(last_pos + 1, pos - last_pos - 1));
+          last_pos = pos;
+        }
+        if (last_pos != std::string::npos) { // Last argument.
+          result.emplace_back(subargs.substr(last_pos +1));
+        } else { // Single empty arg.
+          result.emplace_back();
+        }
+        if (argc > 1 ||
+            !(argv[1][0] == '-' || argv[1][0] == '+')) { // Look ahead.
+          // Last option argument before non-option arguments: armor!
+          result.emplace_back("--");
+        }
       } else {
         result.emplace_back(*argv);
       }
@@ -370,12 +396,17 @@ NOTES
 
 * `+' denotes a repeatable argument.
 
-* Short options may be bundled.
+* Short options may be bundled e.g. `-af' => `-a -f' and `+CF' =>
+  `+C +F'.
 
 * Long options may be specified as --arg arg1 arg2 ... or
   --arg=arg1,arg2... However, if your arguments include commas you
   should use the first form. If your arguments contain spaces you
-  should use quotation marks to hide them from the shell.
+  should use quotation marks or escapes (\) to hide them from the shell.
+  If you specify a space-separated long option argument set as your
+  final option argument, you should finish with `--'  to
+  distinguish arguments to the long option from non-option arguments.
+  `--long-arg=' shall be equivalent to `--long-arg ""'.
 
 * concat_hdf5 works best with files created with hep_hpc::hdf5::Ntuple.
 
