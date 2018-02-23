@@ -423,8 +423,6 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
   auto & out_ds_info = ds_info_[ds_name];
   Datatype in_type (ErrorController::call(&H5Dget_type, in_ds));
   if (!have_output_ds) { // Does not exist
-    report(3, std::string("Creating dataset ") +
-           ds_name + " in output.");
     if (!want_filters_) {
       // Deactivate filters in outgoing dataset.
       (void) ErrorController::call(&H5Premove_filter,
@@ -451,6 +449,26 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
     report(4, std::string("Calculated buffer_size_rows = ") +
            to_string(out_ds_info.buffer_size_rows));
 
+    if (out_ds_info.buffer_size_rows == 0) {
+      throw
+        std::runtime_error(std::string("Unable to write a complete row of dataset ") +
+                           ds_name +
+                           " (" +
+                           to_string(out_ds_info.row_size_bytes) +
+                           " B) due to configured buffer size of " +
+                           to_string(mem_max_bytes_) + " B.");
+    } else if (out_ds_info.buffer_size_rows < out_ds_info.chunk_rows) {
+      report (-1, std::string("Configured buffer size allows for only ") +
+              to_string(out_ds_info.buffer_size_rows) +
+              " rows from dataset " +
+              ds_name +
+              ",\nwhich is less than one complete chunk (" +
+              to_string(out_ds_info.chunk_rows) +
+              " rows).\n I/O will be restricted to rank 0 only!");
+    }
+
+    report(3, std::string("Creating dataset ") +
+           ds_name + " in output.");
     // Create the dataset.
     out_ds_info.ds = Dataset(h5out_,
                              ds_name,
