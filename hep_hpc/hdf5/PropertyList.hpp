@@ -124,7 +124,7 @@ hep_hpc::hdf5::PropertyList::
 operator () (FUNC func, Args && ... args)
 {
   (void) ErrorController::call(ErrorMode::EXCEPTION, func,
-                               (hid_t) (*this),
+                               (*this),
                                std::forward<Args>(args)...);
   return *this;
 }

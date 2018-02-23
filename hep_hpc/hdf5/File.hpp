@@ -29,12 +29,12 @@ public:
   explicit File(hid_t file,
                 ResourceStrategy strategy = ResourceStrategy::observer_tag);
 
-  // Open or create an HDF5 file, as appropriate. Note that the
-  // PropertyList objects (if specified) will be consumed.
+  // Open or create an HDF5 file, as appropriate. Property lists may be
+  // provided with move semantics to avoid a copy if desired.
   explicit File(std::string const & filename,
                 unsigned int flag = H5F_ACC_RDONLY,
-                PropertyList && fileCreationProperties = {},
-                PropertyList && fileAccessProperties = {});
+                PropertyList fileCreationProperties = {},
+                PropertyList fileAccessProperties = {});
 
   operator hid_t() const noexcept;
 
@@ -51,7 +51,8 @@ private:
 };
 
 inline
-hep_hpc::hdf5::File::File(hid_t const file, ResourceStrategy const strategy)
+hep_hpc::hdf5::File::File(hid_t const file,
+                          ResourceStrategy const strategy)
   :
   h5file_((strategy == ResourceStrategy::handle_tag) ?
           Resource(file, &H5Fclose) :

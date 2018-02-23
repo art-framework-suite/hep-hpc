@@ -36,14 +36,14 @@ public:
   // appropriate time.
   Group(hid_t group, ResourceStrategy strategy);
 
-  // Create or open a group. Note that the PropertyList objects (if specified)
-  // will be consumed.
+  // Create or open a group. Property lists may be provided with move
+  // semantics to avoid a copy if desired.
   Group(hid_t fileOrGroup,
         std::string const & fullPathName,
         group_mode_t mode = CREATE_MODE,
-        PropertyList && linkCreationProperties = {},
-        PropertyList && GroupCreationProperties = {},
-        PropertyList && GroupAccessProperties = {});
+        PropertyList linkCreationProperties = {},
+        PropertyList GroupCreationProperties = {},
+        PropertyList GroupAccessProperties = {});
 
   operator hid_t() const noexcept;
 

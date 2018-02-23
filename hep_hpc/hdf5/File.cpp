@@ -3,8 +3,8 @@
 
 hep_hpc::hdf5::File::File(std::string const & filename,
                            unsigned int const flag,
-                           PropertyList && fileCreationProperties,
-                           PropertyList && fileAccessProperties)
+                           PropertyList fileCreationProperties,
+                           PropertyList fileAccessProperties)
   :
   h5file_([&]()
           { HID_t result;
@@ -17,13 +17,13 @@ hep_hpc::hdf5::File::File(std::string const & filename,
               }
               result = H5Fopen(filename.c_str(),
                                flag,
-                               std::move(fileAccessProperties));
+                               fileAccessProperties);
             } else {
               // Create.
               result = H5Fcreate(filename.c_str(),
                                  flag,
-                                 std::move(fileCreationProperties),
-                                 std::move(fileAccessProperties));
+                                 fileCreationProperties,
+                                 fileAccessProperties);
             }
             return result;
           }, &H5Fclose)
