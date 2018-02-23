@@ -174,13 +174,19 @@ namespace {
   {
     using std::to_string;
     NumerologyInfo result;
+    // Do we have an incomplete chunk in the output?
     auto const incomplete_chunk_size =
       out_ds_info.n_rows_written_total % out_ds_info.chunk_rows;
+    // How many rows left in this input file?
     auto remaining_rows_this_file =
       in_ds_size - n_rows_written_this_input;
+    // How many whole chunks can we write per rank?
+    auto const max_chunks_per_rank =
+      out_ds_info.buffer_size_rows / out_ds_info.chunk_rows;
+    // How many rows to write this iteration?
     result.rows_to_write_this_iteration =
       std::min(remaining_rows_this_file,
-               out_ds_info.buffer_size_rows * n_ranks);
+               max_chunks_per_rank * out_ds_info.chunk_rows * n_ranks);
     // Trim to integral chunks and worry about the remainder later.
     result.rows_to_write_this_iteration -=
       (result.rows_to_write_this_iteration % out_ds_info.chunk_rows);
@@ -216,23 +222,31 @@ namespace {
     }
     // Tack on some extra rows if that's what we need to complete the file.
     remaining_rows_this_file -= result.rows_to_write_this_iteration;
+    hsize_t extra_rows_to_write = 0ull;
+    int rank_to_write_remaining_rows = 0;
     if (remaining_rows_this_file > 0ull &&
         remaining_rows_this_file < out_ds_info.chunk_rows) {
-      result.rows_to_write_this_iteration += remaining_rows_this_file;
+      extra_rows_to_write = remaining_rows_this_file;
       // Be compact in deciding which rank writes the extra rows.
-      auto const rank_to_write_remaining_rows =
+      rank_to_write_remaining_rows =
         (minsize == 0) ? leftovers : n_ranks - 1;
+    } else if (result.rows_to_write_this_iteration == 0) {
+      extra_rows_to_write =
+        std::min(remaining_rows_this_file,
+                 out_ds_info.buffer_size_rows);
+    }
+    if (extra_rows_to_write > 0ull) {
+      result.rows_to_write_this_iteration += extra_rows_to_write;
       // If there's room in the buffer for the remaining rows, write
       // them, otherwise we get to do another iteration.
       if (my_rank == rank_to_write_remaining_rows &&
-          ! (result.rows_to_write_this_rank + remaining_rows_this_file >
+          ! (result.rows_to_write_this_rank + extra_rows_to_write >
              out_ds_info.buffer_size_rows)) {
         report(3, std::string("Thunking rows_to_write_this_rank from ") +
                to_string(result.rows_to_write_this_rank) + " to " +
-               to_string(result.rows_to_write_this_rank + remaining_rows_this_file) +
-               ", including " + to_string(remaining_rows_this_file) +
-               " rows required to complete the current input file.");
-        result.rows_to_write_this_rank += remaining_rows_this_file;
+               to_string(result.rows_to_write_this_rank + extra_rows_to_write) +
+               ".");
+        result.rows_to_write_this_rank += extra_rows_to_write;
       }
     }
 
