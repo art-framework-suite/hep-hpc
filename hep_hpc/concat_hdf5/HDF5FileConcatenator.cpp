@@ -288,7 +288,7 @@ HDF5FileConcatenator(std::string const & output,
 
 int
 hep_hpc::HDF5FileConcatenator::
-concatFiles(std::vector<std::string> const & inputs [[gnu::unused]])
+concatFiles(std::vector<std::string> const & inputs)
 {
   // FIXME Need to treat filename_column here.
 
@@ -335,19 +335,21 @@ visit_item_(hid_t root_id,
     {
       Group in_g(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
                  ResourceStrategy::handle_tag);
-      (void) Group(h5out_,
-                   obj_name,
-                   Group::OPEN_OR_CREATE_MODE,
-                   {},
-                   PropertyList(ErrorController::call(&H5Gget_create_plist, in_g),
-                                ResourceStrategy::handle_tag)
-                  );
+      (void)
+        Group(h5out_,
+              obj_name,
+              Group::OPEN_OR_CREATE_MODE,
+              {},
+              PropertyList(ErrorController::call(&H5Gget_create_plist, in_g),
+                           ResourceStrategy::handle_tag)
+             );
     }
     break;
   case H5O_TYPE_DATASET:
   {
-    Dataset in_ds(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
-                  ResourceStrategy::handle_tag);
+    Dataset
+      in_ds(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
+            ResourceStrategy::handle_tag);
     status = handle_dataset_(std::move(in_ds), obj_name);
   }
   break;
@@ -373,7 +375,7 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
   report(2, std::string("Examining shape for input dataset ") + ds_name);
   Dataspace in_dataspace(ErrorController::call(&H5Dget_space, in_ds),
                          ResourceStrategy::handle_tag);
-  
+
   if (ErrorController::call(&H5Sis_simple, in_dataspace) <= 0) {
     report(-1, std::string("Ignoring incoming non-simple dataset ") + ds_name);
     return status;
@@ -475,8 +477,9 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
   }
 
   // Get an up-to-date copy of the output dataset.
-  Dataspace out_dataspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
-                          ResourceStrategy::handle_tag);
+  Dataspace out_dataspace =
+    Dataspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
+              ResourceStrategy::handle_tag);
 
   // 4. Iterate over buffer-sized chunks.
   auto n_rows_written_this_input = 0ull;
@@ -533,7 +536,8 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
 
     // 4.3 Update cursors.
     n_rows_written_this_input += numerology.rows_to_write_this_iteration;
-    out_ds_info.n_rows_written_total +=  numerology.rows_to_write_this_iteration;
+    out_ds_info.n_rows_written_total +=
+      numerology.rows_to_write_this_iteration;
   }
   return status;
 }
