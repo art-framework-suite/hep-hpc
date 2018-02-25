@@ -101,9 +101,9 @@ namespace {
 
   // Prepare the output dataspace based on the input dataspace.
   Dataspace
-  output_dataspace(Dataspace const & in_dataspace)
+  output_dspace(Dataspace const & in_dspace)
   {
-    Dataspace result = in_dataspace;
+    Dataspace result = in_dspace;
     auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, result);
     std::vector<hsize_t> shape(ndims), maxshape(ndims);
     (void) ErrorController::call(&H5Sget_simple_extent_dims,
@@ -122,17 +122,17 @@ namespace {
   // Select the correct hyperslab for IO in a dataspace,
   // returning the corresponding memory dataspace.
   Dataspace
-  prepare_dataspace(Dataspace & file_dataspace,
+  prepare_dspace(Dataspace & file_dspace,
                     hsize_t const start_row,
                     hsize_t const rows_for_io)
   {
-    Dataspace mem_dataspace; // Result.
+    Dataspace mem_dspace; // Result.
     auto const ndims =
       ErrorController::call(&H5Sget_simple_extent_ndims,
-                            file_dataspace);
+                            file_dspace);
     std::vector<hsize_t> shape(ndims), maxshape(ndims);
     (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                                 file_dataspace,
+                                 file_dspace,
                                  shape.data(),
                                  maxshape.data());
     std::vector<hsize_t> offsets(ndims),
@@ -143,19 +143,19 @@ namespace {
     n_elements.front() = rows_for_io;
     if (rows_for_io > 0) {
       (void) ErrorController::call(&H5Sselect_hyperslab,
-                                   file_dataspace,
+                                   file_dspace,
                                    H5S_SELECT_SET,
                                    offsets.data(),
                                    nullptr,
                                    block_count.data(),
                                    n_elements.data());
-      mem_dataspace =
+      mem_dspace =
         Dataspace(ndims, n_elements.data(), n_elements.data());
     } else {
-      (void) ErrorController::call(&H5Sselect_none, file_dataspace);
-      mem_dataspace = Dataspace(H5S_NULL);
+      (void) ErrorController::call(&H5Sselect_none, file_dspace);
+      mem_dspace = Dataspace(H5S_NULL);
     }
-    return mem_dataspace;
+    return mem_dspace;
   }
 
   // Structure to hold the calculated numerology for an I/O operation.
@@ -306,9 +306,21 @@ int
 hep_hpc::HDF5FileConcatenator::
 concatFiles(std::vector<std::string> const & inputs)
 {
-  // FIXME Need to treat filename_column here.
+  // Initialize filename column data from input filenames (as given).
+  if (!filename_column_info_.column_name().empty()) {
+    if (filename_column_info_.has_regex()) {
+      filename_column_data_ = inputs;
+    } else {
+      for (auto const & input : inputs) {
+        filename_column_data_.emplace_back(std::regex_replace(input,
+                                                              filename_column_info_.regex(),
+                                                              filename_column_info_.replacement()));
+      }
+    };
+  }
 
   // Iterate over files:
+  auto fn_column_val_iterator = filename_column_data_.cbegin();
   for (auto const & input_file_name : inputs) {
     // 1. Open input file
     report(2, std::string("Attempting to open input file ") + input_file_name);
@@ -331,7 +343,67 @@ concatFiles(std::vector<std::string> const & inputs)
            },
            this);
 
-    // FIXME: fill filename_column here.
+    // Fill filename_column.
+    hsize_t max_fn_column_val_size =
+      std::max_element(filename_column_data_.cbegin(),
+                       filename_column_data_.cend(),
+                       [](std::string const & l,
+                          std::string const & r)
+                       { return l.size() < r.size(); })->size();
+
+    Datatype s_type;
+    for (auto & group_info : group_filename_column_ds_size_) {
+      auto const & group_path = group_info.first;
+      auto & ds_info = group_info.second;
+      if (!ds_info.ds) {
+        // Create dataset of required size.
+        s_type = Datatype(H5Tcopy(H5T_C_S1));
+        H5Tset_size(s_type, max_fn_column_val_size);
+        hsize_t const ds_size = ds_info.required_size;
+        hsize_t const ds_maxsize = H5S_UNLIMITED;
+        ds_info.ds =
+          Dataset(h5out_,
+                  group_path +
+                  '/' +
+                  filename_column_info_.column_name(),
+                  s_type,
+                  Dataspace(1, &ds_size, &ds_maxsize));
+      } else {
+        // Resize existing dataspace.
+        (void) ErrorController::call(&H5Dset_extent,
+                                     ds_info.ds,
+                                     &ds_info.required_size);    
+      }
+      if (my_rank == 1) {
+        // Fill the required section of the dataspace with the expected
+        // value for this input file.
+        Datatype new_s_type(H5Tcopy(H5T_C_S1));
+        static hsize_t const block_count  = 1;
+        H5Tset_size(s_type, fn_column_val_iterator->size());
+        auto const n_new_elements = ds_info.required_size - ds_info.current_size;
+        std::unique_ptr<uint8_t[]> buf(new uint8_t[max_fn_column_val_size * n_new_elements]);
+        Dataspace mem_dspace(1, &n_new_elements, &n_new_elements);
+        (void) ErrorController::call(&H5Dfill,
+                                     fn_column_val_iterator->c_str(),
+                                     new_s_type,
+                                     buf.get(),
+                                     s_type,
+                                     mem_dspace);
+        Dataspace file_dspace(1, &ds_info.required_size, &ds_info.required_size);
+        (void) ErrorController::call(&H5Sselect_hyperslab,
+                                     file_dspace,
+                                     H5S_SELECT_SET,
+                                     &ds_info.current_size,
+                                     nullptr,
+                                     &block_count,
+                                     &n_new_elements);
+        ds_info.ds.write(s_type, buf.get(), mem_dspace, file_dspace);
+      }
+      // Update current size.
+      ds_info.current_size = ds_info.required_size;
+    }
+    // Bump to next value for filename column dataset.
+    ++fn_column_val_iterator;
   }
   return 0;
 }
@@ -350,8 +422,10 @@ visit_item_(hid_t root_id,
                     only_groups_.cend(),
                     [obj_name](std::regex const & re) { return std::regex_match(obj_name, re); })) {
       report(2, std::string("Ensuring existence of group ") + obj_name + " in output file.");
+      // Make sure the group exists in the output.
       Group in_g(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
                  ResourceStrategy::handle_tag);
+
       (void)
         Group(h5out_,
               obj_name,
@@ -360,6 +434,15 @@ visit_item_(hid_t root_id,
               PropertyList(ErrorController::call(&H5Gget_create_plist, in_g),
                            ResourceStrategy::handle_tag)
              );
+      // If we decide it needs a filename column, keep track of how many
+      // rows it should have.
+      if ((!filename_column_info_.column_name().empty() &&
+           ((!filename_column_info_.has_group_regex()) ||
+            std::any_of(filename_column_info_.group_regexes().cbegin(),
+                        filename_column_info_.group_regexes().cend(),
+                        [obj_name](std::regex const & re) { return std::regex_match(obj_name, re); })))) {
+        group_filename_column_ds_size_[obj_name].required_size = 0ull;
+      }
     }
     break;
   case H5O_TYPE_DATASET:
@@ -383,26 +466,26 @@ visit_item_(hid_t root_id,
 
 herr_t
 hep_hpc::HDF5FileConcatenator::
-handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
+handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
 {
   using std::to_string;
   herr_t status = 0;
 
   // 1. Discover incoming dataset shape and size.
   report(2, std::string("Examining shape for input dataset ") + ds_name);
-  Dataspace in_dataspace(ErrorController::call(&H5Dget_space, in_ds),
+  Dataspace in_dspace(ErrorController::call(&H5Dget_space, in_ds),
                          ResourceStrategy::handle_tag);
 
-  if (ErrorController::call(&H5Sis_simple, in_dataspace) <= 0) {
+  if (ErrorController::call(&H5Sis_simple, in_dspace) <= 0) {
     report(-1, std::string("Ignoring incoming non-simple dataset ") + ds_name);
     return status;
   }
 
   auto const ndims =
-    ErrorController::call(&H5Sget_simple_extent_ndims, in_dataspace);
+    ErrorController::call(&H5Sget_simple_extent_ndims, in_dspace);
   std::vector<hsize_t> in_shape(ndims), in_maxshape(ndims);
   (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                               in_dataspace,
+                               in_dspace,
                                in_shape.data(),
                                in_maxshape.data());
   auto const in_ds_size = in_shape.front();
@@ -432,6 +515,11 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
                                    in_ds_create_plist,
                                    H5Z_FILTER_ALL);
     }
+    // Save parent group's name.
+    auto const slash_pos = ds_name.rfind('/');
+    out_ds_info.parent = (slash_pos != std::string::npos) ?
+                         ds_name.substr(0, slash_pos) : ".";
+
     // Calculate the size of a row in bytes.
     out_ds_info.row_size_bytes =
       std::accumulate(in_shape.cbegin() + 1,
@@ -476,20 +564,20 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
     out_ds_info.ds = Dataset(h5out_,
                              ds_name,
                              in_type,
-                             output_dataspace(in_dataspace),
+                             output_dspace(in_dspace),
                              {},
                              std::move(in_ds_create_plist),
                              std::move(in_ds_access_plist));
   }
 
   if (have_output_ds) { // Resize existing dataset.
-    Dataspace out_dataspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
+    Dataspace out_dspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
                             ResourceStrategy::handle_tag);
 
-    auto const out_ndims = ErrorController::call(&H5Sget_simple_extent_ndims, out_dataspace);
+    auto const out_ndims = ErrorController::call(&H5Sget_simple_extent_ndims, out_dspace);
     std::vector<hsize_t> out_shape(out_ndims), out_maxshape(out_ndims);
     (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                                 out_dataspace,
+                                 out_dspace,
                                  out_shape.data(),
                                  out_maxshape.data());
     if (!(ndims == out_ndims || std::equal(in_shape.cbegin() + 1,
@@ -512,7 +600,7 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
   }
 
   // Get an up-to-date copy of the output dataset.
-  Dataspace out_dataspace =
+  Dataspace out_dspace =
     Dataspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
               ResourceStrategy::handle_tag);
 
@@ -529,8 +617,8 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
     //     the corresponding hyperslab of the output.
 
     // 4.2.1 Prepare the input dataspace.
-    auto mem_dataspace =
-      prepare_dataspace(in_dataspace,
+    auto mem_dspace =
+      prepare_dspace(in_dspace,
                         numerology.input_start_row_this_rank,
                         numerology.rows_to_write_this_rank);
 
@@ -545,12 +633,12 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
            ").");
     (void) in_ds.read(in_type,
                       buffer_.data(),
-                      std::move(mem_dataspace),
-                      in_dataspace,
+                      std::move(mem_dspace),
+                      in_dspace,
                       transfer_properties_());
     // 4.2.3 Prepare the dataspaces.
-    mem_dataspace =
-      prepare_dataspace(out_dataspace,
+    mem_dspace =
+      prepare_dspace(out_dspace,
                         numerology.output_start_row_this_rank,
                         numerology.rows_to_write_this_rank);
 
@@ -565,8 +653,8 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
            ").");
     out_ds_info.ds.write(in_type,
                          buffer_.data(),
-                         std::move(mem_dataspace),
-                         out_dataspace,
+                         std::move(mem_dspace),
+                         out_dspace,
                          transfer_properties_());
 
     // 4.3 Update cursors.
@@ -574,6 +662,18 @@ handle_dataset_(hdf5::Dataset in_ds, const char * const ds_name)
     out_ds_info.n_rows_written_total +=
       numerology.rows_to_write_this_iteration;
   }
+
+  // Update the required size of the filename column dataset, if
+  // necessary.
+  auto const group_size_iter =
+    group_filename_column_ds_size_.find(out_ds_info.parent);
+  if (group_size_iter != group_filename_column_ds_size_.cend()) {
+    group_size_iter->second.required_size =
+      std::max(group_size_iter->second.required_size,
+               out_ds_info.n_rows_written_total);
+  }
+
+  // Done.
   return status;
 }
 

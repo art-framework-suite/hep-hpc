@@ -41,7 +41,7 @@ private:
                      char const * obj_name,
                      H5O_info_t const * obj_info);
   // Handle the data movement for one dataset.
-  herr_t handle_dataset_(hdf5::Dataset ds_in, const char * ds_name);
+  herr_t handle_dataset_(hdf5::Dataset ds_in, std::string ds_name);
   // Return a suitably-set property list specifying properties for read
   // and write.
   hdf5::PropertyList transfer_properties_();
@@ -51,6 +51,7 @@ private:
   bool want_filters_;
   bool want_collective_writes_;
   FilenameColumnInfo filename_column_info_;
+  std::vector<std::string> filename_column_data_;
   std::vector<std::regex> only_groups_;
 
   // I/O buffer.
@@ -62,6 +63,14 @@ private:
   hdf5::File h5out_;
   // Per-dataset info and state.
   std::unordered_map<std::string, ConcatenatedDSInfo> ds_info_;
+  // Per-group info.
+  struct FilenameColumnDSInfo {
+    hdf5::Dataset ds;
+    hsize_t current_size { 0ull };
+    hsize_t required_size { 0ull };
+  };
+  std::unordered_map<std::string, FilenameColumnDSInfo>
+  group_filename_column_ds_size_;
 };
 
 #endif /* hep_hpc_concat_hdf5_HDF5FileConcatenator_hpp */

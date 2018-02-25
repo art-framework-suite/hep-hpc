@@ -15,6 +15,7 @@ namespace hep_hpc {
 }
 
 struct hep_hpc::ConcatenatedDSInfo {
+  std::string parent;
   std::size_t row_size_bytes {0ull};
   hsize_t chunk_rows {0ul};
   hsize_t buffer_size_rows {0ull};
