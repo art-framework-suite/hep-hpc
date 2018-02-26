@@ -272,6 +272,31 @@ namespace {
     }
     return result;
   }
+
+  // Return the parent group of a dataset or group
+  std::string
+  parent_group(std::string const & child)
+  {
+    auto const slash_pos = child.rfind('/');
+    std::string
+      parent = (slash_pos != std::string::npos) ?
+      child.substr(0, slash_pos) : ".";
+    return parent;
+  }
+
+  // Match a group name against a bunch of regexes, returning true if
+  // any match.
+  bool
+  match_group_against_regexes(std::string const & group_name,
+                              std::vector<std::regex> const & only_groups)
+  {
+    return only_groups.size() == 0 ||
+      std::any_of(only_groups.cbegin(),
+                  only_groups.cend(),
+                  [group_name](std::regex const & re)
+                  { return std::regex_match(group_name, re); });
+  }
+
 }
 
 hep_hpc::HDF5FileConcatenator::
@@ -313,14 +338,15 @@ concatFiles(std::vector<std::string> const & inputs)
   // Initialize filename column data from input filenames (as given).
   if (!filename_column_info_.column_name().empty()) {
     if (filename_column_info_.has_regex()) {
-      filename_column_data_ = inputs;
-    } else {
       for (auto const & input : inputs) {
-        filename_column_data_.emplace_back(std::regex_replace(input,
-                                                              filename_column_info_.regex(),
-                                                              filename_column_info_.replacement()));
+        filename_column_data_.
+          emplace_back(std::regex_replace(input,
+                                          filename_column_info_.regex(),
+                                          filename_column_info_.replacement()));
       }
-    };
+    } else {
+      filename_column_data_ = inputs;
+    }
   }
 
   // Iterate over files:
@@ -349,60 +375,76 @@ concatFiles(std::vector<std::string> const & inputs)
 
     // Fill filename_column.
     hsize_t max_fn_column_val_size =
+      (filename_column_data_.size() > 0) ?
       std::max_element(filename_column_data_.cbegin(),
                        filename_column_data_.cend(),
                        [](std::string const & l,
                           std::string const & r)
-                       { return l.size() < r.size(); })->size();
-
-    Datatype s_type;
+                       { return l.size() < r.size(); })->size() : 0;
+    Datatype s_type(H5Tcopy(H5T_C_S1));
+    H5Tset_size(s_type, max_fn_column_val_size);
     for (auto & group_info : group_filename_column_ds_size_) {
       auto const & group_path = group_info.first;
       auto & ds_info = group_info.second;
       if (!ds_info.ds) {
+        report(2, std::string("Creating filename column dataset ") +
+               group_path + '/' +
+               filename_column_info_.column_name() + " in output.");
         // Create dataset of required size.
-        s_type = Datatype(H5Tcopy(H5T_C_S1));
-        H5Tset_size(s_type, max_fn_column_val_size);
         hsize_t const ds_size = ds_info.required_size;
         hsize_t const ds_maxsize = H5S_UNLIMITED;
+        hsize_t const chunk_size = 128;
+        PropertyList cprops(H5P_DATASET_CREATE);
+        cprops(&H5Pset_chunk, 1, &chunk_size);
+        if (want_filters_) {
+          cprops(&H5Pset_deflate, 6);
+        }
         ds_info.ds =
           Dataset(h5out_,
                   group_path +
                   '/' +
                   filename_column_info_.column_name(),
                   s_type,
-                  Dataspace(1, &ds_size, &ds_maxsize));
+                  Dataspace(1, &ds_size, &ds_maxsize),
+                  {},
+                  cprops);
       } else {
         // Resize existing dataspace.
         (void) ErrorController::call(&H5Dset_extent,
                                      ds_info.ds,
                                      &ds_info.required_size);    
       }
-      if (my_rank == 1) {
-        // Fill the required section of the dataspace with the expected
-        // value for this input file.
-        Datatype new_s_type(H5Tcopy(H5T_C_S1));
-        static hsize_t const block_count  = 1;
-        H5Tset_size(s_type, fn_column_val_iterator->size());
-        auto const n_new_elements = ds_info.required_size - ds_info.current_size;
-        std::unique_ptr<uint8_t[]> buf(new uint8_t[max_fn_column_val_size * n_new_elements]);
-        Dataspace mem_dspace(1, &n_new_elements, &n_new_elements);
-        (void) ErrorController::call(&H5Dfill,
-                                     fn_column_val_iterator->c_str(),
-                                     new_s_type,
-                                     buf.get(),
-                                     s_type,
-                                     mem_dspace);
-        Dataspace file_dspace(1, &ds_info.required_size, &ds_info.required_size);
-        (void) ErrorController::call(&H5Sselect_hyperslab,
-                                     file_dspace,
-                                     H5S_SELECT_SET,
-                                     &ds_info.current_size,
-                                     nullptr,
-                                     &block_count,
-                                     &n_new_elements);
-        ds_info.ds.write(s_type, buf.get(), mem_dspace, file_dspace);
-      }
+      // Fill the required section of the dataspace with the expected
+      // value for this input file.
+      static hsize_t const block_count  = 1;
+      Datatype new_s_type(H5Tcopy(H5T_C_S1));
+      H5Tset_size(new_s_type, fn_column_val_iterator->size());
+      auto const n_new_elements = ds_info.required_size - ds_info.current_size;
+      std::unique_ptr<uint8_t[]> buf(new uint8_t[max_fn_column_val_size * n_new_elements]);
+      Dataspace mem_dspace(1, &n_new_elements, &n_new_elements);
+      // Fill a memory buffer with the data to write.
+      report(4, std::string("Fill buffer for filename column dataset."));
+      (void) ErrorController::call(&H5Dfill,
+                                   fn_column_val_iterator->c_str(),
+                                   new_s_type,
+                                   buf.get(),
+                                   s_type,
+                                   mem_dspace);
+      Dataspace file_dspace(1, &ds_info.required_size, &ds_info.required_size);
+      // Write our memory buffer to the dataset.
+      report(4, std::string("Write buffer for filename column dataset."));
+      (void) ErrorController::call(&H5Sselect_hyperslab,
+                                   file_dspace,
+                                   H5S_SELECT_SET,
+                                   &ds_info.current_size,
+                                   nullptr,
+                                   &block_count,
+                                   &n_new_elements);
+      ds_info.ds.write(s_type,
+                       buf.get(),
+                       std::move(mem_dspace),
+                       std::move(file_dspace),
+                       transfer_properties_());
       // Update current size.
       ds_info.current_size = ds_info.required_size;
     }
@@ -422,9 +464,7 @@ visit_item_(hid_t root_id,
   herr_t status = 0;
   switch (obj_info->type) {
   case H5O_TYPE_GROUP:
-    if (std::any_of(only_groups_.cbegin(),
-                    only_groups_.cend(),
-                    [obj_name](std::regex const & re) { return std::regex_match(obj_name, re); })) {
+    if (match_group_against_regexes(obj_name, only_groups_)) {
       report(2, std::string("Ensuring existence of group ") + obj_name + " in output file.");
       // Make sure the group exists in the output.
       Group in_g(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
@@ -438,24 +478,32 @@ visit_item_(hid_t root_id,
               PropertyList(ErrorController::call(&H5Gget_create_plist, in_g),
                            ResourceStrategy::handle_tag)
              );
+
       // If we decide it needs a filename column, keep track of how many
       // rows it should have.
-      if ((!filename_column_info_.column_name().empty() &&
-           ((!filename_column_info_.has_group_regex()) ||
-            std::any_of(filename_column_info_.group_regexes().cbegin(),
-                        filename_column_info_.group_regexes().cend(),
-                        [obj_name](std::regex const & re) { return std::regex_match(obj_name, re); })))) {
+      if (!filename_column_info_.column_name().empty() &&
+          match_group_against_regexes(obj_name,
+                                       filename_column_info_.group_regexes())) {
         group_filename_column_ds_size_[obj_name].required_size = 0ull;
       }
+    } else if (strcmp(".", obj_name) != 0) {
+      report(3, std::string("Ignoring group ") + obj_name +
+             " due to failure to match --only-groups specification.");
     }
     break;
   case H5O_TYPE_DATASET:
-  {
-    Dataset
-      in_ds(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
-            ResourceStrategy::handle_tag);
-    status = handle_dataset_(std::move(in_ds), obj_name);
-  }
+    if (match_group_against_regexes(parent_group(obj_name),
+                                    only_groups_)) {
+      Dataset
+        in_ds(ErrorController::call(&H5Oopen_by_addr,
+                                    root_id,
+                                    obj_info->addr),
+              ResourceStrategy::handle_tag);
+      status = handle_dataset_(std::move(in_ds), obj_name);
+    } else {
+      report(3, std::string("Ignoring dataset ") + obj_name +
+             " due to failure of containing group to match --only-groups specification.");
+    }
   break;
   case H5O_TYPE_NAMED_DATATYPE:
     report(-1, std::string("Ignoring named datatype ") + obj_name);
@@ -520,9 +568,7 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
                                    H5Z_FILTER_ALL);
     }
     // Save parent group's name.
-    auto const slash_pos = ds_name.rfind('/');
-    out_ds_info.parent = (slash_pos != std::string::npos) ?
-                         ds_name.substr(0, slash_pos) : ".";
+    out_ds_info.parent = parent_group(ds_name);
 
     // Calculate the size of a row in bytes.
     out_ds_info.row_size_bytes =
