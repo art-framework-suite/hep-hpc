@@ -70,17 +70,18 @@ namespace {
         // Deal with --arg=... arguments
         result.emplace_back(lea_match[1].str()); // Argumemt name.
         auto const & subargs = lea_match[2].str();
-        std::string::size_type pos = 0, last_pos = std::string::npos;
-        while ((pos = subargs.find(',', last_pos + 1)) != std::string::npos) {
-          result.emplace_back(subargs.substr(last_pos + 1, pos - last_pos - 1));
-          last_pos = pos;
-        }
-        if (last_pos != std::string::npos) { // Last argument.
-          result.emplace_back(subargs.substr(last_pos +1));
-        } else { // Single empty arg.
+        if (subargs.empty()) { // Single empty arg.
           result.emplace_back();
+        } else {
+          std::string::size_type pos = 0, last_pos = std::string::npos;
+          while ((pos = subargs.find(',', last_pos + 1)) != std::string::npos) {
+            result.emplace_back(subargs.substr(last_pos + 1, pos - last_pos - 1));
+            last_pos = pos;
+          }
+          // Last argument.
+          result.emplace_back(subargs.substr(last_pos +1));
         }
-        if (argc > 1 ||
+        if (argc == 1 ||
             !(argv[1][0] == '-' || argv[1][0] == '+')) { // Look ahead.
           // Last option argument before non-option arguments: armor!
           result.emplace_back("--");
@@ -189,7 +190,7 @@ private:
     auto const eargs = args.end();
     auto iarg = args.begin();
     for (; iarg != eargs; ++iarg) {
-      auto arg = *iarg;
+      auto & arg = *iarg;
       if (arg[0] != '-' && arg[0] != '+') {
         // Finished processing options (processing for individual
         // options should progress iarg after dealing with arguments).
@@ -199,7 +200,8 @@ private:
         ++iarg;
         break;
       }
-      auto next_arg_iter = detail::copy_advance(iarg, 1);
+      // Count sub-arguments.
+      auto next_arg_iter = iarg + 1;
       while (next_arg_iter != eargs &&
              (*next_arg_iter)[0] != '-' &&
              (*next_arg_iter)[0] != '+') {
@@ -238,7 +240,7 @@ private:
                  isubarg != next_arg_iter;
                  ++isubarg) {
               try {
-                group_regexes.emplace_back(*iarg);
+                group_regexes.emplace_back(*isubarg);
               }
               catch (std::regex_error const & e) {
                 throw_bad_argument(arg, *isubarg, 2, e.what());
@@ -290,7 +292,7 @@ private:
                isubarg != next_arg_iter;
                ++isubarg) {
             try {
-              only_groups_.emplace_back(*iarg);
+              only_groups_.emplace_back(*isubarg);
             }
             catch (std::regex_error const & e) {
               throw_bad_argument(arg, *isubarg, 2, e.what());
