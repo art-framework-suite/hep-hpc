@@ -75,11 +75,13 @@ namespace {
   {
     PropertyList file_access_properties(H5P_FILE_ACCESS);
 #ifdef HEP_HPC_USE_MPI
-    report(1, "Setting access properties to use MPI I/O.");
-    (void) ErrorController::call(&H5Pset_fapl_mpio,
-                                 file_access_properties,
-                                 MPI_COMM_WORLD,
-                                 MPI_INFO_NULL);
+    if (n_ranks > 1) {
+      report(1, "Setting access properties to use MPI I/O.");
+      (void) ErrorController::call(&H5Pset_fapl_mpio,
+                                   file_access_properties,
+                                   MPI_COMM_WORLD,
+                                   MPI_INFO_NULL);
+    }
 #endif
     return file_access_properties;
   }
@@ -287,7 +289,7 @@ HDF5FileConcatenator(std::string const & output,
   , filename_column_info_(std::move(filename_column_info))
   , only_groups_(only_groups)
   , buffer_(mem_max_bytes_)
-  , h5out_(open_output_file(output, file_mode))
+  , h5out_()
   , ds_info_()
 {
   // Set file-scope parameters.
@@ -300,6 +302,8 @@ HDF5FileConcatenator(std::string const & output,
   n_ranks = 1;
   my_rank = 0;
 #endif
+  // Must wait until n_ranks & my_rank are initialized.
+  h5out_ = open_output_file(output, file_mode);
 }
 
 int
