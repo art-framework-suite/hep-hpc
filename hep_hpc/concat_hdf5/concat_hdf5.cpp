@@ -434,6 +434,21 @@ OPTIONS
     triggered the resize. This column is only useful for tabular data
     where each dataset in a given group has the same number of rows.
 
+    NOTES
+
+    * <regex> is a substring match expression following the ECMAScript
+      specification. Use ^ and $ as appropriate to anchor the beginning
+      and end of your expression.
+
+    * The replacement format string should follow the ECMAScript
+      specifications for backreferences (e.g. $<num> for back-reference
+      <num>) as described in documentation for the C++ Standard Library
+      function std::regex_replace().
+
+    * <group-regex> arguments, if specified, are whole-string match
+      expressions following the ECMAScript specification.
+
+
   --help
   -h
   -?
@@ -452,8 +467,8 @@ OPTIONS
 
   --only-groups <regex>+
 
-    Handle only groups matching these ECMAScript regexes, and the
-    datasets within them.
+    Handle only groups matching these ECMAScript whole-string match
+    expressions, and the datasets within them.
 
   --output <output-file>
   -o <output-file>
