@@ -96,8 +96,8 @@ add_subdirectory(memstream)
 add_subdirectory(hep_hpc)
 add_subdirectory(gtest EXCLUDE_FROM_ALL)
 add_subdirectory(test)
+add_subdirectory(tools)
 add_subdirectory(ups)
-#add_subdirectory(doc)
 
 install(FILES LICENSE README.md
   DESTINATION ".")
