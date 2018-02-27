@@ -54,11 +54,13 @@ int main(int argc, char **argv)
   hid_t dataset = H5Dcreate2(file, "dset", H5T_NATIVE_INT, dataspace,
                              H5P_DEFAULT, prop, H5P_DEFAULT);
 
-  int data[chunk_size][2][3];
+  int * data = malloc(chunk_size * 2 * 3 * sizeof(int));
+
   for (hsize_t i = 0; i < chunk_size; ++i) {
     for (int j = 0; j < 2; ++j) {
       for (int k = 0; k < 3; ++k) {
-        data[i][j][k] = my_rank * 1000 + i * 100 + j * 10 + k;
+        data[i * chunk_size + j * 2 + k * 3] =
+          my_rank * 1000 + i * 100 + j * 10 + k;
       }
     }
   }
@@ -101,5 +103,6 @@ int main(int argc, char **argv)
   status = H5Fclose(file);
 
   MPI_Finalize();
+  free(data);
   return status;
 }

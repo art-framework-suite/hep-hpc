@@ -54,7 +54,7 @@ private:
     for (; ++argv, --argc;) {
       if (strcmp(*argv, "-o") == 0) {
         auto const tmp = std::strtol(argv[1], &endptr, 10);
-        if (tmp == LONG_MIN || tmp == LONG_MAX || !*endptr == '\0') {
+        if (tmp == LONG_MIN || tmp == LONG_MAX || !(*endptr == '\0')) {
           throw
             ProgramOptionsException(std::string("Invalid input for offset: ") +
                                     argv[1], 2);
@@ -63,7 +63,7 @@ private:
         --argc, ++argv;
       } else if (strcmp(*argv, "-n") == 0) {
         auto const tmp =  std::strtol(argv[1], &endptr, 10);
-        if (tmp == LONG_MIN || tmp == LONG_MAX || !*endptr == '\0' || tmp < 0) {
+        if (tmp == LONG_MIN || tmp == LONG_MAX || !(*endptr == '\0') || tmp < 0) {
           throw
             ProgramOptionsException(std::string("Invalid input for # rows: ") +
                                     argv[1], 2);
@@ -72,7 +72,7 @@ private:
         --argc, ++argv;
       } else if (strcmp(*argv, "-c") == 0) {
         auto const tmp =  std::strtol(argv[1], &endptr, 10);
-        if (tmp == LONG_MIN || tmp == LONG_MAX || !*endptr == '\0' || tmp < 0) {
+        if (tmp == LONG_MIN || tmp == LONG_MAX || !(*endptr == '\0') || tmp < 0) {
           throw
             ProgramOptionsException(std::string("Invalid input for chunk size: ") +
                                     argv[1], 2);

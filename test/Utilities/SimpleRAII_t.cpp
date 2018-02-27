@@ -61,7 +61,7 @@ TEST(SimpleRAII_construction, td_void)
   size_t const ref = 27;
   size_t iut = 0;
   {
-    SimpleRAII<void> const r([ref,&iut]() { iut = ref; });
+    SimpleRAII<void> const r([&iut]() { iut = ref; });
   }
   ASSERT_EQ(iut, ref);
 }

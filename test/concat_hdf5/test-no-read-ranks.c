@@ -74,8 +74,7 @@ int main(int argc, char **argv)
   }
 
   /* To hold incoming data. */
-  int data[chunk_size][2][3];
-  memset(data, 0, chunk_size * 2 * 3 * sizeof(int));
+  int * data = calloc(chunk_size * 2 * 3, sizeof(int));
 
   hid_t in_dataspace = H5Dget_space(in_dataset);
   hid_t mem_dspace;
@@ -131,5 +130,6 @@ int main(int argc, char **argv)
   status = H5Fclose(file);
 
   MPI_Finalize();
+  free(data);
   return status;
 }
