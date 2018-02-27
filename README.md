@@ -17,10 +17,10 @@ data in HDF5 files with row-wise fill semantics and column-wise read.
 * Linux (tested on RHEL6/7-related, should work on Ubuntu 16.04) or Mac
   (tested on Sierra).
 * CMake.
-* A modern C++ compiler (C++14-compliant preferred, C++11 compliance
-  required). If you require C++11 compatibility rather than C++14 or
-  better, Boost is required to provide facilities that would otherwise
-  be provided by the standard library.
+* A modern C++ compiler (C++17 supported, C++14-compliant preferred,
+  C++11 compliance required). If you require C++11 compatibility rather
+  than C++14 or better, Boost is required to provide facilities that
+  would otherwise be provided by the standard library.
 * A modern HDF5 distribution (1.10.0+).
 * Optionally, MPI distribution (tested with MPICH, likely to be
   problematic with OpenMPI).
@@ -68,9 +68,7 @@ instead, use
 
 In order to obtain a reasonable build of HDF5 1.10, one should:
 
-1. `brew tap homebrew/science`
-2. `cd $(brew --repository homebrew/science)`
-3. `brew install --build-from-source hdf5 --with-mpi --without-cxx`
+* `brew install --build-from-source hdf5 --with-mpi --without-cxx`
 
 ### Linux ###
 
@@ -94,7 +92,6 @@ Use your OS' package manager wherever possible.
 
 ## Building the code ##
 
-1. Make a build directory and `cd` into it.
 1. One time per local repository only:  
     ```
     git submodule init
@@ -103,23 +100,29 @@ Use your OS' package manager wherever possible.
     ```
     git submodule update gtest
     ```
+1. Make a build directory and `cd` into it.
 1. Invoke CMake to configure the code:  
     ```
     CC=<c-compiler> CXX=<c++-compiler> FC=<Fortran-compiler> \
     cmake -DCMAKE_BUILD_TYPE=<Debug|Release|RelWithDebInfo> \
     -DCMAKE_INSTALL_PREFIX=<install-area> \
     [-DCMAKE_CXX_STANDARD=<11|14|17>] \
-    [-DWANT_MPI=1] \
-    [-DWANT_UPS=1] \
+    [-DWANT_MPI=TRUE] \
+    [-DWANT_UPS=TRUE] \
+    [-DWANT_H5PY=TRUE] \
     <path-to-repository-top-dir>
     ```  
     The `CMakeLists.txt` file includes a safeguard against invoking
     CMake from within the source directory, but you may still have to
-    remove some debris if you do this unintentionally.  Define `WANT_MPI`
-    appropriately to activate MPI, if it is available and desired. Note
-    that your own code may still use MPI even if `WANT_MPI` is not set,
-    but the (as yet, very basic) MPI facilities of this package will not
-    be available. Define WANT_UPS if you wish to build a UPS-capable package.
+    remove some debris if you do this unintentionally.  Define
+    `WANT_MPI` appropriately to activate MPI, if it is available and
+    desired. Note that your own code may still use MPI even if
+    `WANT_MPI` is not set, but the (as yet, very basic) MPI facilities
+    of this package will not be available. Define `WANT_UPS` if you wish
+    to build a UPS-capable package. Defining `WANT_H5PY` turns on the
+    testing of the `concat-h5py` utility (assuming the `h5py` Python
+    package is available and compatible with the current compiler,
+    etc.).
     
 1. Build the code:   
     ```
