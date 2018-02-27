@@ -8,6 +8,7 @@ using namespace hep_hpc;
 
 #include <iomanip>
 #include <ostream>
+#include <sstream>
 
 namespace {
 #ifdef HEP_HPC_USE_MPI
