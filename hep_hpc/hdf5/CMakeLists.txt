@@ -21,6 +21,7 @@ set (headers
   Ntuple.hpp
   PropertyList.hpp
   Resource.hpp
+  ResourceStrategy.hpp
   errorHandling.hpp
   make_column.hpp
   make_ntuple.hpp
