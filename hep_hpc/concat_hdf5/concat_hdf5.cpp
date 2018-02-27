@@ -555,7 +555,7 @@ int main(int argc, char **argv)
 #else
   n_ranks = 1;
   my_rank = 0;
-  bool want_abort = false;
+  bool want_abort [[gnu::unused]] = false;
 #endif
   // Make sure we throw exceptions on HDF5 call errors.
   hdf5::ErrorController::setErrorHandler(hdf5::ErrorMode::EXCEPTION);
