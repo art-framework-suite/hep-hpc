@@ -9,6 +9,12 @@ find_program(VERIFY_TEST_FILE NAME verify_test_file.py
 include(CMakeParseArguments)
 
 function(make_input_files TEST_FILES_IN_VAR OUTPUT_STEM)
+  if (3.9.0 VERSION_GREATER CMAKE_VERSION)
+    # Older CMake.
+    set (SA_OPT UNIX_COMMAND)
+  else()
+    set (SA_OPT NATIVE_COMMAND)
+  endif()
   cmake_parse_arguments(MIF "" "CHUNK_SIZE" "" ${ARGN})
   if (MIF_CHUNK_SIZE)
     set(MIF_CHUNK_SIZE "-c ${MIF_CHUNK_SIZE}")
@@ -22,7 +28,7 @@ function(make_input_files TEST_FILES_IN_VAR OUTPUT_STEM)
   if (EC)
     message(FATAL_ERROR "ERROR generating test data for target ${TARGET}")
   endif()
-  separate_arguments(TEST_FILES_IN NATIVE_COMMAND "${TEST_FILES_IN}")
+  separate_arguments(TEST_FILES_IN ${SA_OPT} "${TEST_FILES_IN}")
   set(${TEST_FILES_IN_VAR} ${TEST_FILES_IN} PARENT_SCOPE)
 endfunction()
 
