@@ -1,6 +1,7 @@
 #ifndef hep_hpc_concat_hdf5_HDF5FileConcatenator_hpp
 #define hep_hpc_concat_hdf5_HDF5FileConcatenator_hpp
 
+#include "hep_hpc/Utilities/detail/compiler_macros.hpp"
 #include "hep_hpc/concat_hdf5/ConcatenatedDSInfo.hpp"
 #include "hep_hpc/concat_hdf5/FilenameColumnInfo.hpp"
 #include "hep_hpc/hdf5/Dataset.hpp"
@@ -49,7 +50,7 @@ private:
   // Parameters.
   hsize_t mem_max_bytes_;
   bool want_filters_;
-  bool want_collective_writes_;
+  bool want_collective_writes_ UNUSED_PRIVATE_FIELD;
   FilenameColumnInfo filename_column_info_;
   std::vector<std::string> filename_column_data_;
   std::vector<std::regex> only_groups_;

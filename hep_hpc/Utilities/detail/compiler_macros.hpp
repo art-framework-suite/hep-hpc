@@ -89,6 +89,12 @@
 #define IGNORE_FALLTHROUGH_END
 #endif
 
+#ifdef __clang__
+#define UNUSED_PRIVATE_FIELD [[gnu::unused]]
+#else
+#define UNUSED_PRIVATE_FIELD
+#endif
+
 #endif /* hep_hpc_Utilities_detail_compiler_macros_hpp */
 
 // Local Variables:

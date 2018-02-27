@@ -3,12 +3,11 @@
 #include "hep_hpc/detail/config.hpp"
 #ifdef HEP_HPC_USE_MPI
 #include "hep_hpc/MPI/MPICommunicator.hpp"
+using namespace hep_hpc;
 #endif
 
 #include <iomanip>
 #include <ostream>
-
-using namespace hep_hpc;
 
 namespace {
 #ifdef HEP_HPC_USE_MPI
