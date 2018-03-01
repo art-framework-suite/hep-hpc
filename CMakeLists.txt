@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.12.2)
 
 project(hep_hpc)
 
-set(HEP_HPC_VERSION 0.07.00)
+set(HEP_HPC_VERSION 0.07.01)
 
 if (POLICY CMP0042)
   cmake_policy(SET CMP0042 NEW) # @rpath on OS X.
