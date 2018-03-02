@@ -188,8 +188,8 @@ private:
     std::vector<std::string> args(unbundle_args(argc, argv));
     std::size_t idx {0ull};
     auto const eargs = args.end();
-    auto iarg = args.begin();
-    for (; iarg != eargs; ++iarg) {
+    auto iarg = args.begin(), next_arg_iter = iarg;
+    for (; iarg != eargs; iarg = next_arg_iter) {
       auto & arg = *iarg;
       if (arg[0] != '-' && arg[0] != '+') {
         // Finished processing options (processing for individual
@@ -201,12 +201,13 @@ private:
         break;
       }
       // Count sub-arguments.
-      auto next_arg_iter = iarg + 1;
+      next_arg_iter = iarg + 1;
       while (next_arg_iter != eargs &&
              (*next_arg_iter)[0] != '-' &&
              (*next_arg_iter)[0] != '+') {
         ++next_arg_iter;
       }
+      auto const n_sub_args = std::distance(iarg + 1, next_arg_iter);
       if (arg[1] == '-') { // Long options.
         if (arg == "--append") {
           arg = "-a"; // Short option alias.
@@ -215,7 +216,6 @@ private:
         } else if (arg == "--no-collective-writes") {
           arg = "+C"; // Short option alias.
         } else if (arg == "--filename-column") {
-          auto const n_sub_args = std::distance(iarg + 1, next_arg_iter);
           if (n_sub_args != 1 && n_sub_args < 3) {
             throw_bad_sub_args(*iarg,
                                2,
@@ -248,12 +248,10 @@ private:
             }
             filename_column_info_.set_group_regexes(std::move(group_regexes));
           }
-          iarg += n_sub_args;
           continue;
         } else if (arg == "--help") {
           arg = "-h"; // Short option alias.
         } else if (arg == "--mem-max") {
-          auto const n_sub_args = std::distance(iarg, next_arg_iter);
           if (n_sub_args != 1) {
             throw_bad_sub_args(*iarg,
                                2,
@@ -271,6 +269,12 @@ private:
           }
           continue;
         } else if (arg == "--mem-max-bytes") {
+          if (n_sub_args != 1) {
+            throw_bad_sub_args(*iarg,
+                               2,
+                               std::string("expected 1 sub-argument, got ") +
+                               to_string(n_sub_args));
+          }
           try {
             mem_max_bytes_ = std::stoull(*++iarg, &idx);
           }
@@ -282,7 +286,6 @@ private:
           }
           continue;
         } else if (arg == "--only-groups") {
-          auto const n_sub_args = std::distance(iarg + 1, next_arg_iter);
           if (n_sub_args == 0) {
             throw_bad_sub_args(*iarg,
                                2,
@@ -298,7 +301,6 @@ private:
               throw_bad_argument(arg, *isubarg, 2, e.what());
             }
           }
-          iarg += n_sub_args;
           continue;
         } else if (arg == "--output") {
           arg = "-o"; // Short option alias.
@@ -347,7 +349,13 @@ private:
         throw ProgramOptionsException(*iarg, 1);
         break;
       case 'o':
-        output_ = *++iarg;
+        if (n_sub_args != 1) {
+          throw_bad_sub_args(*iarg,
+                             2,
+                             std::string("expected 1 sub-argument, got ") +
+                             to_string(n_sub_args));
+        }
+        output_ = *(iarg + 1);
         break;
       case 'v':
         verbosity_ += (arg[0] = '-') ? 1 : -1;
