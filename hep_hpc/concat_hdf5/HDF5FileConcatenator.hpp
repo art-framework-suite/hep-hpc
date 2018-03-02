@@ -73,6 +73,7 @@ private:
   std::unordered_map<std::string, ConcatenatedDSInfo> ds_info_;
   // Per-group info.
   struct FilenameColumnDSInfo {
+    std::string name;
     hdf5::Dataset ds;
     hsize_t current_size { 0ull };
     hsize_t required_size { 0ull };

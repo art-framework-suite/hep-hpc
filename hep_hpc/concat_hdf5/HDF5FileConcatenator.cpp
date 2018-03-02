@@ -368,6 +368,10 @@ concatFiles(std::vector<std::string> const & inputs)
     for (auto & group_info : group_filename_column_ds_size_) {
       auto const & group_path = group_info.first;
       auto & ds_info = group_info.second;
+      if (ds_info.required_size == 0) {
+        // Don't need this dataset (yet).
+        continue;
+      }
       if (!ds_info.ds) {
         report(2, std::string("Creating filename column dataset ") +
                group_path + '/' +
@@ -381,11 +385,11 @@ concatFiles(std::vector<std::string> const & inputs)
         if (want_filters_) {
           cprops(&H5Pset_deflate, 6);
         }
+        ds_info.name =
+          group_path + '/' + filename_column_info_.column_name();
         ds_info.ds =
           Dataset(h5out_,
-                  group_path +
-                  '/' +
-                  filename_column_info_.column_name(),
+                  ds_info.name,
                   s_type,
                   Dataspace(1, &ds_size, &ds_maxsize),
                   {},
@@ -405,7 +409,7 @@ concatFiles(std::vector<std::string> const & inputs)
       std::unique_ptr<uint8_t[]> buf(new uint8_t[max_fn_column_val_size * n_new_elements]);
       Dataspace mem_dspace(1, &n_new_elements, &n_new_elements);
       // Fill a memory buffer with the data to write.
-      report(4, std::string("Fill buffer for filename column dataset."));
+      report(4, std::string("Fill buffer for filename column dataset ") + ds_info.name + ".");
       (void) ErrorController::call(&H5Dfill,
                                    fn_column_val_iterator->c_str(),
                                    new_s_type,
@@ -414,7 +418,7 @@ concatFiles(std::vector<std::string> const & inputs)
                                    mem_dspace);
       Dataspace file_dspace(1, &ds_info.required_size, &ds_info.required_size);
       // Write our memory buffer to the dataset.
-      report(4, std::string("Write buffer for filename column dataset."));
+      report(4, std::string("Write buffer for filename column dataset ") + ds_info.name + ".");
       (void) ErrorController::call(&H5Sselect_hyperslab,
                                    file_dspace,
                                    H5S_SELECT_SET,
