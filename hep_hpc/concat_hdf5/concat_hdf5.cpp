@@ -112,7 +112,7 @@ private:
   {
     if (!msg.empty()) {
       if (!extra_msg.empty()) {
-        msg += ": ";
+        msg += ": " + extra_msg;
       }
     } else {
       msg += extra_msg;
