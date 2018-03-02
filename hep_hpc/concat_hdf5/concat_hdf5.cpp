@@ -150,6 +150,7 @@ public:
     std::string const & output() const { return output_; }
     bool append() const { return append_; }
     bool overwrite() const { return overwrite_; }
+    long long max_rows() const { return max_rows_; }
     std::size_t mem_max_bytes() const { return mem_max_bytes_; }
     FilenameColumnInfo const & filename_column_info() const { return filename_column_info_; }
     FilenameColumnInfo & filename_column_info() { return filename_column_info_; }
@@ -165,6 +166,7 @@ private:
     static std::string const DEFAULT_FILENAME;
     static bool const DEFAULT_APPEND;
     static bool const DEFAULT_OVERWRITE;
+    static long long const DEFAULT_MAX_ROWS;
     static std::size_t const DEFAULT_MEM_MAX;
     static bool const DEFAULT_WANT_FILTERS;
     static bool const DEFAULT_WANT_COLLECTIVE_WRITES;
@@ -173,6 +175,7 @@ private:
     std::string output_ { DEFAULT_FILENAME };
     bool append_ { DEFAULT_APPEND };
     bool overwrite_ { DEFAULT_OVERWRITE };
+    long long max_rows_ { DEFAULT_MAX_ROWS };
     std::size_t mem_max_bytes_ { DEFAULT_MEM_MAX * 1024 * 1024 };
     FilenameColumnInfo filename_column_info_;
     std::vector<std::regex> only_groups_;
@@ -251,6 +254,8 @@ private:
           continue;
         } else if (arg == "--help") {
           arg = "-h"; // Short option alias.
+        } else if (arg == "--max-rows") {
+          arg = "-n"; // Short option alias.
         } else if (arg == "--mem-max") {
           if (n_sub_args != 1) {
             throw_bad_sub_args(*iarg,
@@ -348,6 +353,25 @@ private:
       case '?':
         throw ProgramOptionsException(*iarg, 1);
         break;
+      case 'n':
+      {
+        if (n_sub_args != 1) {
+          throw_bad_sub_args(*iarg,
+                             2,
+                             std::string("expected 1 sub-argument, got ") +
+                             to_string(n_sub_args));
+        }
+        try {
+          max_rows_ = std::stoll(*++iarg, &idx);
+        }
+        catch (...) {
+          throw_bad_argument(arg, *iarg, 2);
+        }
+        if (idx != iarg->size()) {
+          throw_bad_argument(arg, *iarg, 2);
+        }
+        continue;
+      }
       case 'o':
         if (n_sub_args != 1) {
           throw_bad_sub_args(*iarg,
@@ -463,6 +487,12 @@ OPTIONS
 
     This help.
 
+  --max-rows <max>
+  -n <max>
+
+    Write no more than <max> rows per dataset. A value of -1 (the
+    default) indicates to write all rows found.
+
   --mem-max <buffer-size-MiB>
 
     The maximum memory available for the I/O buffer, in MiB (default )END"
@@ -540,6 +570,7 @@ NOTES
   std::string const ProgramOptions::DEFAULT_FILENAME = "test.hdf5";
   bool const ProgramOptions::DEFAULT_APPEND = false;
   bool const ProgramOptions::DEFAULT_OVERWRITE = true;
+  long long const ProgramOptions::DEFAULT_MAX_ROWS = -1ll;
   std::size_t const ProgramOptions::DEFAULT_MEM_MAX = 100ull;
   bool const ProgramOptions::DEFAULT_WANT_FILTERS = true;
   bool const ProgramOptions::DEFAULT_WANT_COLLECTIVE_WRITES = true;
@@ -576,6 +607,7 @@ int main(int argc, char **argv)
                    program_options.append() ?
                    H5F_ACC_RDWR :
                    program_options.overwrite() ? H5F_ACC_TRUNC : H5F_ACC_EXCL,
+                   program_options.max_rows(),
                    program_options.mem_max_bytes(),
                    std::move(program_options.filename_column_info()),
                    program_options.only_groups(),

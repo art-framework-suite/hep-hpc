@@ -27,6 +27,7 @@ class hep_hpc::HDF5FileConcatenator {
 public:
   HDF5FileConcatenator(std::string const & output,
                        unsigned int file_mode,
+                       long long max_rows,
                        std::size_t mem_max_bytes,
                        FilenameColumnInfo filename_column_info,
                        std::vector<std::regex> const & only_groups,
@@ -46,8 +47,14 @@ private:
   // Return a suitably-set property list specifying properties for read
   // and write.
   hdf5::PropertyList transfer_properties_();
+  // Quick calculation if we still have rows available in the output.
+  hsize_t rows_available_(ConcatenatedDSInfo const & info) const;
+  // Prepare output dataspace based on input dataspace and other constraints.
+  hdf5::Dataspace output_dspace_(hdf5::Dataspace const & in_dspace,
+                                 ConcatenatedDSInfo const & info) const;
 
   // Parameters.
+  long long max_rows_;
   hsize_t mem_max_bytes_;
   bool want_filters_;
   bool want_collective_writes_ UNUSED_PRIVATE_FIELD;

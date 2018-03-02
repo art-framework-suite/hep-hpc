@@ -101,26 +101,6 @@ namespace {
     return output_file;
   }
 
-  // Prepare the output dataspace based on the input dataspace.
-  Dataspace
-  output_dspace(Dataspace const & in_dspace)
-  {
-    Dataspace result = in_dspace;
-    auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, result);
-    std::vector<hsize_t> shape(ndims), maxshape(ndims);
-    (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                                 result,
-                                 shape.data(),
-                                 maxshape.data());
-    maxshape.front() = H5S_UNLIMITED;
-    (void) ErrorController::call(&H5Sset_extent_simple,
-                                 result,
-                                 ndims,
-                                 shape.data(),
-                                 maxshape.data());
-    return result;
-  }
-
   // Select the correct hyperslab for IO in a dataspace,
   // returning the corresponding memory dataspace.
   Dataspace
@@ -302,13 +282,15 @@ namespace {
 hep_hpc::HDF5FileConcatenator::
 HDF5FileConcatenator(std::string const & output,
                      unsigned int file_mode,
+                     long long max_rows,
                      std::size_t mem_max_bytes,
                      FilenameColumnInfo filename_column_info,
                      std::vector<std::regex> const & only_groups,
                      bool want_filters,
                      bool want_collective_writes,
                      int in_verbosity)
-  : mem_max_bytes_(mem_max_bytes)
+  : max_rows_(max_rows)
+  , mem_max_bytes_(mem_max_bytes)
   , want_filters_(want_filters)
   , want_collective_writes_(want_collective_writes)
   , filename_column_info_(std::move(filename_column_info))
@@ -614,13 +596,18 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
     out_ds_info.ds = Dataset(h5out_,
                              ds_name,
                              in_type,
-                             output_dspace(in_dspace),
+                             output_dspace_(in_dspace, out_ds_info),
                              {},
                              std::move(in_ds_create_plist),
                              std::move(in_ds_access_plist));
   }
 
-  if (have_output_ds) { // Resize existing dataset.
+  hsize_t rows_threshold = std::min(rows_available_(out_ds_info), in_ds_size);
+
+  report(3, std::string("Calculated rows_threshold = ") +
+         to_string(rows_threshold));
+
+  if (have_output_ds && (rows_threshold > 0)) { // Resize existing dataset.
     Dataspace out_dspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
                             ResourceStrategy::handle_tag);
 
@@ -639,7 +626,7 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
       status = -1;
       return status;
     }
-    auto const new_size_rows = out_shape.front() + in_ds_size;
+    auto const new_size_rows = out_shape.front() + rows_threshold;
     report(1, std::string("resize ") + ds_name + " from " +
            to_string(out_shape.front()) + " to " +
            to_string(new_size_rows));
@@ -656,12 +643,13 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
 
   // 4. Iterate over buffer-sized chunks.
   auto n_rows_written_this_input = 0ull;
-  while (n_rows_written_this_input < in_ds_size) {
+
+  while (n_rows_written_this_input < rows_threshold) {
     // 4.1 Calculate row numerology.
     auto const numerology =
       row_numerology(out_ds_info,
                      n_rows_written_this_input,
-                     in_ds_size);
+                     rows_threshold);
 
     // 4.2 Read the correct hyperslab of the input file and copy it to
     //     the corresponding hyperslab of the output.
@@ -742,4 +730,37 @@ transfer_properties_()
   PropertyList xfer_properties;
 #endif
   return xfer_properties;
+}
+
+hsize_t
+hep_hpc::HDF5FileConcatenator::
+rows_available_(ConcatenatedDSInfo const & info) const
+{
+  hsize_t result = ((hsize_t) max_rows_) - info.n_rows_written_total;
+  return result;
+}
+
+Dataspace
+hep_hpc::HDF5FileConcatenator::
+output_dspace_(hdf5::Dataspace const & in_dspace,
+               ConcatenatedDSInfo const & info) const
+{
+  Dataspace result = in_dspace;
+  auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, result);
+  std::vector<hsize_t> shape(ndims), maxshape(ndims);
+  (void) ErrorController::call(&H5Sget_simple_extent_dims,
+                               result,
+                               shape.data(),
+                               maxshape.data());
+  // The output size is unconstrained.
+  maxshape.front() = H5S_UNLIMITED;
+  // Modify initial shape based on user-set constraint, if present.
+  shape[0] = std::min(rows_available_(info), shape[0]);
+  // Set the extent in the dataspace.
+  (void) ErrorController::call(&H5Sset_extent_simple,
+                               result,
+                               ndims,
+                               shape.data(),
+                               maxshape.data());
+  return result;
 }
