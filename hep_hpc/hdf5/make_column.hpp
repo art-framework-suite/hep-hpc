@@ -12,8 +12,8 @@
 // the creation of columns with particular HDF5 properties. The second
 // signature is specifically for columns of scalars, where specifying
 // the dimensions is unnecessary. Note that in either case, the number and order of
-// specification of the properties (link creation, dataset creation,
-// dataset access)
+// specification of the properties is: link creation, dataset creation,
+// dataset access.
 //
 // template <typename T, size_t NDIMS = 1>
 // Column<T, NDIMS>
