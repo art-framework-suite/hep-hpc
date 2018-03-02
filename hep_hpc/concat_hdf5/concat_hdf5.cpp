@@ -369,7 +369,7 @@ private:
 
     if (want_collective_writes_) {
       if (n_ranks == 1) {
-        std::cerr << "WARNING: Collective writes require > 1 MPI processes.";
+        std::cerr << "WARNING: Collective writes require > 1 MPI processes.\n";
         want_collective_writes_ = false;
       }
 #if ! (H5_VERS_MAJOR > 1 || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 10))
@@ -384,7 +384,7 @@ private:
     } else if (want_filters_ && n_ranks > 1) {
       if (my_rank == 0) {
         std::cerr << "WARNING: Output filters require collective writes under MPI I/O."
-                  << "\nDeactivating output filters.";
+                  << "\nDeactivating output filters.\n";
       }
       want_filters_ = false;
     }
