@@ -382,7 +382,7 @@ namespace {
 
     // Create or open and resize.
     if (out_ds_info.row_size_bytes == 0ull) {
-      // Output dataset does not exist.
+      // Output dataset should not exist: create it.
 
       // Grab the create property list.
       PropertyList in_ds_create_plist(ErrorController::call(&H5Dget_create_plist, in_ds),
@@ -451,6 +451,9 @@ namespace {
       report(4, std::string("Created dataset ") +
              ds_name + " in output.");
     } else {
+      report(4, std::string("Opening existing output dataset ") +
+             ds_name + " in output.");
+
       // Open the output dataset.
       out_dset = Dataset(h5out, ds_name, std::move(in_ds_access_plist));
 
