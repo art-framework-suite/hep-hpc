@@ -86,6 +86,25 @@ namespace {
     return file_access_properties;
   }
 
+  // Get the number of rows from a dataspace.
+  hsize_t
+  num_rows_from_dspace(Dataspace const & in_dspace)
+  {
+    hsize_t result = 0ull;
+
+    auto const ndims =
+      ErrorController::call(&H5Sget_simple_extent_ndims, in_dspace);
+
+    std::vector<hsize_t> in_shape(ndims), in_maxshape(ndims);
+    (void) ErrorController::call(&H5Sget_simple_extent_dims,
+                                 in_dspace,
+                                 in_shape.data(),
+                                 in_maxshape.data());
+
+    result = in_shape.front();
+    return result;
+ }
+
   // Open the output file.
   File
   open_output_file(std::string file_name,
@@ -275,6 +294,196 @@ namespace {
                   only_groups.cend(),
                   [group_name](std::regex const & re)
                   { return std::regex_match(group_name, re); });
+  }
+
+  // Quick calculation if we still have rows available in the output.
+  hsize_t
+  rows_available(hep_hpc::ConcatenatedDSInfo const & info,
+                 long long const max_rows)
+  {
+    hsize_t result = ((hsize_t) max_rows) - info.n_rows_written_total;
+    return result;
+  }
+
+  // Prepare output dataspace based on input dataspace and other constraints.
+  Dataspace
+  output_dspace(Dataspace const & in_dspace,
+                hep_hpc::ConcatenatedDSInfo const & info,
+                long long const max_rows)
+  {
+    Dataspace result = in_dspace;
+    auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, result);
+    std::vector<hsize_t> shape(ndims), maxshape(ndims);
+    (void) ErrorController::call(&H5Sget_simple_extent_dims,
+                                 result,
+                                 shape.data(),
+                                 maxshape.data());
+    // The output size is unconstrained.
+    maxshape.front() = H5S_UNLIMITED;
+    // Modify initial shape based on user-set constraint, if present.
+    shape.front() = std::min(rows_available(info, max_rows), shape.front());
+
+    // Diagnostics.
+    std::ostringstream out;
+    out << "Shape: (";
+    std::copy(shape.cbegin(), shape.cend(), std::ostream_iterator<hsize_t>(out, ", "));
+    out.seekp(-2, std::ios_base::cur);
+    out << ").";
+    report(4, out.str());
+    out.clear();
+    out << "Max shape: (";
+    std::copy(maxshape.cbegin(), maxshape.cend(), std::ostream_iterator<hsize_t>(out, ", "));
+    out.seekp(-2, std::ios_base::cur);
+    out << ").";
+    report(4, out.str());
+
+    // Set the extent in the dataspace.
+    (void) ErrorController::call(&H5Sset_extent_simple,
+                                 result,
+                                 ndims,
+                                 shape.data(),
+                                 maxshape.data());
+    report(4, "Completed setting output dataspace extent.");
+    return result;
+  }
+
+  Dataset
+  create_or_open_and_resize_dataset(std::string const ds_name,
+                                    hep_hpc::ConcatenatedDSInfo & out_ds_info,
+                                    Dataset const & in_ds,
+                                    File & h5out,
+                                    bool const want_filters,
+                                    std::size_t mem_max_bytes,
+                                    long long const max_rows)
+  {
+    // For number to string conversions.
+    using std::to_string;
+
+    // Result.
+    Dataset out_dset;
+
+    // Interrogate input dataset.
+    PropertyList in_ds_access_plist(ErrorController::call(&H5Dget_access_plist, in_ds),
+                                    ResourceStrategy::handle_tag);
+    Dataspace const in_dspace(ErrorController::call(&H5Dget_space, in_ds),
+                              ResourceStrategy::handle_tag);
+    auto const ndims =
+      ErrorController::call(&H5Sget_simple_extent_ndims, in_dspace);
+
+    std::vector<hsize_t> in_shape(ndims), in_maxshape(ndims);
+    (void) ErrorController::call(&H5Sget_simple_extent_dims,
+                                 in_dspace,
+                                 in_shape.data(),
+                                 in_maxshape.data());
+
+    auto const in_ds_size = in_shape.front();
+
+    Datatype const in_type (ErrorController::call(&H5Dget_type, in_ds));
+
+    // Create or open and resize.
+    if (out_ds_info.row_size_bytes == 0ull) {
+      // Output dataset does not exist.
+
+      // Grab the create property list.
+      PropertyList in_ds_create_plist(ErrorController::call(&H5Dget_create_plist, in_ds),
+                                      ResourceStrategy::handle_tag);
+
+      if (!want_filters) {
+        // Deactivate filters in outgoing dataset.
+        (void) ErrorController::call(&H5Premove_filter,
+                                     in_ds_create_plist,
+                                     H5Z_FILTER_ALL);
+      }
+      // Save parent group's name.
+      out_ds_info.parent = parent_group(ds_name);
+
+      // Calculate the size of a row in bytes.
+      out_ds_info.row_size_bytes =
+        std::accumulate(in_shape.cbegin() + 1,
+                        in_shape.cend(),
+                        ErrorController::call(&H5Tget_size, in_type),
+                        std::multiplies<hsize_t>());
+      report(3, std::string("Calculated row_size_bytes = ") +
+             to_string(out_ds_info.row_size_bytes) + " in dataset " + ds_name);
+
+      // Store the chunk size in rows.
+      (void) ErrorController::call(&H5Pget_chunk,
+                                   in_ds_create_plist,
+                                   1,
+                                   &out_ds_info.chunk_rows);
+
+      // Calculate the buffer size in rows.
+      out_ds_info.buffer_size_rows = mem_max_bytes / out_ds_info.row_size_bytes;
+      report(3, std::string("Calculated buffer_size_rows = ") +
+             to_string(out_ds_info.buffer_size_rows) + " in dataset " + ds_name);
+
+      if (out_ds_info.buffer_size_rows == 0) {
+        throw
+          std::runtime_error(std::string("Unable to write a complete row of dataset ") +
+                             ds_name +
+                             " (" +
+                             to_string(out_ds_info.row_size_bytes) +
+                             " B) due to configured buffer size of " +
+                             to_string(mem_max_bytes) + " B.");
+      } else if (out_ds_info.buffer_size_rows < out_ds_info.chunk_rows) {
+        report (-1, std::string("Configured buffer size allows for only ") +
+                to_string(out_ds_info.buffer_size_rows) +
+                " rows from dataset " +
+                ds_name +
+                ",\nwhich is less than one complete chunk (" +
+                to_string(out_ds_info.chunk_rows) +
+                " rows).\n I/O will be restricted to rank 0 only!");
+      }
+
+      // Create the dataset.
+      report(2, std::string("Creating dataset ") +
+             ds_name + " in output.");
+
+      Dataspace out_dspace(output_dspace(in_dspace, out_ds_info, max_rows));
+      report(4, "out_dspace ready.");
+      out_dset = Dataset(h5out,
+                         ds_name,
+                         in_type,
+                         std::move(out_dspace),
+                         {},
+                         std::move(in_ds_create_plist),
+                         std::move(in_ds_access_plist));
+      report(4, std::string("Created dataset ") +
+             ds_name + " in output.");
+    } else {
+      // Open the output dataset.
+      out_dset = Dataset(h5out, ds_name, std::move(in_ds_access_plist));
+
+      // Resize output dataset.
+      hsize_t const rows_threshold =
+        std::min(rows_available(out_ds_info, max_rows), in_ds_size);
+
+      Dataspace out_dspace(ErrorController::call(&H5Dget_space, out_dset),
+                           ResourceStrategy::handle_tag);
+
+      auto const out_ndims = ErrorController::call(&H5Sget_simple_extent_ndims, out_dspace);
+      std::vector<hsize_t> out_shape(out_ndims), out_maxshape(out_ndims);
+      (void) ErrorController::call(&H5Sget_simple_extent_dims,
+                                   out_dspace,
+                                   out_shape.data(),
+                                   out_maxshape.data());
+      if (!(ndims == out_ndims || std::equal(in_shape.cbegin() + 1,
+                                             in_shape.cend(),
+                                             out_shape.cbegin() + 1))) {
+        throw std::runtime_error(
+          std::string("incoming dataset dimensions are incompatible with outgoing dimensions for dataset ") +
+          ds_name);
+      }
+      auto const new_size_rows = out_shape.front() + rows_threshold;
+      report(1, std::string("resize ") + ds_name + " from " +
+             to_string(out_shape.front()) + " to " +
+             to_string(new_size_rows));
+      out_shape.front() = new_size_rows;
+      (void) ErrorController::call(&H5Dset_extent,
+                                   out_dset,
+                                   out_shape.data());
+    }
+    return out_dset;
   }
 
 }
@@ -506,7 +715,10 @@ herr_t
 hep_hpc::HDF5FileConcatenator::
 handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
 {
+  // For number to string conversions.
   using std::to_string;
+
+  // Result.
   herr_t status = 0;
 
   // 1. Discover incoming dataset shape and size.
@@ -519,130 +731,30 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
     return status;
   }
 
-  auto const ndims =
-    ErrorController::call(&H5Sget_simple_extent_ndims, in_dspace);
-  std::vector<hsize_t> in_shape(ndims), in_maxshape(ndims);
-  (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                               in_dspace,
-                               in_shape.data(),
-                               in_maxshape.data());
-  auto const in_ds_size = in_shape.front();
+  Datatype const in_type (ErrorController::call(&H5Dget_type, in_ds));
+
+  auto const in_ds_size = num_rows_from_dspace(in_dspace);
+
+  auto & out_ds_info = ds_info_[ds_name];
 
   // 2. Check if dataset exists in output. Create and store datasets and
   //    associated information in class state.
-  PropertyList in_ds_create_plist(ErrorController::call(&H5Dget_create_plist, in_ds),
-                                  ResourceStrategy::handle_tag),
-    in_ds_access_plist(ErrorController::call(&H5Dget_access_plist, in_ds),
-                       ResourceStrategy::handle_tag);
-  bool have_output_ds = false;
-  {
-    // Need to not be upset if we can't open the dataset.
-    ScopedErrorHandler disable_hdf5_exceptions;
-    report(2, std::string("Checking for existence of dataset ") +
-           ds_name + " in output.");
-    have_output_ds = (bool) Dataset(h5out_,
-                                    ds_name,
-                                    PropertyList(in_ds_access_plist));
-  }
-  auto & out_ds_info = ds_info_[ds_name];
-  Datatype in_type (ErrorController::call(&H5Dget_type, in_ds));
-  if (!have_output_ds) { // Does not exist
-    if (!want_filters_) {
-      // Deactivate filters in outgoing dataset.
-      (void) ErrorController::call(&H5Premove_filter,
-                                   in_ds_create_plist,
-                                   H5Z_FILTER_ALL);
-    }
-    // Save parent group's name.
-    out_ds_info.parent = parent_group(ds_name);
+  Dataset out_dset =
+    create_or_open_and_resize_dataset(ds_name,
+                                      out_ds_info,
+                                      in_ds,
+                                      h5out_,
+                                      want_filters_,
+                                      mem_max_bytes_,
+                                      max_rows_);
 
-    // Calculate the size of a row in bytes.
-    out_ds_info.row_size_bytes =
-      std::accumulate(in_shape.cbegin() + 1,
-                      in_shape.cend(),
-                      ErrorController::call(&H5Tget_size, in_type),
-                      std::multiplies<hsize_t>());
-    report(3, std::string("Calculated row_size_bytes = ") +
-           to_string(out_ds_info.row_size_bytes));
+  // How many rows can be written into the dataset?
+  hsize_t const rows_threshold =
+    std::min(rows_available(out_ds_info, max_rows_), in_ds_size);
 
-    // Store the chunk size in rows.
-    (void) ErrorController::call(&H5Pget_chunk,
-                                 in_ds_create_plist,
-                                 1,
-                                 &out_ds_info.chunk_rows);
-
-    // Calculate the buffer size in rows.
-    out_ds_info.buffer_size_rows = mem_max_bytes_ / out_ds_info.row_size_bytes;
-    report(3, std::string("Calculated buffer_size_rows = ") +
-           to_string(out_ds_info.buffer_size_rows));
-
-    if (out_ds_info.buffer_size_rows == 0) {
-      throw
-        std::runtime_error(std::string("Unable to write a complete row of dataset ") +
-                           ds_name +
-                           " (" +
-                           to_string(out_ds_info.row_size_bytes) +
-                           " B) due to configured buffer size of " +
-                           to_string(mem_max_bytes_) + " B.");
-    } else if (out_ds_info.buffer_size_rows < out_ds_info.chunk_rows) {
-      report (-1, std::string("Configured buffer size allows for only ") +
-              to_string(out_ds_info.buffer_size_rows) +
-              " rows from dataset " +
-              ds_name +
-              ",\nwhich is less than one complete chunk (" +
-              to_string(out_ds_info.chunk_rows) +
-              " rows).\n I/O will be restricted to rank 0 only!");
-    }
-
-    report(2, std::string("Creating dataset ") +
-           ds_name + " in output.");
-    // Create the dataset.
-    out_ds_info.ds = Dataset(h5out_,
-                             ds_name,
-                             in_type,
-                             output_dspace_(in_dspace, out_ds_info),
-                             {},
-                             std::move(in_ds_create_plist),
-                             std::move(in_ds_access_plist));
-  }
-
-  hsize_t rows_threshold = std::min(rows_available_(out_ds_info), in_ds_size);
-
-  report(3, std::string("Calculated rows_threshold = ") +
-         to_string(rows_threshold));
-
-  if (have_output_ds && (rows_threshold > 0)) { // Resize existing dataset.
-    Dataspace out_dspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
-                            ResourceStrategy::handle_tag);
-
-    auto const out_ndims = ErrorController::call(&H5Sget_simple_extent_ndims, out_dspace);
-    std::vector<hsize_t> out_shape(out_ndims), out_maxshape(out_ndims);
-    (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                                 out_dspace,
-                                 out_shape.data(),
-                                 out_maxshape.data());
-    if (!(ndims == out_ndims || std::equal(in_shape.cbegin() + 1,
-                                           in_shape.cend(),
-                                           out_shape.cbegin() + 1))) {
-      report(-2,
-             std::string("incoming dataset dimensions are incompatible with outgoing dimensions for dataset ") +
-             ds_name);
-      status = -1;
-      return status;
-    }
-    auto const new_size_rows = out_shape.front() + rows_threshold;
-    report(1, std::string("resize ") + ds_name + " from " +
-           to_string(out_shape.front()) + " to " +
-           to_string(new_size_rows));
-    out_shape.front() = new_size_rows;
-    (void) ErrorController::call(&H5Dset_extent,
-                                 out_ds_info.ds,
-                                 out_shape.data());
-  }
-
-  // Get an up-to-date copy of the output dataset.
+  // Get an up-to-date copy of the output dataspace,
   Dataspace out_dspace =
-    Dataspace(ErrorController::call(&H5Dget_space, out_ds_info.ds),
+    Dataspace(ErrorController::call(&H5Dget_space, out_dset),
               ResourceStrategy::handle_tag);
 
   // 4. Iterate over buffer-sized chunks.
@@ -672,7 +784,7 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
            ", " +
            to_string(numerology.input_start_row_this_rank +
                      numerology.rows_to_write_this_rank) +
-           ").");
+           ") in dataset " + ds_name + ".");
     (void) in_ds.read(in_type,
                       buffer_.data(),
                       std::move(mem_dspace),
@@ -692,12 +804,12 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
            ", " +
            to_string(numerology.output_start_row_this_rank +
                      numerology.rows_to_write_this_rank) +
-           ").");
-    out_ds_info.ds.write(in_type,
-                         buffer_.data(),
-                         std::move(mem_dspace),
-                         out_dspace,
-                         transfer_properties_());
+           ") in dataset " + ds_name + ".");
+    (void) out_dset.write(in_type,
+                          buffer_.data(),
+                          std::move(mem_dspace),
+                          out_dspace,
+                          transfer_properties_());
 
     // 4.3 Update cursors.
     n_rows_written_this_input += numerology.rows_to_write_this_iteration;
@@ -714,6 +826,8 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
       std::max(group_size_iter->second.required_size,
                out_ds_info.n_rows_written_total);
   }
+
+  (void) ErrorController::call(&H5Fflush, h5out_, H5F_SCOPE_LOCAL);
 
   // Done.
   return status;
@@ -734,37 +848,4 @@ transfer_properties_()
   PropertyList xfer_properties;
 #endif
   return xfer_properties;
-}
-
-hsize_t
-hep_hpc::HDF5FileConcatenator::
-rows_available_(ConcatenatedDSInfo const & info) const
-{
-  hsize_t result = ((hsize_t) max_rows_) - info.n_rows_written_total;
-  return result;
-}
-
-Dataspace
-hep_hpc::HDF5FileConcatenator::
-output_dspace_(hdf5::Dataspace const & in_dspace,
-               ConcatenatedDSInfo const & info) const
-{
-  Dataspace result = in_dspace;
-  auto const ndims = ErrorController::call(&H5Sget_simple_extent_ndims, result);
-  std::vector<hsize_t> shape(ndims), maxshape(ndims);
-  (void) ErrorController::call(&H5Sget_simple_extent_dims,
-                               result,
-                               shape.data(),
-                               maxshape.data());
-  // The output size is unconstrained.
-  maxshape.front() = H5S_UNLIMITED;
-  // Modify initial shape based on user-set constraint, if present.
-  shape[0] = std::min(rows_available_(info), shape[0]);
-  // Set the extent in the dataspace.
-  (void) ErrorController::call(&H5Sset_extent_simple,
-                               result,
-                               ndims,
-                               shape.data(),
-                               maxshape.data());
-  return result;
 }

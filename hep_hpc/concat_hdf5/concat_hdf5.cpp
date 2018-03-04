@@ -194,6 +194,7 @@ private:
     auto iarg = args.begin(), next_arg_iter = iarg;
     for (; iarg != eargs; iarg = next_arg_iter) {
       auto & arg = *iarg;
+//      if (my_rank == 0) { std::cerr << "Processing argument " << arg << ".\n"; }
       if (arg[0] != '-' && arg[0] != '+') {
         // Finished processing options (processing for individual
         // options should progress iarg after dealing with arguments).

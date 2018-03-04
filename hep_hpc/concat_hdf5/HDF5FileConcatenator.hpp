@@ -47,11 +47,6 @@ private:
   // Return a suitably-set property list specifying properties for read
   // and write.
   hdf5::PropertyList transfer_properties_();
-  // Quick calculation if we still have rows available in the output.
-  hsize_t rows_available_(ConcatenatedDSInfo const & info) const;
-  // Prepare output dataspace based on input dataspace and other constraints.
-  hdf5::Dataspace output_dspace_(hdf5::Dataspace const & in_dspace,
-                                 ConcatenatedDSInfo const & info) const;
 
   // Parameters.
   long long max_rows_;
