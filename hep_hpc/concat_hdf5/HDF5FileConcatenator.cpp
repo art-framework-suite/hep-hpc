@@ -346,7 +346,7 @@ namespace {
     return result;
   }
 
-  Dataset
+  void
   create_or_open_and_resize_dataset(std::string const ds_name,
                                     hep_hpc::ConcatenatedDSInfo & out_ds_info,
                                     Dataset const & in_ds,
@@ -359,7 +359,7 @@ namespace {
     using std::to_string;
 
     // Result.
-    Dataset out_dset;
+    Dataset & out_dset = out_ds_info.ds;
 
     // Interrogate input dataset.
     PropertyList in_ds_access_plist(ErrorController::call(&H5Dget_access_plist, in_ds),
@@ -375,7 +375,7 @@ namespace {
                                  in_shape.data(),
                                  in_maxshape.data());
 
-    auto const in_ds_size = in_shape.front();
+    auto const & in_ds_size = in_shape.front();
 
     Datatype const in_type (ErrorController::call(&H5Dget_type, in_ds));
 
@@ -453,8 +453,10 @@ namespace {
       report(4, std::string("Opening existing output dataset ") +
              ds_name + " in output.");
 
-      // Open the output dataset.
-      out_dset = Dataset(h5out, ds_name, std::move(in_ds_access_plist));
+      // Open the output dataset if necessary.
+      if (!out_dset) {
+        out_dset = Dataset(h5out, ds_name, std::move(in_ds_access_plist));
+      }
 
       // Resize output dataset.
       hsize_t const rows_threshold =
@@ -469,9 +471,10 @@ namespace {
                                    out_dspace,
                                    out_shape.data(),
                                    out_maxshape.data());
-      if (!(ndims == out_ndims || std::equal(in_shape.cbegin() + 1,
-                                             in_shape.cend(),
-                                             out_shape.cbegin() + 1))) {
+      if (!(ndims == out_ndims &&
+            std::equal(in_shape.cbegin() + 1,
+                       in_shape.cend(),
+                       out_shape.cbegin() + 1))) {
         throw std::runtime_error(
           std::string("incoming dataset dimensions are incompatible with outgoing dimensions for dataset ") +
           ds_name);
@@ -485,7 +488,6 @@ namespace {
                                    out_dset,
                                    out_shape.data());
     }
-    return out_dset;
   }
 
 }
@@ -741,15 +743,16 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
 
   // 2. Check if dataset exists in output. Create and store datasets and
   //    associated information in class state.
+  create_or_open_and_resize_dataset(ds_name,
+                                    out_ds_info,
+                                    in_ds,
+                                    h5out_,
+                                    want_filters_,
+                                    mem_max_bytes_,
+                                    max_rows_);
+
+  // Easy reference.
   Dataset & out_dset = out_ds_info.ds;
-  out_dset =
-    create_or_open_and_resize_dataset(ds_name,
-                                      out_ds_info,
-                                      in_ds,
-                                      h5out_,
-                                      want_filters_,
-                                      mem_max_bytes_,
-                                      max_rows_);
 
   // How many rows can be written into the dataset?
   hsize_t const rows_threshold =
