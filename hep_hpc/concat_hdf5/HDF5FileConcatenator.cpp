@@ -328,7 +328,8 @@ namespace {
     out.seekp(-2, std::ios_base::cur);
     out << ").";
     report(4, out.str());
-    out.clear();
+    out.str(""); // Clear the stringstream buffer.
+    out.clear(); // Clear any error indicators.
     out << "Max shape: (";
     std::copy(maxshape.cbegin(), maxshape.cend(), std::ostream_iterator<hsize_t>(out, ", "));
     out.seekp(-2, std::ios_base::cur);
