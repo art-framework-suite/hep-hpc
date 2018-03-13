@@ -127,7 +127,6 @@ namespace {
                     hsize_t const start_row,
                     hsize_t const rows_for_io)
   {
-    Dataspace mem_dspace; // Result.
     auto const ndims =
       ErrorController::call(&H5Sget_simple_extent_ndims,
                             file_dspace);
@@ -136,13 +135,12 @@ namespace {
                                  file_dspace,
                                  shape.data(),
                                  maxshape.data());
-    std::vector<hsize_t> offsets(ndims),
-      block_count(ndims),
-      n_elements(shape);
-    offsets.front() = start_row;
-    std::fill(block_count.begin(), block_count.end(), 1);
-    n_elements.front() = rows_for_io;
+    std::vector<hsize_t> n_elements(shape);
     if (rows_for_io > 0) {
+      std::vector<hsize_t> offsets(ndims), block_count(ndims);
+      offsets.front() = start_row;
+      n_elements.front() = rows_for_io;
+      std::fill(block_count.begin(), block_count.end(), 1);
       (void) ErrorController::call(&H5Sselect_hyperslab,
                                    file_dspace,
                                    H5S_SELECT_SET,
@@ -150,12 +148,12 @@ namespace {
                                    nullptr,
                                    block_count.data(),
                                    n_elements.data());
-      mem_dspace =
-        Dataspace(ndims, n_elements.data(), n_elements.data());
     } else {
+      std::fill(n_elements.begin(), n_elements.end(), 0);
       (void) ErrorController::call(&H5Sselect_none, file_dspace);
-      mem_dspace = Dataspace(H5S_NULL);
     }
+    Dataspace mem_dspace =
+      Dataspace(ndims, n_elements.data(), n_elements.data());
     return mem_dspace;
   }
 
@@ -793,6 +791,7 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
                       std::move(mem_dspace),
                       in_dspace,
                       transfer_properties_());
+
     // 4.2.3 Prepare the dataspaces.
     mem_dspace =
       prepare_dspace(out_dspace,
