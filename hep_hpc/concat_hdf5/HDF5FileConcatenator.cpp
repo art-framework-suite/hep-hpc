@@ -855,7 +855,7 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
   }
 
   // Flush all buffers to the output file.
-  (void) ErrorController::call(&H5Fflush, h5out_, H5F_SCOPE_LOCAL);
+  h5out_.flush();
 
   // Done.
   return status;
