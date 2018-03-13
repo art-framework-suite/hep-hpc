@@ -740,7 +740,8 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
 
   // 2. Check if dataset exists in output. Create and store datasets and
   //    associated information in class state.
-  Dataset out_dset =
+  Dataset & out_dset = out_ds_info.ds;
+  out_dset =
     create_or_open_and_resize_dataset(ds_name,
                                       out_ds_info,
                                       in_ds,
