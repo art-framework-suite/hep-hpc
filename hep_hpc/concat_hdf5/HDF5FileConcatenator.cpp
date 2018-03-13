@@ -362,9 +362,12 @@ namespace {
     Dataset & out_dset = out_ds_info.ds;
 
     // Interrogate input dataset.
-    PropertyList in_ds_access_plist(ErrorController::call(&H5Dget_access_plist, in_ds),
-                                    ResourceStrategy::handle_tag);
-    Dataspace const in_dspace(ErrorController::call(&H5Dget_space, in_ds),
+    PropertyList
+      in_ds_access_plist(ErrorController::call(&H5Dget_access_plist,
+                                               in_ds),
+                         ResourceStrategy::handle_tag);
+    Dataspace const in_dspace(ErrorController::call(&H5Dget_space,
+                                                    in_ds),
                               ResourceStrategy::handle_tag);
     auto const ndims =
       ErrorController::call(&H5Sget_simple_extent_ndims, in_dspace);
@@ -384,8 +387,10 @@ namespace {
       // Output dataset should not exist: create it.
 
       // Grab the create property list.
-      PropertyList in_ds_create_plist(ErrorController::call(&H5Dget_create_plist, in_ds),
-                                      ResourceStrategy::handle_tag);
+      PropertyList
+        in_ds_create_plist(ErrorController::call(&H5Dget_create_plist,
+                                                 in_ds),
+                           ResourceStrategy::handle_tag);
 
       if (!want_filters) {
         // Deactivate filters in outgoing dataset.
@@ -402,8 +407,11 @@ namespace {
                         in_shape.cend(),
                         ErrorController::call(&H5Tget_size, in_type),
                         std::multiplies<hsize_t>());
+
       report(3, std::string("Calculated row_size_bytes = ") +
-             to_string(out_ds_info.row_size_bytes) + " in dataset " + ds_name);
+             to_string(out_ds_info.row_size_bytes) +
+             " in dataset " +
+             ds_name);
 
       // Store the chunk size in rows.
       (void) ErrorController::call(&H5Pget_chunk,
@@ -412,20 +420,25 @@ namespace {
                                    &out_ds_info.chunk_rows);
 
       // Calculate the buffer size in rows.
-      out_ds_info.buffer_size_rows = mem_max_bytes / out_ds_info.row_size_bytes;
+      out_ds_info.buffer_size_rows =
+        mem_max_bytes / out_ds_info.row_size_bytes;
       report(3, std::string("Calculated buffer_size_rows = ") +
-             to_string(out_ds_info.buffer_size_rows) + " in dataset " + ds_name);
+             to_string(out_ds_info.buffer_size_rows) +
+             " in dataset " +
+             ds_name);
 
       if (out_ds_info.buffer_size_rows == 0) {
-        throw
-          std::runtime_error(std::string("Unable to write a complete row of dataset ") +
-                             ds_name +
-                             " (" +
-                             to_string(out_ds_info.row_size_bytes) +
-                             " B) due to configured buffer size of " +
-                             to_string(mem_max_bytes) + " B.");
-      } else if (out_ds_info.buffer_size_rows < out_ds_info.chunk_rows) {
-        report (-1, std::string("Configured buffer size allows for only ") +
+        throw std::runtime_error(
+          std::string("Unable to write a complete row of dataset ") +
+          ds_name +
+          " (" +
+          to_string(out_ds_info.row_size_bytes) +
+          " B) due to configured buffer size of " +
+          to_string(mem_max_bytes) + " B.");
+      } else if (out_ds_info.buffer_size_rows <
+                 out_ds_info.chunk_rows) {
+        report (-1,
+                std::string("Configured buffer size allows for only ") +
                 to_string(out_ds_info.buffer_size_rows) +
                 " rows from dataset " +
                 ds_name +
@@ -438,7 +451,8 @@ namespace {
       report(2, std::string("Creating dataset ") +
              ds_name + " in output.");
 
-      Dataspace out_dspace(output_dspace(in_dspace, out_ds_info, max_rows));
+      Dataspace
+        out_dspace(output_dspace(in_dspace, out_ds_info, max_rows));
       report(4, "out_dspace ready.");
       out_dset = Dataset(h5out,
                          ds_name,
@@ -449,7 +463,7 @@ namespace {
                          std::move(in_ds_access_plist));
       report(4, std::string("Created dataset ") +
              ds_name + " in output.");
-    } else {
+    } else { // Dataset already exists.
       report(4, std::string("Opening existing output dataset ") +
              ds_name + " in output.");
 
@@ -462,11 +476,14 @@ namespace {
       hsize_t const rows_threshold =
         std::min(rows_available(out_ds_info, max_rows), in_ds_size);
 
-      Dataspace out_dspace(ErrorController::call(&H5Dget_space, out_dset),
-                           ResourceStrategy::handle_tag);
+      Dataspace
+        out_dspace(ErrorController::call(&H5Dget_space, out_dset),
+                   ResourceStrategy::handle_tag);
 
-      auto const out_ndims = ErrorController::call(&H5Sget_simple_extent_ndims, out_dspace);
-      std::vector<hsize_t> out_shape(out_ndims), out_maxshape(out_ndims);
+      auto const out_ndims =
+        ErrorController::call(&H5Sget_simple_extent_ndims, out_dspace);
+      std::vector<hsize_t> out_shape(out_ndims),
+        out_maxshape(out_ndims);
       (void) ErrorController::call(&H5Sget_simple_extent_dims,
                                    out_dspace,
                                    out_shape.data(),
@@ -476,9 +493,12 @@ namespace {
                        in_shape.cend(),
                        out_shape.cbegin() + 1))) {
         throw std::runtime_error(
-          std::string("incoming dataset dimensions are incompatible with outgoing dimensions for dataset ") +
+          std::string("incoming dataset dimensions are incompatible ") +
+          "with outgoing dimensions for dataset " +
           ds_name);
       }
+
+      // Calculate the correct new size and resize the dataset.
       auto const new_size_rows = out_shape.front() + rows_threshold;
       report(1, std::string("resize ") + ds_name + " from " +
              to_string(out_shape.front()) + " to " +
@@ -834,6 +854,7 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
                out_ds_info.n_rows_written_total);
   }
 
+  // Flush all buffers to the output file.
   (void) ErrorController::call(&H5Fflush, h5out_, H5F_SCOPE_LOCAL);
 
   // Done.
