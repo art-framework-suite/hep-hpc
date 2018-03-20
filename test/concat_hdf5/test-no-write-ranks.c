@@ -59,7 +59,7 @@ int main(int argc, char **argv)
   for (hsize_t i = 0; i < chunk_size; ++i) {
     for (int j = 0; j < 2; ++j) {
       for (int k = 0; k < 3; ++k) {
-        data[i * chunk_size + j * 2 + k * 3] =
+        data[(i * 2 * 3) + (j * 3) + k] =
           my_rank * 1000 + i * 100 + j * 10 + k;
       }
     }
