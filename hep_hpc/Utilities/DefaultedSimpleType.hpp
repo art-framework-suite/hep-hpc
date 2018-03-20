@@ -18,8 +18,8 @@ namespace hep_hpc {
 template <typename T, T DEF>
 class hep_hpc::detail::DefaultedSimpleType {
 public:
-  DefaultedSimpleType() noexcept : item_{DEF} { }
-  DefaultedSimpleType(T t) noexcept : item_{t} { }
+  constexpr DefaultedSimpleType() noexcept : item_{DEF} { }
+  constexpr DefaultedSimpleType(T t) noexcept : item_{t} { }
 
   operator T & () noexcept { return item_; }
   operator T const & () const noexcept { return item_; }
