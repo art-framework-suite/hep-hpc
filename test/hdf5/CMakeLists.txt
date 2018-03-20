@@ -18,6 +18,10 @@ add_test(NAME File_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/File_t)
 
 ####################################
 # PropertyList test.
+add_executable(test-get_class_name test-get_class_name.c)
+target_link_libraries(test-get_class_name ${HDF5_C_LIBRARIES})
+add_test(NAME test-get_class_name COMMAND ${EXECUTABLE_OUTPUT_PATH}/test-get_class_name)
+
 add_executable(PropertyList_t PropertyList_t.cpp)
 target_link_libraries(PropertyList_t hep_hpc_hdf5 gtest)
 add_test(NAME PropertyList_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/PropertyList_t)

@@ -135,7 +135,7 @@ hep_hpc::hdf5::PropertyList::
 getClassName() const {
   // Return from H5Pget_class_name() must be memory-managed.
   hep_hpc::detail::SimpleRAII<char *>
-    cname(&H5Pget_class_name, &free, ErrorController::call(&H5Pget_class, *h5plist_));
+    cname(&H5Pget_class_name, &H5free_memory, ErrorController::call(&H5Pget_class, *h5plist_));
   return *cname;
 }
 
