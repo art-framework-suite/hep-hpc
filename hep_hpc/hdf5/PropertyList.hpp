@@ -84,6 +84,9 @@ PropertyList(hid_t const propClassID)
   :
   h5plist_(&H5Pcreate, &H5Pclose, propClassID)
 {
+  if (*h5plist_ < 0) { // Error that we didn't throw over.
+    h5plist_.release();
+  }
 }
 
 inline
@@ -92,6 +95,9 @@ PropertyList(PropertyList const & other)
   :
   h5plist_(&H5Pcopy, &H5Pclose, *other.h5plist_)
 {
+  if (*h5plist_ < 0) { // Error that we didn't throw over.
+    h5plist_.release();
+  }
 }
 
 inline
@@ -100,6 +106,9 @@ hep_hpc::hdf5::PropertyList::
 operator = (PropertyList const & other)
 {
   h5plist_ = { &H5Pcopy, &H5Pclose, *other.h5plist_ };
+  if (*h5plist_ < 0) { // Error that we didn't throw over.
+    h5plist_.release();
+  }
   return *this;
 }
 

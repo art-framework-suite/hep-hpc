@@ -71,6 +71,9 @@ Datatype(Datatype const & other)
   :
   h5dtype_(&H5Tcopy, &H5Tclose, *other.h5dtype_)
 {
+  if (*h5dtype_ < 0) { // Error that we didn't throw over.
+    h5dtype_.release();
+  }
 }
 
 inline
@@ -79,6 +82,9 @@ hep_hpc::hdf5::Datatype::
 operator = (Datatype const & other)
 {
   h5dtype_ = {&H5Tcopy, &H5Tclose, *other.h5dtype_};
+  if (*h5dtype_ < 0) { // Error that we didn't throw over.
+    h5dtype_.release();
+  }
   return *this;
 }
 

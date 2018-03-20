@@ -28,4 +28,7 @@ hep_hpc::hdf5::File::File(std::string const & filename,
             return result;
           }, &H5Fclose)
 {
+  if (*h5file_ < 0) { // Error that we didn't throw over.
+    h5file_.release();
+  }
 }

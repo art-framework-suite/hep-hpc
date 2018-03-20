@@ -103,6 +103,9 @@ Dataset(hid_t const fileOrGroup,
           datasetCreationProperties,
           datasetAccessProperties)
 {
+  if (*h5dset_ < 0) { // Error that we didn't throw over.
+    h5dset_.release();
+  }
 }
 
 inline
@@ -118,7 +121,6 @@ Dataset(hid_t const fileOrGroup,
 {
   if (*h5dset_ < 0) { // Error that we didn't throw over.
     h5dset_.release();
-    reset();
   }
 }
 

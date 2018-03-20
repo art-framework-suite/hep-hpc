@@ -56,6 +56,9 @@ Group(hid_t const fileOrGroup,
              return result;
            }, &H5Gclose)
 {
+  if (*h5group_ < 0) { // Error that we didn't throw over.
+    h5group_.release();
+  }
 }
 
 hep_hpc::hdf5::HID_t const

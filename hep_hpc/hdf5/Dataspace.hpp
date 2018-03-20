@@ -82,6 +82,9 @@ Dataspace(H5S_class_t const classID)
   :
   h5dspace_(&H5Screate, &H5Sclose, classID)
 {
+  if (*h5dspace_ < 0) { // Error that we didn't throw over.
+    h5dspace_.release();
+  }
 }
 
 inline
@@ -102,6 +105,9 @@ Dataspace(int const rank,
   :
   h5dspace_(&H5Screate_simple, &H5Sclose, rank, dims, maxdims)
 {
+  if (*h5dspace_ < 0) { // Error that we didn't throw over.
+    h5dspace_.release();
+  }
 }
 
 template <typename IN_ITER_1>
@@ -121,6 +127,9 @@ Dataspace(IN_ITER_1 const dim_begin, IN_ITER_1 const dim_end)
             }, &H5Sclose,
             std::vector<hsize_t> {dim_begin, dim_end})
 {
+  if (*h5dspace_ < 0) { // Error that we didn't throw over.
+    h5dspace_.release();
+  }
 }
 
 template <typename IN_ITER_1, typename IN_ITER_2>
@@ -148,6 +157,9 @@ Dataspace(IN_ITER_1 const dim_begin, IN_ITER_1 const dim_end,
             std::vector<hsize_t> {dim_begin, dim_end},
             std::vector<hsize_t> {maxdim_begin, maxdim_end})
 {
+  if (*h5dspace_ < 0) { // Error that we didn't throw over.
+    h5dspace_.release();
+  }
 }
 
 inline
@@ -156,6 +168,9 @@ Dataspace(Dataspace const & other)
   :
   h5dspace_(&H5Scopy, &H5Sclose, *other.h5dspace_)
 {
+  if (*h5dspace_ < 0) { // Error that we didn't throw over.
+    h5dspace_.release();
+  }
 }
 
 inline
@@ -164,6 +179,9 @@ hep_hpc::hdf5::Dataspace::
 operator = (Dataspace const & other)
 {
   h5dspace_ = {&H5Scopy, &H5Sclose, *other.h5dspace_};
+  if (*h5dspace_ < 0) { // Error that we didn't throw over.
+    h5dspace_.release();
+  }
   return *this;
 }
 
