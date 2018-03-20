@@ -71,8 +71,8 @@ public:
   void reset();
 
 private:
-  // Note we are using a plain hid_t here rather than HID_t, because 0
-  // (H5S_ALL) is a reasonable default;
+  static constexpr HID_t const INVALID_DSPACE_ {};
+  // Note 0 (H5S_ALL) is a reasonable default;
   Resource h5dspace_ {0};
 };
 
@@ -85,16 +85,6 @@ Dataspace(H5S_class_t const classID)
   if (*h5dspace_ < 0) { // Error that we didn't throw over.
     h5dspace_.release();
   }
-}
-
-inline
-hep_hpc::hdf5::Dataspace::
-Dataspace(hid_t const dspace, ResourceStrategy const strategy)
-  :
-  h5dspace_((strategy == ResourceStrategy::handle_tag) ?
-            Resource(dspace, &H5Sclose) :
-            Resource(dspace))
-{
 }
 
 inline
@@ -189,7 +179,7 @@ inline
 hep_hpc::hdf5::Dataspace::
 operator bool () const noexcept
 {
-  return *h5dspace_ > H5S_ALL;
+  return *h5dspace_ > INVALID_DSPACE_;
 }
 
 inline

@@ -70,7 +70,7 @@ public:
   void reset();
 
 private:
-  static HID_t const INVALID_DSET_;
+  static constexpr HID_t const INVALID_DSET_ {};
   Resource h5dset_;
 };
 

@@ -1,6 +1,5 @@
 set (source_files
-  Dataset.cpp
-  Datatype.cpp
+  Dataspace.cpp
   File.cpp
   Group.cpp
   Ntuple.cpp

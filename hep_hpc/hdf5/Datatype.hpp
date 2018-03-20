@@ -50,7 +50,7 @@ public:
   void reset();
 
 private:
-  static HID_t const INVALID_DTYPE_;
+  static constexpr HID_t const INVALID_DTYPE_ {};
   Resource h5dtype_;
 };
 

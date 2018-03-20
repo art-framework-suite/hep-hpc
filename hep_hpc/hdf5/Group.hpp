@@ -62,7 +62,7 @@ public:
   void reset();
 
 private:
-  static HID_t const INVALID_GROUP_;
+  static constexpr HID_t const INVALID_GROUP_ {};
   Resource h5group_;
 };
 

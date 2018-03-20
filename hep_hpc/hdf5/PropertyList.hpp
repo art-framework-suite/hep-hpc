@@ -64,19 +64,10 @@ public:
   void reset();
 
 private:
-  // Note we are using a plain hid_t here rather than HID_t, because 0
-  // (H5P_DEFAULT) is a reasonable default;
+  static constexpr HID_t const INVALID_PLIST_ {};
+  // Note 0 (H5P_DEFAULT) is a reasonable default;
   Resource h5plist_ {0};
 };
-
-inline
-hep_hpc::hdf5::PropertyList::
-PropertyList(hid_t const plist, ResourceStrategy const strategy)
-  : h5plist_((strategy == ResourceStrategy::handle_tag) ?
-             Resource(plist, &H5Pclose) :
-             Resource(plist))
-{
-}
 
 inline
 hep_hpc::hdf5::PropertyList::
@@ -116,7 +107,7 @@ inline
 hep_hpc::hdf5::PropertyList::
 operator bool () const noexcept
 {
-  return *h5plist_ > H5P_DEFAULT;
+  return *h5plist_ > INVALID_PLIST_;
 }
 
 inline

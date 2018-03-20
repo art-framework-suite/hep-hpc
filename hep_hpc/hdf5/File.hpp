@@ -8,7 +8,6 @@
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/PropertyList.hpp"
 #include "hep_hpc/hdf5/ResourceStrategy.hpp"
-#include "hep_hpc/hdf5/HID_t.hpp"
 #include "hep_hpc/hdf5/Resource.hpp"
 
 #include "hdf5.h"
@@ -47,6 +46,7 @@ public:
   void close();
 
 private:
+  static constexpr HID_t const INVALID_FILE_ {};
   Resource h5file_;
 };
 
@@ -71,8 +71,7 @@ inline
 hep_hpc::hdf5::File::
 operator bool () const noexcept
 {
-  static const HID_t INVALID_FILE;
-  return *h5file_ > INVALID_FILE;
+  return *h5file_ > INVALID_FILE_;
 }
 
 inline

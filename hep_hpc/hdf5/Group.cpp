@@ -60,6 +60,3 @@ Group(hid_t const fileOrGroup,
     h5group_.release();
   }
 }
-
-hep_hpc::hdf5::HID_t const
-hep_hpc::hdf5::Group::INVALID_GROUP_;

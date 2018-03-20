@@ -1,6 +1,29 @@
 #include "hep_hpc/hdf5/PropertyList.hpp"
+#include "hep_hpc/hdf5/Exception.hpp"
 
 #include <stdexcept>
+
+namespace {
+  void throw_if_invalid_args(hid_t const plist,
+                             hep_hpc::hdf5::ResourceStrategy const strategy)
+  {
+    if (plist == H5P_DEFAULT &&
+        strategy == hep_hpc::hdf5::ResourceStrategy::handle_tag) {
+      throw
+        hep_hpc::hdf5::Exception("PropertyList() called with incorrect resource management strategy for H5P_DEFAULT property list.");
+    }
+  }
+}
+
+hep_hpc::hdf5::PropertyList::
+PropertyList(hid_t const plist, ResourceStrategy const strategy)
+  // Note use of comma operator to detect invalid argument combinations.
+  : h5plist_((throw_if_invalid_args(plist, strategy),
+              (strategy == ResourceStrategy::handle_tag) ?
+              Resource(plist, &H5Pclose) :
+              Resource(plist)))
+{
+}
 
 hid_t
 hep_hpc::hdf5::PropertyList::
@@ -42,7 +65,7 @@ getClass() const
     result = H5P_STRING_CREATE;
   } else {
     using std::to_string;
-    throw std::logic_error("INTERNAL ERROR: H5PopertyList::getClass() did not recognize property class ID " +
+    throw std::logic_error("INTERNAL ERROR: PropertyList::getClass() did not recognize property class ID " +
                            to_string(classID) + "property list ID " + to_string(*h5plist_));
   }
   return result;
