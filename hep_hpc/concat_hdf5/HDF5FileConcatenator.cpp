@@ -23,6 +23,7 @@ extern "C" {
 #include <cstdlib>
 #include <iostream>
 #include <numeric>
+#include <sstream>
 #include <vector>
 
 using namespace hep_hpc::hdf5;
