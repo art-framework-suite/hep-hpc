@@ -50,7 +50,7 @@ public:
   void reset();
 
 private:
-  static constexpr HID_t const INVALID_DTYPE_ {};
+  static constexpr HID_t INVALID_DTYPE_() { return HID_t {};}
   Resource h5dtype_;
 };
 
@@ -92,7 +92,7 @@ inline
 hep_hpc::hdf5::Datatype::
 operator bool () const noexcept
 {
-  return *h5dtype_ > INVALID_DTYPE_;
+  return *h5dtype_ > INVALID_DTYPE_();
 }
 
 inline

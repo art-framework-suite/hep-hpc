@@ -64,7 +64,7 @@ public:
   void reset();
 
 private:
-  static constexpr HID_t const INVALID_PLIST_ {};
+  static constexpr HID_t INVALID_PLIST_() { return HID_t {};}
   // Note 0 (H5P_DEFAULT) is a reasonable default;
   Resource h5plist_ {0};
 };
@@ -107,7 +107,7 @@ inline
 hep_hpc::hdf5::PropertyList::
 operator bool () const noexcept
 {
-  return *h5plist_ > INVALID_PLIST_;
+  return *h5plist_ > INVALID_PLIST_();
 }
 
 inline

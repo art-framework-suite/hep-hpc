@@ -71,7 +71,7 @@ public:
   void reset();
 
 private:
-  static constexpr HID_t const INVALID_DSPACE_ {};
+  static constexpr HID_t INVALID_DSPACE_() {return HID_t {};}
   // Note 0 (H5S_ALL) is a reasonable default;
   Resource h5dspace_ {0};
 };
@@ -179,7 +179,7 @@ inline
 hep_hpc::hdf5::Dataspace::
 operator bool () const noexcept
 {
-  return *h5dspace_ > INVALID_DSPACE_;
+  return *h5dspace_ > INVALID_DSPACE_();
 }
 
 inline

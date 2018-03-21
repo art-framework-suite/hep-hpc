@@ -62,7 +62,7 @@ public:
   void reset();
 
 private:
-  static constexpr HID_t const INVALID_GROUP_ {};
+  static constexpr HID_t INVALID_GROUP_() { return HID_t {};}
   Resource h5group_;
 };
 
@@ -86,7 +86,7 @@ inline
 hep_hpc::hdf5::Group::
 operator bool () const noexcept
 {
-  return *h5group_ > INVALID_GROUP_;
+  return *h5group_ > INVALID_GROUP_();
 }
 
 inline

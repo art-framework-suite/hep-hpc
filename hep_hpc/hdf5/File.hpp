@@ -46,7 +46,7 @@ public:
   void close();
 
 private:
-  static constexpr HID_t const INVALID_FILE_ {};
+  static constexpr HID_t INVALID_FILE_() { return HID_t {}; }
   Resource h5file_;
 };
 
@@ -71,7 +71,7 @@ inline
 hep_hpc::hdf5::File::
 operator bool () const noexcept
 {
-  return *h5file_ > INVALID_FILE_;
+  return *h5file_ > INVALID_FILE_();
 }
 
 inline

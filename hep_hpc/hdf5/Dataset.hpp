@@ -70,7 +70,7 @@ public:
   void reset();
 
 private:
-  static constexpr HID_t const INVALID_DSET_ {};
+  static constexpr HID_t INVALID_DSET_() { return HID_t {}; }
   Resource h5dset_;
 };
 
@@ -135,7 +135,7 @@ inline
 hep_hpc::hdf5::Dataset::
 operator bool () const noexcept
 {
-  return *h5dset_ > INVALID_DSET_;
+  return *h5dset_ > INVALID_DSET_();
 }
 
 inline
