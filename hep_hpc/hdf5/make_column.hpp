@@ -11,9 +11,10 @@
 // described in hep_hpc/hdf5/make_ntuple.hpp. Particularly useful for
 // the creation of columns with particular HDF5 properties. The second
 // signature is specifically for columns of scalars, where specifying
-// the dimensions is unnecessary. Note that in either case, the number and order of
-// specification of the properties is: link creation, dataset creation,
-// dataset access.
+// the dimensions is unnecessary. Note that in either case, the number
+// and order of specification of the properties is: link creation,
+// dataset creation, dataset access. Note also that as a function
+// prerequisite, all property lists are assumed to be valid.
 //
 // template <typename T, size_t NDIMS = 1>
 // Column<T, NDIMS>
@@ -33,6 +34,8 @@
 #include "hep_hpc/hdf5/PropertyList.hpp"
 
 #include "hdf5.h"
+
+#include <cassert>
 
 namespace hep_hpc {
   namespace hdf5 {
@@ -156,6 +159,13 @@ setColumnProperties(COL & col,
                     std::size_t ndims,
                     hsize_t * chunking)
 {
+  // Prerequisite.
+  assert(std::all_of(std::begin(props),
+                     std::end(props),
+                     [](PropertyList const & prop) {
+                       return prop.is_valid();
+                     }) ||
+         "setColumnProperties: all properties must be valid.");
   static auto const throwDup =
     [](std::string const & propertyClass) {
     throw std::runtime_error(std::string("setColumnProperties: props contains multiple properties of class ") + propertyClass);
