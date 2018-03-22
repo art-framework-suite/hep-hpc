@@ -23,7 +23,8 @@ Group(hid_t const fileOrGroup,
                                        groupAccessProperties);
                break;
              case OPEN_MODE:
-               if (linkCreationProperties || groupCreationProperties) { // ERROR.
+               if (linkCreationProperties.is_valid_non_default() ||
+                   groupCreationProperties.is_valid_non_default()) { // ERROR.
                  throw
                    Exception("Group(): flags indicated file-open semantics, "
                              "but non-trivial creation properties specified!");

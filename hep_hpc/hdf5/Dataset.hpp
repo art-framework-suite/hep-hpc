@@ -44,6 +44,8 @@ public:
 
   operator hid_t() const noexcept;
 
+  // Is this a valid dataset?
+  bool is_valid() const noexcept;
   explicit operator bool () const noexcept;
 
   // Write. Data spaces and property lists may be provided with move
@@ -132,10 +134,18 @@ operator hid_t() const noexcept
 }
 
 inline
+bool
+hep_hpc::hdf5::Dataset::
+is_valid () const noexcept
+{
+  return *h5dset_ > INVALID_DSET_();
+}
+
+inline
 hep_hpc::hdf5::Dataset::
 operator bool () const noexcept
 {
-  return *h5dset_ > INVALID_DSET_();
+  return is_valid();
 }
 
 inline

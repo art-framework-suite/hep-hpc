@@ -75,7 +75,7 @@ makeDataset(hid_t const group, COL const & col, TranslationMode mode)
   maxdims[0] = H5S_UNLIMITED;
   // Create and return appropriately constructed dataset.
   PropertyList cdprops = col.datasetCreationProperties();
-  if (!cdprops) {
+  if (cdprops.is_default()) {
     // Default chunking and compression.
     cdprops = defaultDatasetCreationProperties(dims);
   } else if (H5Pget_layout(cdprops) != H5D_CHUNKED) {

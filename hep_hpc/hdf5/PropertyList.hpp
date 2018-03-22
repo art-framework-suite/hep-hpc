@@ -44,8 +44,15 @@ public:
   PropertyList(PropertyList &&) = default;
   PropertyList & operator = (PropertyList &&) = default;
 
-  // Is this a valid, non-default property list?
+  // Is this a valid property list?
+  bool is_valid() const noexcept;
   explicit operator bool () const noexcept;
+
+  // Is this a default property list?
+  bool is_default() const noexcept;
+
+  // Is this a valid, non-default property list?
+  bool is_valid_non_default() const noexcept;
 
   // Access to the underlying resource handle.
   operator hid_t () const noexcept;
@@ -104,10 +111,34 @@ operator = (PropertyList const & other)
 }
 
 inline
+bool
+hep_hpc::hdf5::PropertyList::
+is_valid () const noexcept
+{
+  return *h5plist_ > INVALID_PLIST_();
+}
+
+inline
 hep_hpc::hdf5::PropertyList::
 operator bool () const noexcept
 {
-  return *h5plist_ > INVALID_PLIST_();
+  return is_valid();
+}
+
+inline
+bool
+hep_hpc::hdf5::PropertyList::
+is_default() const noexcept
+{
+  return *h5plist_ == H5P_DEFAULT;
+}
+
+inline
+bool
+hep_hpc::hdf5::PropertyList::
+is_valid_non_default() const noexcept
+{
+  return *h5plist_ > H5P_DEFAULT;
 }
 
 inline

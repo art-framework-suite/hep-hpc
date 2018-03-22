@@ -40,7 +40,8 @@ public:
   Datatype(Datatype &&) = default;
   Datatype & operator = (Datatype &&) = default;
 
-  // Is this a valid, non-default dataspace?
+  // Is this a valid datatype?
+  bool is_valid() const noexcept;
   explicit operator bool () const noexcept;
 
   // Access to the underlying resource handle.
@@ -89,10 +90,18 @@ operator = (Datatype const & other)
 }
 
 inline
+bool
+hep_hpc::hdf5::Datatype::
+is_valid() const noexcept
+{
+  return *h5dtype_ > INVALID_DTYPE_();
+}
+
+inline
 hep_hpc::hdf5::Datatype::
 operator bool () const noexcept
 {
-  return *h5dtype_ > INVALID_DTYPE_();
+  return is_valid();
 }
 
 inline

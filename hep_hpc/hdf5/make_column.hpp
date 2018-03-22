@@ -163,19 +163,19 @@ setColumnProperties(COL & col,
   PropertyList lcp, dcp, dap;
   for (auto && prop : props) {
     if (prop.isClass(H5P_LINK_CREATE)) {
-      if (!lcp) {
+      if (lcp.is_default()) {
         lcp = std::move(prop);
       } else {
         throwDup("H5P_LINK_CREATE");
       }
     } else if (prop.isClass(H5P_DATASET_CREATE)) {
-      if (!dcp) {
+      if (dcp.is_default()) {
         dcp = std::move(prop);
       } else {
         throwDup("H5P_DATASET_CREATE");
       }
     } else if (prop.isClass(H5P_DATASET_ACCESS)) {
-      if (dap) {
+      if (dap.is_default()) {
         dap = std::move(prop);
       } else {
         throwDup("H5P_DATASET_ACCESS");
@@ -184,11 +184,11 @@ setColumnProperties(COL & col,
       throw std::logic_error("setColumnProperties received a property list of unrecognized class.");
     }
   }
-  if (lcp) {
+  if (lcp.is_valid_non_default()) {
     col.setLinkCreationProperties(std::move(lcp));
   }
   if (ndims > 0ull) {
-    if (!dcp) {
+    if (dcp.is_default()) {
       dcp = PropertyList(H5P_DATASET_CREATE);
     }
     (void) ErrorController::call(&H5Pset_chunk,
@@ -196,10 +196,10 @@ setColumnProperties(COL & col,
                                  ndims,
                                  chunking);
   }
-  if (dcp) {
+  if (dcp.is_valid_non_default()) {
     col.setDatasetCreationProperties(std::move(dcp));
   }
-  if (dap) {
+  if (dap.is_valid_non_default()) {
     col.setDatasetAccessProperties(std::move(dap));
   }
 }

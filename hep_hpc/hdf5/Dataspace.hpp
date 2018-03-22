@@ -61,8 +61,15 @@ public:
   Dataspace(Dataspace &&) = default;
   Dataspace & operator = (Dataspace &&) = default;
 
-  // Is this a valid, non-default dataspace?
+  // Is this a valid dataspace?
+  bool is_valid() const noexcept;
   explicit operator bool () const noexcept;
+
+  // Is this a default dataspace?
+  bool is_default() const noexcept;
+
+  // Is this a valid, non-default dataspace?
+  bool is_valid_non_default() const noexcept;
 
   // Access to the underlying resource handle.
   operator hid_t() const noexcept;
@@ -176,10 +183,34 @@ operator = (Dataspace const & other)
 }
 
 inline
+bool
+hep_hpc::hdf5::Dataspace::
+is_valid () const noexcept
+{
+  return *h5dspace_ > INVALID_DSPACE_();
+}
+
+inline
 hep_hpc::hdf5::Dataspace::
 operator bool () const noexcept
 {
-  return *h5dspace_ > INVALID_DSPACE_();
+  return is_valid();
+}
+
+inline
+bool
+hep_hpc::hdf5::Dataspace::
+is_default () const noexcept
+{
+  return *h5dspace_ == H5S_ALL;
+}
+
+inline
+bool
+hep_hpc::hdf5::Dataspace::
+is_valid_non_default () const noexcept
+{
+  return *h5dspace_ > H5S_ALL;
 }
 
 inline

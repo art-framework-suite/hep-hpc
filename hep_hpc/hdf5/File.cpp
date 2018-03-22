@@ -10,7 +10,7 @@ hep_hpc::hdf5::File::File(std::string const & filename,
           { HID_t result;
             if (flag == H5F_ACC_RDONLY || flag == H5F_ACC_RDWR) {
               // Open.
-              if (fileCreationProperties) { // ERROR.
+              if (fileCreationProperties.is_valid_non_default()) { // ERROR.
                 throw
                   Exception("File(): flags indicated file-open semantics, "
                             "but non-trivial creation properties specified!");

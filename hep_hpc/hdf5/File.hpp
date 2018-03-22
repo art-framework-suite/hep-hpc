@@ -37,6 +37,8 @@ public:
 
   operator hid_t() const noexcept;
 
+  // Is this a valid file?
+  bool is_valid() const noexcept;
   explicit operator bool () const noexcept;
 
   // Flush the file contents.
@@ -68,10 +70,18 @@ operator hid_t() const noexcept
 }
 
 inline
+bool
+hep_hpc::hdf5::File::
+is_valid() const noexcept
+{
+  return *h5file_ > INVALID_FILE_();
+}
+
+inline
 hep_hpc::hdf5::File::
 operator bool () const noexcept
 {
-  return *h5file_ > INVALID_FILE_();
+  return is_valid();
 }
 
 inline

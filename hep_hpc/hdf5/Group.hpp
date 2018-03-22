@@ -47,6 +47,8 @@ public:
 
   operator hid_t() const noexcept;
 
+  // Is this a valid group?
+  bool is_valid() const noexcept;
   explicit operator bool () const noexcept;
 
   // Obtain information about the group;
@@ -83,10 +85,18 @@ operator hid_t() const noexcept
 }
 
 inline
+bool
+hep_hpc::hdf5::Group::
+is_valid() const noexcept
+{
+  return *h5group_ > INVALID_GROUP_();
+}
+
+inline
 hep_hpc::hdf5::Group::
 operator bool () const noexcept
 {
-  return *h5group_ > INVALID_GROUP_();
+  return is_valid();
 }
 
 inline
