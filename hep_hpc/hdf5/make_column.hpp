@@ -166,9 +166,10 @@ setColumnProperties(COL & col,
                        return prop.is_valid();
                      }) ||
          "setColumnProperties: all properties must be valid.");
+  // Exception to throw in case of duplicate property list classes.
   static auto const throwDup =
     [](std::string const & propertyClass) {
-    throw std::runtime_error(std::string("setColumnProperties: props contains multiple properties of class ") + propertyClass);
+    throw std::logic_error(std::string("setColumnProperties: props contains multiple properties of class ") + propertyClass);
   };
   PropertyList lcp, dcp, dap;
   for (auto && prop : props) {
