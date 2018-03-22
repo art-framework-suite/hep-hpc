@@ -103,6 +103,15 @@ TEST(PropertyList, getClassName)
   }
 }
 
+TEST(PropertyList, reset)
+{
+  PropertyList plist(H5P_FILE_ACCESS);
+  ASSERT_TRUE(plist.is_valid_non_default());
+  plist.reset();
+  ASSERT_TRUE(plist.is_default());
+}
+
+
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ErrorController::setErrorHandler(ErrorMode::EXCEPTION);

@@ -79,8 +79,9 @@ public:
 
 private:
   static constexpr HID_t INVALID_DSPACE_() {return HID_t {};}
-  // Note 0 (H5S_ALL) is a reasonable default;
-  Resource h5dspace_ {0};
+  // Note H5S_ALL is a reasonable default: no memory management
+  // required.
+  Resource h5dspace_ {H5S_ALL};
 };
 
 inline
@@ -225,6 +226,10 @@ void
 hep_hpc::hdf5::Dataspace::
 reset()
 {
-  h5dspace_.reset();
+  using std::swap;
+  // Note: we're not calling Resource::reset() because we want the
+  // default value.
+  Dataspace tmp;
+  swap(*this, tmp);
 }
 #endif /* hep_hpc_hdf5_Dataspace_hpp */

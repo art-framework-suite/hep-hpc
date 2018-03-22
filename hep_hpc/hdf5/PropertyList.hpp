@@ -72,8 +72,9 @@ public:
 
 private:
   static constexpr HID_t INVALID_PLIST_() { return HID_t {};}
-  // Note 0 (H5P_DEFAULT) is a reasonable default;
-  Resource h5plist_ {0};
+  // Note H5P_DEFAULT is a reasonable default: no memory management
+  // required.
+  Resource h5plist_ {H5P_DEFAULT};
 };
 
 inline
@@ -182,7 +183,11 @@ inline
 void
 hep_hpc::hdf5::PropertyList::
 reset() {
-  h5plist_.reset();
+  using std::swap;
+  // Note: we're not calling Resource::reset() because we want the
+  // default value.
+  PropertyList tmp;
+  swap(*this, tmp);
 }
 
 #endif /* hep_hpc_hdf5_PropertyList_hpp */
