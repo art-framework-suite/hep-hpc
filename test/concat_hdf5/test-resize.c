@@ -4,6 +4,7 @@
 * Open collective datasets in a file and keep resizing them.
 *
 ***********************************************************************/
+#define _POSIX_C_SOURCE 200809L /* Required for strdup on Linux. */
 
 #include "mpi.h"
 #include "hdf5.h"
