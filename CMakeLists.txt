@@ -1,12 +1,9 @@
-cmake_minimum_required(VERSION 2.8.12.2)
+# For CMAKE_C_EXTENSIONS support.
+cmake_minimum_required(VERSION 3.4.0 FATAL_ERROR)
 
-project(hep_hpc)
+project(hep_hpc LANGUAGES C CXX)
 
-set(HEP_HPC_VERSION 0.08.01)
-
-if (POLICY CMP0042)
-  cmake_policy(SET CMP0042 NEW) # @rpath on OS X.
-endif()
+set(HEP_HPC_VERSION 0.08.02)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules
@@ -23,25 +20,16 @@ enable_testing()
 if (NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 if (NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 11)
 endif()
-set(CMAKE_C_STANDARD_REQUIRED TRUE)
-
-if (CMAKE_VERSION VERSION_LESS 3.1)
-  if (${CMAKE_CXX_STANDARD} EQUAL 17)
-    set(cxx_standard -std=gnu++1z)
-  else()
-    set(cxx_standard -std=gnu++${CMAKE_CXX_STANDARD})
-  endif()
-  set(c_standard -std=gnu${CMAKE_C_STANDARD}) # For _POSIX_C_SOURCE >= 200809L
-endif()
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Set compiler flags
-set(common_flags "-Wall -Wextra -Werror -pedantic -Wno-missing-braces")
-set(CMAKE_CXX_FLAGS "${common_flags} ${cxx_standard}")
-set(CMAKE_C_FLAGS "${common_flags} ${c_standard}")
+add_compile_options(-Wall -Wextra -Werror -pedantic -Wno-missing-braces)
 string(TOUPPER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_UC)
 if (BUILD_TYPE_UC STREQUAL "RELEASE" OR
     BUILD_TYPE_UC STREQUAL "RELWITHDEBINFO")
