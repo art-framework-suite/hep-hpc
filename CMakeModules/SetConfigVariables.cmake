@@ -95,8 +95,7 @@ function(set_config_variables UPS_PROD PROD_VERSION)
     # Qualifiers in version file name must be sorted!
     string(REPLACE ":" ";" UPS_QUALS_LIST ${UPS_QUALS})
     list(SORT UPS_QUALS_LIST)
-    string(REPLACE ":" ";" UPS_QUALS_SORTED "${UPS_QUALS_LIST}")
-    string(REPLACE ":" "_" UPS_VERSION_FILE ${UPS_QUALS_SORTED})
+    string(REPLACE ";" "_" UPS_VERSION_FILE "${UPS_QUALS_LIST}")
     set(UPS_VERSION_FILE "${UPS_FLAVOR}_${UPS_VERSION_FILE}")
     set(UPS_VERSION_FILE ${UPS_VERSION_FILE} PARENT_SCOPE)
     # UPS_FLAVOR_DIR.
