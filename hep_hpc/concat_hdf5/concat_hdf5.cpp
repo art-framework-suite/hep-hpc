@@ -194,7 +194,6 @@ private:
     auto iarg = args.begin(), next_arg_iter = iarg;
     for (; iarg != eargs; iarg = next_arg_iter) {
       auto & arg = *iarg;
-//      if (my_rank == 0) { std::cerr << "Processing argument " << arg << ".\n"; }
       if (arg[0] != '-' && arg[0] != '+') {
         // Finished processing options (processing for individual
         // options should progress iarg after dealing with arguments).
@@ -397,19 +396,23 @@ private:
         std::cerr << "WARNING: Collective writes require > 1 MPI processes.\n";
         want_collective_writes_ = false;
       }
-#if ! (H5_VERS_MAJOR > 1 || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 10))
+#if ! (H5_VERS_MAJOR > 1 || \
+       (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 10) || \
+       (H5_VERS_MAJOR == 1 && H5_VERS_MINOR == 10 && H5_VERS_RELEASE >= 2))
       else if (want_filters_) {
         if (my_rank == 0) {
           std::cerr << "WARNING: Collective writes not supported with filters for HDF5 version "
                     << H5_VERS_INFO << ".\n";
-          std::cerr << "         Require HDF5 version >= 1.12.0.\n";
+          std::cerr << "         Require HDF5 version >= 1.10.2.\n"
+                    << "         Deactivating output filters.\n";
         }
+        want_filters_ = false;
       }
 #endif
     } else if (want_filters_ && n_ranks > 1) {
       if (my_rank == 0) {
-        std::cerr << "WARNING: Output filters require collective writes under MPI I/O."
-                  << "\nDeactivating output filters.\n";
+        std::cerr << "WARNING: Output filters require collective writes under MPI I/O.\n"
+                  << "         Deactivating output filters.\n";
       }
       want_filters_ = false;
     }
