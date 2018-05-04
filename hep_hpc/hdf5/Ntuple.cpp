@@ -14,7 +14,11 @@ hep_hpc::hdf5::NtupleDetail::verifiedFile(File file)
   if (istat != (herr_t)0) {
     throw std::runtime_error("Error obtaining file mode.");
   } 
-  if (intent == H5F_ACC_RDONLY || intent == H5F_ACC_SWMR_READ) {
+  if (intent == H5F_ACC_RDONLY 
+#if H5_VERS_MAJOR > 1 || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR >= 10)
+    || intent == H5F_ACC_SWMR_READ
+#endif
+    ) {
     throw std::runtime_error("Reading from HDF5 Ntuple file not supported!");
   }
   return file;

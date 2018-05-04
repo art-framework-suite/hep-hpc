@@ -115,7 +115,11 @@ herr_t
 hep_hpc::hdf5::Group::
 flush()
 {
+#if H5_VERS_MAJOR > 1 || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR >= 10)
   return ErrorController::call(&H5Gflush, *h5group_);
+#else
+  return 0;
+#endif
 }
 
 inline
@@ -123,7 +127,11 @@ herr_t
 hep_hpc::hdf5::Group::
 refresh()
 {
+#if H5_VERS_MAJOR > 1 || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR >= 10)
   return ErrorController::call(&H5Grefresh, *h5group_);
+#else
+  return 0;
+#endif
 }
 
 inline

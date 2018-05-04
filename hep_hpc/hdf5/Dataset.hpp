@@ -187,7 +187,11 @@ herr_t
 hep_hpc::hdf5::Dataset::
 flush()
 {
+#if H5_VERS_MAJOR > 1 || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR >= 10)
   return ErrorController::call(&H5Dflush, *h5dset_);
+#else
+  return 0;
+#endif
 }
 
 inline
@@ -195,7 +199,11 @@ herr_t
 hep_hpc::hdf5::Dataset::
 refresh()
 {
+#if H5_VERS_MAJOR > 1 || (H5_VERS_MAJOR == 1 && H5_VERS_MINOR >= 10)
   return ErrorController::call(&H5Drefresh, *h5dset_);
+#else
+  return 0;
+#endif
 }
 
 inline
