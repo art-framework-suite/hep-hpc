@@ -12,6 +12,7 @@ set(headers
 set(detail_headers
   detail/index_sequence.hpp
   detail/compiler_macros.hpp
+  detail/copy_advance.hpp
   )
 
 add_library(hep_hpc_Utilities SHARED ${source_files})
