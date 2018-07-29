@@ -353,6 +353,7 @@ namespace {
                                     Dataset const & in_ds,
                                     File & h5out,
                                     bool const want_filters,
+                                    bool const force_compression,
                                     std::size_t mem_max_bytes,
                                     long long const max_rows)
   {
@@ -393,12 +394,52 @@ namespace {
                                                  in_ds),
                            ResourceStrategy::handle_tag);
 
+      // Store the chunk size in rows.
+      int const chunk_rank =
+        ErrorController::call(ErrorMode::NONE,
+                              &H5Pget_chunk,
+                              in_ds_create_plist,
+                              1,
+                              &out_ds_info.chunk_rows);
+      if (chunk_rank != 1) {
+        if (chunk_rank < 1) {
+          // No chunking set.
+          out_ds_info.chunk_rows = 128;
+        }
+        report(-1,
+               std::string("Concatenation algorithm relies on the presence of full-row chunking in\n") +
+               "the output. Chunking set to " + to_string(out_ds_info.chunk_rows) +
+               " full rows for dataset " + ds_name + ".");
+        in_ds_create_plist(&H5Pset_chunk, 1, &out_ds_info.chunk_rows);
+      }
+
       if (!want_filters) {
         // Deactivate filters in outgoing dataset.
-        (void) ErrorController::call(&H5Premove_filter,
-                                     in_ds_create_plist,
-                                     H5Z_FILTER_ALL);
+        in_ds_create_plist(&H5Premove_filter, H5Z_FILTER_ALL);
+      } else if (force_compression) {
+        // Add compression if it's not already there.
+        unsigned int flags;
+        size_t cd_nelmts { 0 };
+        size_t namelen { 0 };
+        unsigned int filter_config;
+        if (ErrorController::call(ErrorMode::NONE,
+                                  &H5Pget_filter_by_id2,
+                                  in_ds_create_plist,
+                                  H5Z_FILTER_DEFLATE,
+                                  &flags,
+                                  &cd_nelmts,
+                                  nullptr,
+                                  namelen,
+                                  nullptr,
+                                  &filter_config) < 0) {
+          // Set deflate filter.
+          report(0,
+                 std::string("Forcing DEFLATE compression for dataset ") +
+                 ds_name + ".");
+          in_ds_create_plist(&H5Pset_deflate, 6);
+        }
       }
+
       // Save parent group's name.
       out_ds_info.parent = parent_group(ds_name);
 
@@ -413,12 +454,6 @@ namespace {
              to_string(out_ds_info.row_size_bytes) +
              " in dataset " +
              ds_name);
-
-      // Store the chunk size in rows.
-      (void) ErrorController::call(&H5Pget_chunk,
-                                   in_ds_create_plist,
-                                   1,
-                                   &out_ds_info.chunk_rows);
 
       // Calculate the buffer size in rows.
       out_ds_info.buffer_size_rows =
@@ -515,17 +550,19 @@ namespace {
 
 hep_hpc::HDF5FileConcatenator::
 HDF5FileConcatenator(std::string const & output,
-                     unsigned int file_mode,
-                     long long max_rows,
-                     std::size_t mem_max_bytes,
+                     unsigned int const file_mode,
+                     long long const max_rows,
+                     std::size_t const mem_max_bytes,
                      FilenameColumnInfo filename_column_info,
                      std::vector<std::regex> const & only_groups,
-                     bool want_filters,
-                     bool want_collective_writes,
-                     int in_verbosity)
+                     bool const want_filters,
+                     bool const force_compression,
+                     bool const want_collective_writes,
+                     int const in_verbosity)
   : max_rows_(max_rows)
   , mem_max_bytes_(mem_max_bytes)
   , want_filters_(want_filters)
+  , force_compression_(force_compression)
   , want_collective_writes_(want_collective_writes)
   , filename_column_info_(std::move(filename_column_info))
   , only_groups_(only_groups)
@@ -738,7 +775,7 @@ visit_item_(hid_t root_id,
 
 herr_t
 hep_hpc::HDF5FileConcatenator::
-handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
+handle_dataset_(Dataset in_ds, std::string const ds_name)
 {
   // For number to string conversions.
   using std::to_string;
@@ -769,6 +806,7 @@ handle_dataset_(hdf5::Dataset in_ds, std::string const ds_name)
                                     in_ds,
                                     h5out_,
                                     want_filters_,
+                                    force_compression_,
                                     mem_max_bytes_,
                                     max_rows_);
 

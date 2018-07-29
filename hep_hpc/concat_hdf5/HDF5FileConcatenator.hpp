@@ -32,6 +32,7 @@ public:
                        FilenameColumnInfo filename_column_info,
                        std::vector<std::regex> const & only_groups,
                        bool want_filters,
+                       bool force_compression,
                        bool want_collective_writes,
                        int verbosity);
 
@@ -52,7 +53,13 @@ private:
   long long max_rows_;
   hsize_t mem_max_bytes_;
   bool want_filters_;
-  bool want_collective_writes_ UNUSED_PRIVATE_FIELD;
+  bool force_compression_;
+  bool want_collective_writes_
+#ifndef HEP_HPC_USE_MPI
+  // Satisfy picky compilers if we're not compiled with MPI.
+  UNUSED_PRIVATE_FIELD
+#endif
+  ;
   FilenameColumnInfo filename_column_info_;
   std::vector<std::string> filename_column_data_;
   std::vector<std::regex> only_groups_;

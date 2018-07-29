@@ -156,6 +156,7 @@ public:
     FilenameColumnInfo & filename_column_info() { return filename_column_info_; }
     std::vector<std::regex> const & only_groups() const { return only_groups_; }
     bool want_filters() const { return want_filters_; }
+    bool force_compression() const { return force_compression_; }
     bool want_collective_writes() const { return want_collective_writes_;}
     std::size_t verbosity() const { return verbosity_; }
     std::vector<std::string> const & inputs() const { return inputs_; }
@@ -169,6 +170,7 @@ private:
     static long long const DEFAULT_MAX_ROWS;
     static std::size_t const DEFAULT_MEM_MAX;
     static bool const DEFAULT_WANT_FILTERS;
+    static bool const DEFAULT_FORCE_COMPRESSION;
     static bool const DEFAULT_WANT_COLLECTIVE_WRITES;
     static int const DEFAULT_VERBOSITY;
 
@@ -180,6 +182,7 @@ private:
     FilenameColumnInfo filename_column_info_;
     std::vector<std::regex> only_groups_;
     bool want_filters_ { DEFAULT_WANT_FILTERS };
+    bool force_compression_ { DEFAULT_FORCE_COMPRESSION };
     bool want_collective_writes_ { DEFAULT_WANT_COLLECTIVE_WRITES };
     int verbosity_ { DEFAULT_VERBOSITY };
     std::vector<std::string> inputs_;
@@ -252,6 +255,8 @@ private:
             filename_column_info_.set_group_regexes(std::move(group_regexes));
           }
           continue;
+        } else if (arg == "--force-compression") {
+          force_compression_ = true;
         } else if (arg == "--help") {
           arg = "-h"; // Short option alias.
         } else if (arg == "--max-rows") {
@@ -391,6 +396,12 @@ private:
       }
     }
 
+    if (force_compression_ && !want_filters_) {
+      std::cerr << "WARNING: Forced compression requires filters to be enabled in the"
+                << "         output.";
+        want_filters_ = true;
+    }
+
     if (want_collective_writes_) {
       if (n_ranks == 1) {
         std::cerr << "WARNING: Collective writes require > 1 MPI processes.\n";
@@ -484,6 +495,14 @@ OPTIONS
     * <group-regex> arguments, if specified, are whole-string match
       expressions following the ECMAScript specification.
 
+  --force-compression
+
+    Force compression (deflate, level 6) on columns with no level 6
+    set (default )END"
+              << std::boolalpha << DEFAULT_FORCE_COMPRESSION
+              << R"END(). Requires filters (--with-filters) and
+    (if invoking multiple MPI proceses) collective writes
+    (--collective-writes) to be selected.
 
   --help
   -h
@@ -577,6 +596,7 @@ NOTES
   long long const ProgramOptions::DEFAULT_MAX_ROWS = -1ll;
   std::size_t const ProgramOptions::DEFAULT_MEM_MAX = 100ull;
   bool const ProgramOptions::DEFAULT_WANT_FILTERS = true;
+  bool const ProgramOptions::DEFAULT_FORCE_COMPRESSION = false;
   bool const ProgramOptions::DEFAULT_WANT_COLLECTIVE_WRITES = true;
   int const ProgramOptions::DEFAULT_VERBOSITY = 0;
 
@@ -616,6 +636,7 @@ int main(int argc, char **argv)
                    std::move(program_options.filename_column_info()),
                    program_options.only_groups(),
                    program_options.want_filters(),
+                   program_options.force_compression(),
                    program_options.want_collective_writes(),
                    program_options.verbosity());
     status = concatenator.concatFiles(program_options.inputs());
