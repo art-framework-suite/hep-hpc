@@ -395,23 +395,27 @@ namespace {
                            ResourceStrategy::handle_tag);
 
       // Store the chunk size in rows.
+      std::vector<hsize_t> in_chunking(ndims);
       int const chunk_rank =
         ErrorController::call(ErrorMode::NONE,
                               &H5Pget_chunk,
                               in_ds_create_plist,
-                              1,
-                              &out_ds_info.chunk_rows);
-      if (chunk_rank != 1) {
-        if (chunk_rank < 1) {
-          // No chunking set.
-          out_ds_info.chunk_rows = 128;
-        }
+                              ndims,
+                              in_chunking.data());
+      if (! (chunk_rank == ndims &&
+             std::equal(in_chunking.cbegin() + 1,
+                        in_chunking.cend(),
+                        in_shape.cbegin() + 1))) {
+        // Don't have compatible chunking on input.
+        in_chunking = in_shape;
+        in_chunking[0] = 128;
         report(-1,
                std::string("Concatenation algorithm relies on the presence of full-row chunking in\n") +
-               "the output. Chunking set to " + to_string(out_ds_info.chunk_rows) +
-               " full rows for dataset " + ds_name + ".");
-        in_ds_create_plist(&H5Pset_chunk, 1, &out_ds_info.chunk_rows);
+               "the output. Chunking will set to " + to_string(in_chunking[0]) +
+               " full rows for output dataset " + ds_name + ".");
+        in_ds_create_plist(&H5Pset_chunk, ndims, in_chunking.data());
       }
+      out_ds_info.chunk_rows = in_chunking[0];
 
       if (!want_filters) {
         // Deactivate filters in outgoing dataset.

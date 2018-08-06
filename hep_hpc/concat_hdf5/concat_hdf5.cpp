@@ -257,6 +257,7 @@ private:
           continue;
         } else if (arg == "--force-compression") {
           force_compression_ = true;
+          continue;
         } else if (arg == "--help") {
           arg = "-h"; // Short option alias.
         } else if (arg == "--max-rows") {
@@ -497,7 +498,7 @@ OPTIONS
 
   --force-compression
 
-    Force compression (deflate, level 6) on columns with no level 6
+    Force compression (deflate, level 6) on columns with none set
     set (default )END"
               << std::boolalpha << DEFAULT_FORCE_COMPRESSION
               << R"END(). Requires filters (--with-filters) and
