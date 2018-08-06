@@ -143,6 +143,15 @@ private:
               status, extra_msg);
   }
 
+  template<typename IN_ITER>
+  void
+  coerce_n_sub_args_(size_t const n_sub_args,
+                     IN_ITER const iarg,
+                     IN_ITER & next_arg_iter)
+  {
+    next_arg_iter = detail::copy_advance(iarg, 1 + n_sub_args);
+  }
+
   class ProgramOptions {
 public:
     ProgramOptions(int argc, char **argv);
@@ -206,14 +215,19 @@ private:
         ++iarg;
         break;
       }
-      // Count sub-arguments.
+      // Count sub-arguments (greedy).
       next_arg_iter = iarg + 1;
       while (next_arg_iter != eargs &&
              (*next_arg_iter)[0] != '-' &&
              (*next_arg_iter)[0] != '+') {
         ++next_arg_iter;
       }
-      auto const n_sub_args = std::distance(iarg + 1, next_arg_iter);
+      auto n_sub_args = std::distance(iarg + 1, next_arg_iter);
+      auto coerce_n_sub_args =
+        [iarg, &next_arg_iter, &n_sub_args](size_t set_sub_args) {
+        coerce_n_sub_args_(set_sub_args, iarg, next_arg_iter);
+        n_sub_args = set_sub_args;
+      };
       if (arg[1] == '-') { // Long options.
         if (arg == "--append") {
           arg = "-a"; // Short option alias.
@@ -256,6 +270,7 @@ private:
           }
           continue;
         } else if (arg == "--force-compression") {
+          coerce_n_sub_args(0);
           force_compression_ = true;
           continue;
         } else if (arg == "--help") {
@@ -263,12 +278,7 @@ private:
         } else if (arg == "--max-rows") {
           arg = "-n"; // Short option alias.
         } else if (arg == "--mem-max") {
-          if (n_sub_args != 1) {
-            throw_bad_sub_args(*iarg,
-                               2,
-                               std::string("expected 1 sub-argument, got ") +
-                               to_string(n_sub_args));
-          }
+          coerce_n_sub_args(1);
           try {
             mem_max_bytes_ = std::stoull(*++iarg, &idx) * 1024 * 1024;
           }
@@ -280,12 +290,7 @@ private:
           }
           continue;
         } else if (arg == "--mem-max-bytes") {
-          if (n_sub_args != 1) {
-            throw_bad_sub_args(*iarg,
-                               2,
-                               std::string("expected 1 sub-argument, got ") +
-                               to_string(n_sub_args));
-          }
+          coerce_n_sub_args(1);
           try {
             mem_max_bytes_ = std::stoull(*++iarg, &idx);
           }
@@ -320,6 +325,7 @@ private:
         } else if (arg == "--verbose") {
           arg = "-v"; // Short option alias.
         } else if (arg == "--verbosity") {
+          coerce_n_sub_args(1);
           try {
             verbosity_ = std::stoi(*++iarg, &idx);
           }
@@ -343,15 +349,19 @@ private:
       // Process short options (including aliases for long options).
       switch (arg[1]) {
       case 'a':
+        coerce_n_sub_args(0);
         append_ = true;
         break;
       case 'C':
+        coerce_n_sub_args(0);
         want_collective_writes_ = (arg[0] == '-') ? true : false;
         break;
       case 'F':
+        coerce_n_sub_args(0);
         want_filters_ = (arg[0] == '-') ? true : false;
         break;
       case 'f':
+        coerce_n_sub_args(0);
         overwrite_ = true;
         break;
       case 'h':
@@ -361,12 +371,7 @@ private:
         break;
       case 'n':
       {
-        if (n_sub_args != 1) {
-          throw_bad_sub_args(*iarg,
-                             2,
-                             std::string("expected 1 sub-argument, got ") +
-                             to_string(n_sub_args));
-        }
+        coerce_n_sub_args(1);
         try {
           max_rows_ = std::stoll(*++iarg, &idx);
         }
@@ -379,15 +384,11 @@ private:
         continue;
       }
       case 'o':
-        if (n_sub_args != 1) {
-          throw_bad_sub_args(*iarg,
-                             2,
-                             std::string("expected 1 sub-argument, got ") +
-                             to_string(n_sub_args));
-        }
+        coerce_n_sub_args(1);
         output_ = *(iarg + 1);
         break;
       case 'v':
+        coerce_n_sub_args(0);
         verbosity_ += (arg[0] = '-') ? 1 : -1;
         break;
       default:
