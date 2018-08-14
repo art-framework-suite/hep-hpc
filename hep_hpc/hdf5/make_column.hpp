@@ -164,7 +164,7 @@ setColumnProperties(COL & col,
                      std::end(props),
                      [](PropertyList const & prop) {
                        return prop.is_valid();
-                     }) ||
+                     }) &&
          "setColumnProperties: all properties must be valid.");
   // Exception to throw in case of duplicate property list classes.
   static auto const throwDup =
