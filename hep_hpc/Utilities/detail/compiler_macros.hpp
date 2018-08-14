@@ -5,6 +5,7 @@
 // Define GCC and Clang version tests:
 ////////////////////////////////////////////////////////////////////////
 
+#ifndef GCC_VERSION
 #if defined __GNUC_PATCHLEVEL__
 #define GCC_VERSION                                                            \
   (100000 * __GNUC__ + 1000 * __GNUC_MINOR__ + __GNUC_PATCHLEVEL__)
@@ -19,7 +20,9 @@
 #define GCC_VERSION 0
 
 #endif
+#endif
 
+#ifndef CLANG_VERSION
 #if defined __clang_patchlevel__
 #define CLANG_VERSION                                                          \
   (100000 * __clang_major__ + 1000 * __clang_minor__ + __clang_patchlevel__)
@@ -34,12 +37,17 @@
 #define CLANG_VERSION 0
 
 #endif
+#endif
 
+#ifndef GCC_IS_AT_LEAST
 #define GCC_IS_AT_LEAST(major, minor, patch)                                   \
   (GCC_VERSION >= ((100000 * (major)) + (1000 * (minor)) + (patch)))
+#endif
 
+#ifndef CLANG_IS_AT_LEAST
 #define CLANG_IS_AT_LEAST(major, minor, patch)                                 \
   (CLANG_VERSION >= ((100000 * (major)) + (1000 * (minor)) + (patch)))
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Define macros EXTERN_C_FUNC_DECLARE_START and
@@ -47,22 +55,27 @@
 // functions.
 ////////////////////////////////////////////////////////////////////////
 
+#ifndef EXTERN_C_FUNC_DECLARE_START_DETAIL
 #define EXTERN_C_FUNC_DECLARE_START_DETAIL extern "C" {
 
 #ifdef __clang__
-#define EXTERN_C_FUNC_DECLARE_START                               \
-  _Pragma("clang diagnostic push")                                \
-  _Pragma("clang diagnostic ignored \"-Wreturn-type-c-linkage\"") \
-  EXTERN_C_FUNC_DECLARE_START_DETAIL
-#define EXTERN_C_FUNC_DECLARE_END } _Pragma("clang diagnostic pop")
+#define EXTERN_C_FUNC_DECLARE_START                                            \
+  _Pragma("clang diagnostic push")                                             \
+    _Pragma("clang diagnostic ignored \"-Wreturn-type-c-linkage\"")            \
+      EXTERN_C_FUNC_DECLARE_START_DETAIL
+#define EXTERN_C_FUNC_DECLARE_END                                              \
+  }                                                                            \
+  _Pragma("clang diagnostic pop")
 #else
 #define EXTERN_C_FUNC_DECLARE_START EXTERN_C_FUNC_DECLARE_START_DETAIL
 #define EXTERN_C_FUNC_DECLARE_END }
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////
 // Define FALLTHROUGH macro to allow case fallthrough.
 ////////////////////////////////////////////////////////////////////////
+#ifndef FALLTHROUGH
 #if __cplusplus >= 201703L
 #if __has_cpp_attribute(fallthrough)
 #define FALLTHROUGH [[fallthrough]]
@@ -72,27 +85,31 @@
 #else
 #define FALLTHROUGH while (0)
 #endif
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // Define IGNORE_FALLTHROUGH_START and IGNORE_FALLTHROUGH_END to ignore
 // implicit fallthrough warnings (e.g.) in included headers.
 ////////////////////////////////////////////////////////////////////////
 
-#if GCC_IS_AT_LEAST(7,1,0) || defined(__clang__)
-#define IGNORE_FALLTHROUGH_START                                \
-  _Pragma("GCC diagnostic push")                                \
-  _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
-#define IGNORE_FALLTHROUGH_END                  \
-  _Pragma("GCC diagnostic pop")
+#ifndef IGNORE_FALLTHROUGH_START
+#if GCC_IS_AT_LEAST(7, 1, 0) || defined(__clang__)
+#define IGNORE_FALLTHROUGH_START                                               \
+  _Pragma("GCC diagnostic push")                                               \
+    _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+#define IGNORE_FALLTHROUGH_END _Pragma("GCC diagnostic pop")
 #else
 #define IGNORE_FALLTHROUGH_START
 #define IGNORE_FALLTHROUGH_END
 #endif
+#endif
 
+#ifndef UNUSED_PRIVATE_FIELD
 #ifdef __clang__
 #define UNUSED_PRIVATE_FIELD [[gnu::unused]]
 #else
 #define UNUSED_PRIVATE_FIELD
+#endif
 #endif
 
 #endif /* hep_hpc_Utilities_detail_compiler_macros_hpp */
