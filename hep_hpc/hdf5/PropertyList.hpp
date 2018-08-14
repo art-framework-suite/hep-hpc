@@ -176,7 +176,7 @@ bool
 hep_hpc::hdf5::PropertyList::
 isClass(hid_t const propClassID) const
 {
-  return H5Pequal(ErrorController::call(&H5Pget_class,*h5plist_), propClassID);
+  return (H5Pequal(ErrorController::call(&H5Pget_class,*h5plist_), propClassID) == 1);
 }
 
 inline
