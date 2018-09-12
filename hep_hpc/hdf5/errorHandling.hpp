@@ -104,8 +104,7 @@
 // 
 // * The implementation of the exception-throwing functionality requires
 //   POSIX.1-2008 support, specifically the function
-//   open_memstream(). If missing from the system, it is supplied in the
-//   memstream/ directory of this package.
+//   open_memstream().
 //
 // * The ability to throw an exception upon HDF5 failure does not
 //   utilize the HDF5 error-handling callback system (other than to
@@ -346,11 +345,18 @@ call(std::string msg,
 {
   decltype(h5func(std::forward<Args>(args)...)) result =
     h5func(std::forward<Args>(args)...);
+#ifdef __INTEL_COMPILER
+#pragma warning (push)
+#pragma warning (disable:186)
+#endif
   if (result < 0 &&
       mode_ == ErrorMode::EXCEPTION &&
       !std::uncaught_exception()) {
     detail::throwH5Error(std::move(msg));
   }
+#ifdef __INTEL_COMPILER
+#pragma warning (pop)
+#endif
   return result;
 }
 

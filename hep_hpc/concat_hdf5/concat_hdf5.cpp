@@ -32,8 +32,8 @@
 #endif
 
 #include <cstring>
+#include <fstream>
 #include <iostream>
-#include <regex>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -152,6 +152,21 @@ private:
     next_arg_iter = detail::copy_advance(iarg, 1 + n_sub_args);
   }
 
+  template <typename STRING_COLL>
+  void
+  read_file_list(std::string const & list_file_name,
+                 STRING_COLL & coll)
+  {
+    std::ifstream file_list(list_file_name);
+    std::string read_file_name;
+    while (std::getline(file_list, read_file_name)) {
+      if (read_file_name.empty() || read_file_name.front() == '#') {
+        continue;
+      }
+      coll.push_back(read_file_name);
+    }
+  }
+
   class ProgramOptions {
 public:
     ProgramOptions(int argc, char **argv);
@@ -167,6 +182,7 @@ public:
     bool want_filters() const { return want_filters_; }
     bool force_compression() const { return force_compression_; }
     bool want_collective_writes() const { return want_collective_writes_;}
+    bool want_flush_per_dataset() const { return want_flush_per_dataset_; }
     std::size_t verbosity() const { return verbosity_; }
     std::vector<std::string> const & inputs() const { return inputs_; }
 
@@ -181,6 +197,7 @@ private:
     static bool const DEFAULT_WANT_FILTERS;
     static bool const DEFAULT_FORCE_COMPRESSION;
     static bool const DEFAULT_WANT_COLLECTIVE_WRITES;
+    static bool const DEFAULT_WANT_FLUSH_PER_DATASET;
     static int const DEFAULT_VERBOSITY;
 
     std::string output_ { DEFAULT_FILENAME };
@@ -193,6 +210,7 @@ private:
     bool want_filters_ { DEFAULT_WANT_FILTERS };
     bool force_compression_ { DEFAULT_FORCE_COMPRESSION };
     bool want_collective_writes_ { DEFAULT_WANT_COLLECTIVE_WRITES };
+    bool want_flush_per_dataset_ { DEFAULT_WANT_FLUSH_PER_DATASET };
     int verbosity_ { DEFAULT_VERBOSITY };
     std::vector<std::string> inputs_;
   };
@@ -223,6 +241,7 @@ private:
         ++next_arg_iter;
       }
       auto n_sub_args = std::distance(iarg + 1, next_arg_iter);
+      // Allow adjustment of arg pointers.
       auto coerce_n_sub_args =
         [iarg, &next_arg_iter, &n_sub_args](size_t set_sub_args) {
         coerce_n_sub_args_(set_sub_args, iarg, next_arg_iter);
@@ -235,6 +254,8 @@ private:
           arg = "-C"; // Short option alias.
         } else if (arg == "--no-collective-writes") {
           arg = "+C"; // Short option alias.
+        } else if (arg == "--input-file-list") {
+          arg = "-I"; // Short option alias.
         } else if (arg == "--filename-column") {
           if (n_sub_args != 1 && n_sub_args < 3) {
             throw_bad_sub_args(*iarg,
@@ -360,6 +381,16 @@ private:
         coerce_n_sub_args(0);
         want_filters_ = (arg[0] == '-') ? true : false;
         break;
+      case 'I':
+        coerce_n_sub_args(1);
+        try {
+          read_file_list(*++iarg, inputs_);
+        } catch (std::exception const & e) {
+          throw_bad_argument(arg, *iarg, 2, e.what());
+        } catch (...) {
+          throw_bad_argument(arg, *iarg, 2);
+        }
+        break;
       case 'f':
         coerce_n_sub_args(0);
         overwrite_ = true;
@@ -389,7 +420,7 @@ private:
         break;
       case 'v':
         coerce_n_sub_args(0);
-        verbosity_ += (arg[0] = '-') ? 1 : -1;
+        verbosity_ += (arg[0] == '-') ? 1 : -1;
         break;
       default:
         throw
@@ -444,7 +475,7 @@ private:
   void
   ProgramOptions::usage()
   {
-    std::cerr << R"END(Usage: concat_hdf5 [<OPTIONS>] [--] <input-file>+
+    std::cerr << R"END(Usage: concat_hdf5 [<OPTIONS>] [--] [<input-file>+]
        concat_hdf5 --help|-h|-?
 
 Concatenate tabular HDF5 files, combining compatible datasets into one.
@@ -496,6 +527,22 @@ OPTIONS
 
     * <group-regex> arguments, if specified, are whole-string match
       expressions following the ECMAScript specification.
+
+  -I <list-file>
+  --input-file-list <list-file>
+
+    Obtain the list of input files from <list-file> rather than from the
+    command line. Each line should contain one file name. Empty lines
+    and those starting with # will be skipped. Inline comments are *not*
+    permitted and leading spaces will be considered part of the file
+    name.
+
+  --flush-per-dataset
+
+    Ensure that HDF information is flushed to the file after every
+    dataset is written. This causes a performance penalty and is only
+    useful for clarity while debugging or studying performance
+    bottlenecks.
 
   --force-compression
 
@@ -600,10 +647,9 @@ NOTES
   bool const ProgramOptions::DEFAULT_WANT_FILTERS = true;
   bool const ProgramOptions::DEFAULT_FORCE_COMPRESSION = false;
   bool const ProgramOptions::DEFAULT_WANT_COLLECTIVE_WRITES = true;
+  bool const ProgramOptions::DEFAULT_WANT_FLUSH_PER_DATASET = false;
   int const ProgramOptions::DEFAULT_VERBOSITY = 0;
-
 }
-
 
 
 int main(int argc, char **argv)
@@ -640,6 +686,7 @@ int main(int argc, char **argv)
                    program_options.want_filters(),
                    program_options.force_compression(),
                    program_options.want_collective_writes(),
+                   program_options.want_flush_per_dataset(),
                    program_options.verbosity());
     status = concatenator.concatFiles(program_options.inputs());
   }

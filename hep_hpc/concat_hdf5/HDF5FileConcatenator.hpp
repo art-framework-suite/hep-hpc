@@ -34,6 +34,7 @@ public:
                        bool want_filters,
                        bool force_compression,
                        bool want_collective_writes,
+                       bool want_flush_per_dataset,
                        int verbosity);
 
   int concatFiles(std::vector<std::string> const & inputs);
@@ -60,6 +61,7 @@ private:
   UNUSED_PRIVATE_FIELD
 #endif
   ;
+  bool want_flush_per_dataset_;
   FilenameColumnInfo filename_column_info_;
   std::vector<std::string> filename_column_data_;
   std::vector<std::regex> only_groups_;

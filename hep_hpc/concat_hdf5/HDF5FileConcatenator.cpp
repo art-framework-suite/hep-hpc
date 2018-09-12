@@ -562,12 +562,14 @@ HDF5FileConcatenator(std::string const & output,
                      bool const want_filters,
                      bool const force_compression,
                      bool const want_collective_writes,
+                     bool const want_flush_per_dataset,
                      int const in_verbosity)
   : max_rows_(max_rows)
   , mem_max_bytes_(mem_max_bytes)
   , want_filters_(want_filters)
   , force_compression_(force_compression)
   , want_collective_writes_(want_collective_writes)
+  , want_flush_per_dataset_(want_flush_per_dataset)
   , filename_column_info_(std::move(filename_column_info))
   , only_groups_(only_groups)
   , buffer_(mem_max_bytes_)
@@ -897,8 +899,10 @@ handle_dataset_(Dataset in_ds, std::string const ds_name)
                out_ds_info.n_rows_written_total);
   }
 
-  // Flush all buffers to the output file.
-  h5out_.flush();
+  if (want_flush_per_dataset_) {
+    // Flush all buffers to the output file.
+    h5out_.flush();
+  }
 
   // Done.
   return status;

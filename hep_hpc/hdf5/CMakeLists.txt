@@ -28,11 +28,14 @@ set (headers
 
 add_library(hep_hpc_hdf5 SHARED ${source_files})
 
-target_link_libraries(hep_hpc_hdf5
+set(HEP_HPC_HDF5_LIBRARIES
   hep_hpc_Utilities
-  memstream
   ${HDF5_C_LIBRARIES}
   )
+if (NOT HAS_OPEN_MEMSTREAM)
+  list(APPEND HEP_HPC_HDF5_LIBRARIES memstream)
+endif()
+target_link_libraries(hep_hpc_hdf5 ${HEP_HPC_HDF5_LIBRARIES})
 
 install(TARGETS hep_hpc_hdf5
   LIBRARY DESTINATION "lib"

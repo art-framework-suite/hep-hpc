@@ -2,7 +2,9 @@
 #include "hep_hpc/Utilities/SimpleRAII.hpp"
 #include "hep_hpc/hdf5/errorHandling.hpp"
 
+#if _POSIX_C_SOURCE < 200809L
 #include "memstream/memstream.h"
+#endif
 
 #include "hdf5.h"
 

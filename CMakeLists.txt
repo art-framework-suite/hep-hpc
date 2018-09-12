@@ -39,6 +39,10 @@ set(CMAKE_C_FLAGS_RELEASE "-O3 ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 ${CMAKE_CXX_FLAGS}")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -g -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
+include(CheckSymbolExists)
+set(CMAKE_REQUIRED_DEFINITIONS "-D_POSIX_C_SOURCE=200809L")
+check_symbol_exists(open_memstream stdio.h HAS_OPEN_MEMSTREAM)
+unset(CMAKE_REQUIRED_DEFINITIONS)
 
 # Set include base directory.
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -80,7 +84,11 @@ set_config_variables(${CMAKE_PROJECT_NAME} ${HEP_HPC_VERSION})
 include (CTest)
 
 # Subdirectories.
-add_subdirectory(memstream)
+if (HAS_OPEN_MEMSTREAM)
+  add_definitions("-D_POSIX_C_SOURCE=200809L")
+else()
+  add_subdirectory(memstream)
+endif()
 add_subdirectory(hep_hpc)
 add_subdirectory(gtest EXCLUDE_FROM_ALL)
 add_subdirectory(test)
