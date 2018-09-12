@@ -107,7 +107,7 @@ Use your OS' package manager wherever possible.
     cmake -DCMAKE_BUILD_TYPE=<Debug|Release|RelWithDebInfo> \
     -DCMAKE_INSTALL_PREFIX=<install-area> \
     [-DCMAKE_CXX_STANDARD=<11|14|17>] \
-    [-DWANT_MPI=TRUE] \
+    [-DWANT_MPI=TRUE [-DMPIEXEC_PREFLAGS=...]] \
     [-DWANT_UPS=TRUE] \
     [-DWANT_H5PY=TRUE] \
     <path-to-repository-top-dir>
@@ -118,11 +118,13 @@ Use your OS' package manager wherever possible.
     `WANT_MPI` appropriately to activate MPI, if it is available and
     desired. Note that your own code may still use MPI even if
     `WANT_MPI` is not set, but the (as yet, very basic) MPI facilities
-    of this package will not be available. Define `WANT_UPS` if you wish
-    to build a UPS-capable package. Defining `WANT_H5PY` turns on the
-    testing of the `concat-h5py` utility (assuming the `h5py` Python
-    package is available and compatible with the current compiler,
-    etc.).
+    of this package will not be available. If the executable for running
+    MPI jobs on your system is "srun," then MPI tests will be disabled
+    unless you defined MPIEXEC_PREFLAGS (e.g. to set the hardware type,
+    time limits, etc.). Define `WANT_UPS` if you wish to build a
+    UPS-capable package. Defining `WANT_H5PY` turns on the testing of
+    the `concat-h5py` utility (assuming the `h5py` Python package is
+    available and compatible with the current compiler, etc.).
     
 1. Build the code:   
     ```

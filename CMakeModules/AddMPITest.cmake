@@ -9,8 +9,8 @@
 #
 # NP <#>
 #
-#   Specify the number of processors to use. Defaults to NCORES if not
-#   specified.
+#   Specify the number of processors to use. Defaults to
+#   MPIEXEC_MAX_NUMPROCS if not specified.
 #
 # WRAP_COMMAND <wrapper-cmd-and-args>
 #
@@ -31,22 +31,6 @@
 ########################################################################
 include (CMakeParseArguments)
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  execute_process(COMMAND sysctl -n hw.ncpu
-    OUTPUT_VARIABLE NCORES
-    )
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  execute_process(COMMAND cat /proc/cpuinfo
-    COMMAND grep -c -e ^processor
-    OUTPUT_VARIABLE NCORES
-    ERROR_QUIET
-    )
-endif()
-
-if (NOT NCORES)
-  message(FATAL_ERROR "Unable to ascertain number of cores on this system.")
-endif()
-
 function (add_mpi_test TARGET_STEM)
   if (NOT MPI_FOUND)
     message(FATAL_ERROR "add_mpi_test requires that find_package(MPI) has been executed successfully on this system.")
@@ -54,7 +38,7 @@ function (add_mpi_test TARGET_STEM)
 
   cmake_parse_arguments(amt "VALGRIND" "NP" "WRAP_COMMAND;COMMAND" ${ARGN})
   if (NOT amt_NP)
-    set(amt_NP ${NCORES})
+    set(amt_NP ${MPIEXEC_MAX_NUMPROCS})
   endif()
   if (NOT amt_COMMAND)
     set (amt_COMMAND ${amt_UNPARSED_ARGUMENTS})
