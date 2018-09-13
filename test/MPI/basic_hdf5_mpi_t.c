@@ -51,13 +51,18 @@ int main(void) {
   /* Create the data space with unlimited dimensions. */
   hid_t dataspace = H5Screate_simple(DATARANK, dims, maxdims);
 
+  hid_t const fprop = H5Pcreate(H5P_FILE_ACCESS);
+
+  herr_t status __attribute__((unused)) =
+    H5Pset_fapl_mpio(fprop, MPI_COMM_WORLD, MPI_INFO_NULL);
+
   /* Create a new file. If file exists its contents will be overwritten. */
-  hid_t file = H5Fcreate(FILENAME, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  hid_t file = H5Fcreate(FILENAME, H5F_ACC_TRUNC, H5P_DEFAULT, fprop);
 
   /* Modify dataset creation properties, i.e. enable chunking  */
   hid_t prop = H5Pcreate(H5P_DATASET_CREATE);
   hsize_t chunk_dims[2] = {2, 5};
-  herr_t status __attribute__((unused)) = H5Pset_chunk(prop, DATARANK, chunk_dims);
+  status = H5Pset_chunk(prop, DATARANK, chunk_dims);
 
   /* Create a new dataset within the file using chunk
      creation properties.  */
