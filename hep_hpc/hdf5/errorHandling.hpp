@@ -351,7 +351,12 @@ call(std::string msg,
 #endif
   if (result < 0 &&
       mode_ == ErrorMode::EXCEPTION &&
-      !std::uncaught_exception()) {
+#if __cplusplus < 201703L
+      !std::uncaught_exception()
+#else
+      std::uncaught_exceptions() == 0
+#endif
+     ) {
     detail::throwH5Error(std::move(msg));
   }
 #ifdef __INTEL_COMPILER
