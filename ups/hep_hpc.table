@@ -255,6 +255,42 @@ Qualifiers=c5:prof
   Action = ExtraSetup
     setupRequired(hdf5 v1_10_3 -q+c5)
 
+Flavor=ANY
+Qualifiers=c7:mpich:prof
+
+  Action=DefineFQ
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mpich-prof)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_10_3 -q+c7:+mpich:+prof)
+
+Flavor=ANY
+Qualifiers=c7:mpich:debug
+
+  Action=DefineFQ
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mpich-debug)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_10_3 -q+c7:+mpich:+debug)
+
+Flavor=ANY
+Qualifiers=c7:mvapich2:prof
+
+  Action=DefineFQ
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mvapich2-prof)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_10_3 -q+c7:+mvapich2:+prof)
+
+Flavor=ANY
+Qualifiers=c7:prof
+
+  Action=DefineFQ
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-prof)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_10_3 -q+c7)
+
 Common:
   Action = setup
     setupEnv()
