@@ -183,6 +183,7 @@ public:
     bool force_compression() const { return force_compression_; }
     bool want_collective_writes() const { return want_collective_writes_;}
     bool want_flush_per_dataset() const { return want_flush_per_dataset_; }
+    bool want_mpi_io() const { return want_mpi_io_; }
     std::size_t verbosity() const { return verbosity_; }
     std::vector<std::string> const & inputs() const { return inputs_; }
 
@@ -198,6 +199,7 @@ private:
     static bool const DEFAULT_FORCE_COMPRESSION;
     static bool const DEFAULT_WANT_COLLECTIVE_WRITES;
     static bool const DEFAULT_WANT_FLUSH_PER_DATASET;
+    static bool const DEFAULT_WANT_MPI_IO;
     static int const DEFAULT_VERBOSITY;
 
     std::string output_ { DEFAULT_FILENAME };
@@ -211,6 +213,7 @@ private:
     bool force_compression_ { DEFAULT_FORCE_COMPRESSION };
     bool want_collective_writes_ { DEFAULT_WANT_COLLECTIVE_WRITES };
     bool want_flush_per_dataset_ { DEFAULT_WANT_FLUSH_PER_DATASET };
+    bool want_mpi_io_ { DEFAULT_WANT_MPI_IO };
     int verbosity_ { DEFAULT_VERBOSITY };
     std::vector<std::string> inputs_;
   };
@@ -321,6 +324,10 @@ private:
           if (idx != iarg->size()) {
             throw_bad_argument(arg, *iarg, 2);
           }
+          continue;
+        } else if (arg == "--mpi-io") {
+          coerce_n_sub_args(0);
+          want_mpi_io_ = true;
           continue;
         } else if (arg == "--only-groups") {
           if (n_sub_args == 0) {
@@ -436,12 +443,17 @@ private:
     }
 
     if (want_collective_writes_) {
+#if ! (H5_VERS_MAJOR > 1 ||                                             \
+       (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 10) ||                    \
+       (H5_VERS_MAJOR == 1 && H5_VERS_MINOR == 10 && H5_VERS_RELEASE >= 3))
       if (n_ranks == 1) {
-        std::cerr << "WARNING: Collective writes require > 1 MPI processes.\n";
+        std::cerr << "WARNING: Collective writes require > 1 MPI processes for HDF5 version "
+                  << H5_VER_INFO << ".\n";
         want_collective_writes_ = false;
       }
-#if ! (H5_VERS_MAJOR > 1 || \
-       (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 10) || \
+#endif
+#if ! (H5_VERS_MAJOR > 1 ||                                             \
+       (H5_VERS_MAJOR == 1 && H5_VERS_MINOR > 10) ||                    \
        (H5_VERS_MAJOR == 1 && H5_VERS_MINOR == 10 && H5_VERS_RELEASE >= 2))
       else if (want_filters_) {
         if (my_rank == 0) {
@@ -453,7 +465,7 @@ private:
         want_filters_ = false;
       }
 #endif
-    } else if (want_filters_ && n_ranks > 1) {
+    } else if (want_filters_ && (n_ranks > 1 || want_mpi_io_)) {
       if (my_rank == 0) {
         std::cerr << "WARNING: Output filters require collective writes under MPI I/O.\n"
                   << "         Deactivating output filters.\n";
@@ -542,7 +554,9 @@ OPTIONS
     Ensure that HDF information is flushed to the file after every
     dataset is written. This causes a performance penalty and is only
     useful for clarity while debugging or studying performance
-    bottlenecks.
+    bottlenecks (default )END"
+              << std::boolalpha << DEFAULT_WANT_FLUSH_PER_DATASET
+              << R"END().
 
   --force-compression
 
@@ -574,6 +588,11 @@ OPTIONS
 
     The maximum memory available for the I/O buffer, in B (default )END"
               << DEFAULT_MEM_MAX * 1024 * 1024 << R"END( B).
+
+  --mpi-io
+
+    Select MPI I/O even in the case when nranks == 1 (default )END"
+              << std::boolalpha << DEFAULT_WANT_MPI_IO << R"END().
 
   --only-groups <regex>+
 
@@ -636,6 +655,13 @@ NOTES
   I/O with MPI. With older HDF5 (<=1.10), either deactivate MPI or
   deactivate filters.
 
+* Ordinarily, parallel MPI I/O is only selected if nranks > 1 because we
+  are incapable in the general case of detecting the difference between
+  invoking the program in a non-MPI environment and invoking it in an
+  MPI environment with nranks == 1. On some HPC filesystems it is
+  necessary to use MPI I/O even if nranks == 1: in this case, use the
+  --mpi-io option. Note that for older versions of HDF5 this may be
+  incompatible with filter use in the output.
 )END";
   }
 
@@ -648,6 +674,7 @@ NOTES
   bool const ProgramOptions::DEFAULT_FORCE_COMPRESSION = false;
   bool const ProgramOptions::DEFAULT_WANT_COLLECTIVE_WRITES = true;
   bool const ProgramOptions::DEFAULT_WANT_FLUSH_PER_DATASET = false;
+  bool const ProgramOptions::DEFAULT_WANT_MPI_IO = false;
   int const ProgramOptions::DEFAULT_VERBOSITY = 0;
 }
 
@@ -687,6 +714,7 @@ int main(int argc, char **argv)
                    program_options.force_compression(),
                    program_options.want_collective_writes(),
                    program_options.want_flush_per_dataset(),
+                   program_options.want_mpi_io(),
                    program_options.verbosity());
     status = concatenator.concatFiles(program_options.inputs());
   }

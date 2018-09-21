@@ -36,3 +36,4 @@ add_executable(concat_hdf5 concat_hdf5.cpp)
 target_link_libraries(concat_hdf5 hep_hpc_concat_hdf5)
 
 install(TARGETS concat_hdf5 DESTINATION "bin")
+install(PROGRAMS concat-hdf5.py DESTINATION "bin")

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.4.0 FATAL_ERROR)
 
 project(hep_hpc LANGUAGES C CXX)
 
-set(HEP_HPC_VERSION 0.09.01)
+set(HEP_HPC_VERSION 0.10.00)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules
@@ -97,7 +97,6 @@ endif()
 add_subdirectory(hep_hpc)
 add_subdirectory(gtest EXCLUDE_FROM_ALL)
 add_subdirectory(test)
-add_subdirectory(tools)
 add_subdirectory(ups)
 
 install(FILES LICENSE README.md

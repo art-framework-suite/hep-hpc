@@ -35,6 +35,7 @@ public:
                        bool force_compression,
                        bool want_collective_writes,
                        bool want_flush_per_dataset,
+                       bool want_mpi_io,
                        int verbosity);
 
   int concatFiles(std::vector<std::string> const & inputs);
@@ -62,6 +63,7 @@ private:
 #endif
   ;
   bool want_flush_per_dataset_;
+  bool want_mpi_io_;
   FilenameColumnInfo filename_column_info_;
   std::vector<std::string> filename_column_data_;
   std::vector<std::regex> only_groups_;

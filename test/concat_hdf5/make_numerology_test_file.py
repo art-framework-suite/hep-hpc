@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Create simple HDF5 file(s) with specified number(s) of rows in a simple dataset for the purpose of checking the numerology of file concatenation."""
 
+from __future__ import print_function
 import h5py
 import argparse
 import numpy as np
@@ -49,6 +50,6 @@ if __name__ == "__main__":
                                                       endpoint=False,
                                                       dtype=np.int32))
 
-        print output_file_name
+        print(output_file_name)
 
         starting_value += nrows

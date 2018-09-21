@@ -72,11 +72,11 @@ namespace {
 
   // Set independent or collective access on the file.
   PropertyList
-  maybe_collective_access()
+  maybe_collective_access(bool const force_collective = false)
   {
     PropertyList file_access_properties(H5P_FILE_ACCESS);
 #ifdef HEP_HPC_USE_MPI
-    if (n_ranks > 1) {
+    if (n_ranks > 1 || force_collective) {
       report(1, "Setting access properties to use MPI I/O.");
       (void) ErrorController::call(&H5Pset_fapl_mpio,
                                    file_access_properties,
@@ -108,8 +108,9 @@ namespace {
 
   // Open the output file.
   File
-  open_output_file(std::string file_name,
-                   unsigned int file_mode)
+  open_output_file(std::string const file_name,
+                   unsigned int file_mode,
+                   bool const want_mpi_io)
   {
     // We want a slightly different semantic for "append" (H5F_ACC_RDWR)
     // than that provided by HDF5: if it exists, open it read/write; if it
@@ -117,7 +118,10 @@ namespace {
     if (file_mode == H5F_ACC_RDWR &&  ! file_exists(file_name)) {
       file_mode = H5F_ACC_EXCL;
     }
-    File output_file(file_name, file_mode, {}, maybe_collective_access());
+    File output_file(file_name,
+                     file_mode,
+                     {},
+                     maybe_collective_access(want_mpi_io));
     return output_file;
   }
 
@@ -563,6 +567,7 @@ HDF5FileConcatenator(std::string const & output,
                      bool const force_compression,
                      bool const want_collective_writes,
                      bool const want_flush_per_dataset,
+                     bool const want_mpi_io,
                      int const in_verbosity)
   : max_rows_(max_rows)
   , mem_max_bytes_(mem_max_bytes)
@@ -570,6 +575,7 @@ HDF5FileConcatenator(std::string const & output,
   , force_compression_(force_compression)
   , want_collective_writes_(want_collective_writes)
   , want_flush_per_dataset_(want_flush_per_dataset)
+  , want_mpi_io_(want_mpi_io)
   , filename_column_info_(std::move(filename_column_info))
   , only_groups_(only_groups)
   , buffer_(mem_max_bytes_)
@@ -587,7 +593,7 @@ HDF5FileConcatenator(std::string const & output,
   my_rank = 0;
 #endif
   // Must wait until n_ranks & my_rank are initialized.
-  h5out_ = open_output_file(output, file_mode);
+  h5out_ = open_output_file(output, file_mode, want_mpi_io_);
 }
 
 int
@@ -613,7 +619,10 @@ concatFiles(std::vector<std::string> const & inputs)
   for (auto const & input_file_name : inputs) {
     // 1. Open input file
     report(2, std::string("Attempting to open input file ") + input_file_name);
-    File input_file(input_file_name, H5F_ACC_RDONLY, {}, maybe_collective_access());
+    File input_file(input_file_name,
+                    H5F_ACC_RDONLY,
+                    {},
+                    maybe_collective_access(want_mpi_io_));
 
     // 2. Discover and iterate over items.
     report(0, std::string("Processing input file ") + input_file_name);
