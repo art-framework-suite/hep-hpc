@@ -72,7 +72,7 @@ namespace {
 
   // Set independent or collective access on the file.
   PropertyList
-  maybe_collective_access(bool const force_collective = false)
+  maybe_collective_access(bool const force_collective [[gnu::unused]] = false)
   {
     PropertyList file_access_properties(H5P_FILE_ACCESS);
 #ifdef HEP_HPC_USE_MPI
