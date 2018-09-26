@@ -176,7 +176,9 @@ public:
     bool overwrite() const { return overwrite_; }
     long long max_rows() const { return max_rows_; }
     std::size_t mem_max_bytes() const { return mem_max_bytes_; }
+#if 0 /* Currently unused */
     FilenameColumnInfo const & filename_column_info() const { return filename_column_info_; }
+#endif
     FilenameColumnInfo & filename_column_info() { return filename_column_info_; }
     std::vector<std::regex> const & only_groups() const { return only_groups_; }
     bool want_filters() const { return want_filters_; }
