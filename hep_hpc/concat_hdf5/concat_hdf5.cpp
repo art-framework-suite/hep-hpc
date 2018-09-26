@@ -448,7 +448,7 @@ private:
        (H5_VERS_MAJOR == 1 && H5_VERS_MINOR == 10 && H5_VERS_RELEASE >= 3))
       if (n_ranks == 1) {
         std::cerr << "WARNING: Collective writes require > 1 MPI processes for HDF5 version "
-                  << H5_VER_INFO << ".\n";
+                  << H5_VERS_INFO << ".\n";
         want_collective_writes_ = false;
       }
 #endif
