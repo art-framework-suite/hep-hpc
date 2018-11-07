@@ -9,16 +9,12 @@
 #if defined __GNUC_PATCHLEVEL__
 #define GCC_VERSION                                                            \
   (100000 * __GNUC__ + 1000 * __GNUC_MINOR__ + __GNUC_PATCHLEVEL__)
-
 #elif defined __GNUC_MINOR__
 #define GCC_VERSION (10000 * __GNUC__ + 1000 * __GNUC_MINOR__)
-
 #elif defined __GNUC__
 #define GCC_VERSION (10000 * __GNUC__)
-
 #else
 #define GCC_VERSION 0
-
 #endif
 #endif
 
@@ -26,27 +22,40 @@
 #if defined __clang_patchlevel__
 #define CLANG_VERSION                                                          \
   (100000 * __clang_major__ + 1000 * __clang_minor__ + __clang_patchlevel__)
-
 #elif defined __clang_minor__
 #define CLANG_VERSION (10000 * __clang_major__ + 1000 * __clang_minor__)
-
 #elif defined __clang_major__
 #define CLANG_VERSION (10000 * __clang_major__)
-
 #else
 #define CLANG_VERSION 0
-
 #endif
 #endif
 
 #ifndef GCC_IS_AT_LEAST
-#define GCC_IS_AT_LEAST(major, minor, patch)                                   \
-  (GCC_VERSION >= ((100000 * (major)) + (1000 * (minor)) + (patch)))
+#ifndef __clang__
+#define GCC_IS_AT_LEAST(major, minor, patch)                        \
+  GCC_VERSION >= ((100000 * (major)) + (1000 * (minor)) + (patch))
+#else
+#define GCC_IS_AT_LEAST(major, minor, patch) 0
+#endif
 #endif
 
+#ifdef __apple_build_version__
+#ifndef APPLE_CLANG_IS_AT_LEAST
+#define APPLE_CLANG_IS_AT_LEAST(major, minor, patch)                  \
+  CLANG_VERSION >= ((100000 * (major)) + (1000 * (minor)) + (patch))
+#endif
 #ifndef CLANG_IS_AT_LEAST
-#define CLANG_IS_AT_LEAST(major, minor, patch)                                 \
-  (CLANG_VERSION >= ((100000 * (major)) + (1000 * (minor)) + (patch)))
+#define CLANG_IS_AT_LEAST(major, minor, patch) 0
+#endif
+#else
+#ifndef CLANG_IS_AT_LEAST
+#define CLANG_IS_AT_LEAST(major, minor, patch)                        \
+  CLANG_VERSION >= ((100000 * (major)) + (1000 * (minor)) + (patch))
+#endif
+#ifndef APPLE_CLANG_IS_AT_LEAST
+#define APPLE_CLANG_IS_AT_LEAST(major, minor, patch) 0
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////
@@ -75,6 +84,7 @@
 ////////////////////////////////////////////////////////////////////////
 // Define FALLTHROUGH macro to allow case fallthrough.
 ////////////////////////////////////////////////////////////////////////
+
 #ifndef FALLTHROUGH
 #if __cplusplus >= 201703L
 #if __has_cpp_attribute(fallthrough)
@@ -93,10 +103,10 @@
 ////////////////////////////////////////////////////////////////////////
 
 #ifndef IGNORE_FALLTHROUGH_START
-#if GCC_IS_AT_LEAST(7, 1, 0) || defined(__clang__)
-#define IGNORE_FALLTHROUGH_START                                               \
-  _Pragma("GCC diagnostic push")                                               \
-    _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+#if defined(__clang__) || GCC_IS_AT_LEAST(7, 1, 0)
+#define IGNORE_FALLTHROUGH_START                                        \
+  _Pragma("GCC diagnostic push")                                        \
+  _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
 #define IGNORE_FALLTHROUGH_END _Pragma("GCC diagnostic pop")
 #else
 #define IGNORE_FALLTHROUGH_START
@@ -104,9 +114,18 @@
 #endif
 #endif
 
+////////////////////////////////////////////////////////////////////////
+// Define UNUSED_PRIVATE_FIELD to label a private unused class data
+// member.
+////////////////////////////////////////////////////////////////////////
+
 #ifndef UNUSED_PRIVATE_FIELD
 #ifdef __clang__
+#if __has_cpp_attribute(maybe_unused)
+#define UNUSED_PRIVATE_FIELD [[maybe_unused]]
+#else
 #define UNUSED_PRIVATE_FIELD [[gnu::unused]]
+#endif
 #else
 #define UNUSED_PRIVATE_FIELD
 #endif
