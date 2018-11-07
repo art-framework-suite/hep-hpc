@@ -53,7 +53,7 @@ target_link_libraries(Column_t hep_hpc_hdf5)
 
 ####################################
 # Ntuple tests.
-foreach (nt 1 2 3 4 5)
+foreach (nt 1 2 3 4 5 6)
   add_executable(Ntuple_0${nt}_t Ntuple_0${nt}_t.cpp)
   target_link_libraries(Ntuple_0${nt}_t hep_hpc_hdf5)
   add_test(NAME Ntuple_0${nt}_t
