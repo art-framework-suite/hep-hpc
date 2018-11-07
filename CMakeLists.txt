@@ -60,7 +60,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory ${EXECUTABLE_OUTPUT_P
 
 # MPI
 if (WANT_MPI)
-  find_package(MPI REQUIRED)
+  find_package(MPI REQUIRED COMPONENTS C)
   if (MPI_FOUND)
     include_directories(${MPI_C_INCLUDE_PATH})
     set (HEP_HPC_USE_MPI TRUE)
