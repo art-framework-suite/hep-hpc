@@ -53,32 +53,19 @@ target_link_libraries(Column_t hep_hpc_hdf5)
 
 ####################################
 # Ntuple tests.
-add_executable(Ntuple_01_t Ntuple_01_t.cpp)
-add_test(NAME Ntuple_01_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_01_t)
-target_link_libraries(Ntuple_01_t hep_hpc_hdf5)
-
-add_executable(Ntuple_02_t Ntuple_02_t.cpp)
-add_test(NAME Ntuple_02_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_02_t)
-target_link_libraries(Ntuple_02_t hep_hpc_hdf5)
-
-add_executable(Ntuple_03_t Ntuple_03_t.cpp)
-add_test(NAME Ntuple_03_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_03_t)
-target_link_libraries(Ntuple_03_t hep_hpc_hdf5)
-
-add_executable(Ntuple_04_t Ntuple_04_t.cpp)
-add_test(NAME Ntuple_04_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_04_t)
-target_link_libraries(Ntuple_04_t hep_hpc_hdf5)
-
-add_executable(Ntuple_t Ntuple_t.cpp)
-add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)
-target_link_libraries(Ntuple_t hep_hpc_hdf5)
-
+foreach (nt 1 2 3 4 5)
+  add_executable(Ntuple_0${nt}_t Ntuple_0${nt}_t.cpp)
+  target_link_libraries(Ntuple_0${nt}_t hep_hpc_hdf5)
+  add_test(NAME Ntuple_0${nt}_t
+    COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_0${nt}_t)
+endforeach()
 ####################################
 
-install(TARGETS Ntuple_t
-  RUNTIME DESTINATION "example"
-  )
-
-install(FILES Ntuple_t.cpp
-  DESTINATION "example"
-)
+####################################
+# Ntuple examples.
+add_executable(Ntuple_t Ntuple_t.cpp)
+target_link_libraries(Ntuple_t hep_hpc_hdf5)
+add_test(NAME Ntuple_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Ntuple_t)
+install(TARGETS Ntuple_t RUNTIME DESTINATION "example")
+install(FILES Ntuple_t.cpp DESTINATION "example")
+####################################

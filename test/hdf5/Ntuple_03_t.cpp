@@ -9,12 +9,18 @@ using namespace hep_hpc::hdf5;
 int main()
 {
   ErrorController::setErrorHandler(ErrorMode::EXCEPTION);
-  auto data = make_ntuple({"test-ntuple_03.hdf5", "g1"},
-                          make_column<int>("A", 2),
-                          make_scalar_column<double>("B"));
-  int i1data[] = { 1, 1, 2, 2, 3, 3, 5, 5, 7, 7, 11, 11, 13, 13, 17, 17, 23, 23 };
-  double d1data[] = { 1.01, 2.02, 3.03, 5.05, 7.07, 11.11, 13.13, 19.17, 23.23 };
-  for (auto i = 0; i < 9; ++i) {
-    data.insert(&i1data[i*2], d1data[i]);
+  auto data =
+    make_ntuple({"test-ntuple_03.hdf5", "g1"},
+                make_column<int, 2>("A", {2, 3}),
+                make_scalar_column<double>("B",
+                  {PropertyList{H5P_DATASET_CREATE}
+                    (&H5Pset_shuffle)
+                    (&H5Pset_deflate, 7u)}));
+  int i1data[] = {  1,  2,  3,  4,  5,  6,
+                    7,  8,  9, 10, 11, 12,
+                   13, 14, 15, 16, 17, 18};
+  double d1data[] = { 1.01, 2.02, 3.03 };
+  for (auto i = 0; i < 3; ++i) {
+    data.insert(&i1data[i*6], d1data[i]);
   }
 }
