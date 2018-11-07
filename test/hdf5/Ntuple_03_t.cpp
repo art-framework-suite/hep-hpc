@@ -12,9 +12,9 @@ int main()
   auto data = make_ntuple({"test-ntuple_03.hdf5", "g1"},
                           make_column<int>("A", 2),
                           make_scalar_column<double>("B"));
-  int i1data[] = { 1, 2, 3, 5, 7, 11, 13, 17, 23};
+  int i1data[] = { 1, 1, 2, 2, 3, 3, 5, 5, 7, 7, 11, 11, 13, 13, 17, 17, 23, 23 };
   double d1data[] = { 1.01, 2.02, 3.03, 5.05, 7.07, 11.11, 13.13, 19.17, 23.23 };
   for (auto i = 0; i < 9; ++i) {
-    data.insert(i1data[i], d1data[i]);
+    data.insert(&i1data[i*2], d1data[i]);
   }
 }
