@@ -47,8 +47,16 @@ add_test(NAME Dataset_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Dataset_t)
 ####################################
 # Column test.
 add_executable(Column_t Column_t.cpp)
-add_test(NAME Column_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Column_t)
 target_link_libraries(Column_t hep_hpc_hdf5)
+add_test(NAME Column_t COMMAND ${EXECUTABLE_OUTPUT_PATH}/Column_t)
+####################################
+
+####################################
+# Attribute writing test.
+add_executable(write_attribute_t write_attribute_t.cpp)
+target_link_libraries(write_attribute_t hep_hpc_hdf5 gtest)
+add_test(NAME write_attribute_t
+  COMMAND ${EXECUTABLE_OUTPUT_PATH}/write_attribute_t)
 ####################################
 
 ####################################

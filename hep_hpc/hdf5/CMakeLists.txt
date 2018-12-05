@@ -5,6 +5,7 @@ set (source_files
   Ntuple.cpp
   PropertyList.cpp
   errorHandling.cpp
+  write_attribute.cpp
   detail/NtupleDataStructure.cpp
   )
 
@@ -24,6 +25,7 @@ set (headers
   errorHandling.hpp
   make_column.hpp
   make_ntuple.hpp
+  write_attribute.hpp
   )
 
 add_library(hep_hpc_hdf5 SHARED ${source_files})
