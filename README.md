@@ -171,4 +171,6 @@ Please fork the repository and send pull requests.
 
 ## Who do I talk to? ##
 
-Send all queries to paterno at fnal dot gov.
+If you believe you have found a bug, or wish to ask a question,
+please use the issue tracker for this repository.
+
