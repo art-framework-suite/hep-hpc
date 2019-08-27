@@ -3,9 +3,6 @@
 This code was produced as part of a Fermilab LDRD project studying the
 use of HDF5 for HEP event data.
 
-See the
-[original project wiki](https://bitbucket.org/mpaterno/hdffilestructurestudy/wiki).
-
 ## What is this repository for? ##
 
 This repository includes utilities for resource and error management of
