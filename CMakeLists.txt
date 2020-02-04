@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.4.0 FATAL_ERROR)
 
 project(hep_hpc LANGUAGES C CXX)
 
-set(HEP_HPC_VERSION 0.11.00)
+set(HEP_HPC_VERSION 0.12.00)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules
@@ -18,7 +18,7 @@ enable_testing()
 
 # Set language standard for the C and CXX compilers.
 if (NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -70,16 +70,6 @@ endif()
 # HDF5
 find_package(HDF5 REQUIRED COMPONENTS C)
 include_directories(${HDF5_INCLUDE_DIRS})
-
-# BOOST (C++11 only, not needed for C++ >11)
-if (CMAKE_CXX_STANDARD EQUAL 11)
-  set(BOOST_INCLUDEDIR $ENV{BOOST_INC})
-  set(BOOST_LIBRARYDIR $ENV{BOOST_LIB})
-  find_package(Boost REQUIRED)
-  message(STATUS "Found Boost version ${Boost_VERSION} headers at ${Boost_INCLUDE_DIRS}, libraries at ${Boost_LIBRARY_DIRS}.")
-  set(HEP_HPC_USE_BOOST_INDEX_SEQUENCE TRUE)
-  include_directories(${Boost_INCLUDE_DIRS})
-endif()
 
 # Configuration variables.
 include(SetConfigVariables)

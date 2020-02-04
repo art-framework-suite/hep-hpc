@@ -14,10 +14,7 @@ data in HDF5 files with row-wise fill semantics and column-wise read.
 * Linux (tested on RHEL6/7-related, should work on Ubuntu 16.04) or Mac
   (tested on Sierra).
 * CMake.
-* A modern C++ compiler (C++17 supported, C++14-compliant preferred,
-  C++11 compliance required). If you require C++11 compatibility rather
-  than C++14 or better, Boost is required to provide facilities that
-  would otherwise be provided by the standard library.
+* C++17.
 * A modern HDF5 distribution (1.10.0+).
 * Optionally, MPI distribution (tested with MPICH, likely to be
   problematic with OpenMPI).
@@ -103,7 +100,7 @@ Use your OS' package manager wherever possible.
     CC=<c-compiler> CXX=<c++-compiler> FC=<Fortran-compiler> \
     cmake -DCMAKE_BUILD_TYPE=<Debug|Release|RelWithDebInfo> \
     -DCMAKE_INSTALL_PREFIX=<install-area> \
-    [-DCMAKE_CXX_STANDARD=<11|14|17>] \
+    [-DCMAKE_CXX_STANDARD=17] \
     [-DWANT_MPI=TRUE [-DMPIEXEC_PREFLAGS=...]] \
     [-DWANT_UPS=TRUE] \
     [-DWANT_H5PY=TRUE] \
@@ -147,9 +144,7 @@ N.B. If you wish to update gtest with respect to Google, use a modern git to do 
 
 You will need to instruct your build system to use the headers as
 installed and find the libraries. You should also configure your build
-system to find the HDF5 and/or MPI libraries, if necessary. Finally, if
-you compiled for C++11 compatibility, you should ensure your build
-system can find the Boost headers.
+system to find the HDF5 and/or MPI libraries, if necessary.
 
 The main user-facing classes are `Ntuple` and `Column` -- see the
 documentation in each header for details, and `test/hdf5/Ntuple_t.cpp`
@@ -170,4 +165,3 @@ Please fork the repository and send pull requests.
 
 If you believe you have found a bug, or wish to ask a question,
 please use the issue tracker for this repository.
-

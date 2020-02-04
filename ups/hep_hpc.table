@@ -4,157 +4,13 @@ Product = hep_hpc
 Group:
 
 Flavor=ANY
-Qualifiers=e9:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e9-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_8_14 -q+e9)
-
-Flavor=ANY
-Qualifiers=e10:mpich:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e10-mpich-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e10:+mpich:+prof)
-
-Flavor=ANY
-Qualifiers=e10:mvapich2:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e10-mvapich2-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e10:+mvapich2:+prof)
-
-Flavor=ANY
-Qualifiers=e10:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e10-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e10)
-
-Flavor=ANY
-Qualifiers=e14:mpich:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e14-mpich-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e14:+mpich:+prof)
-
-Flavor=ANY
-Qualifiers=e14:mpich:debug
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e14-mpich-debug)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e14:+mpich:+debug)
-
-Flavor=ANY
-Qualifiers=e14:mvapich2:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e14-mvapich2-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e14:+mvapich2:+prof)
-
-Flavor=ANY
-Qualifiers=e14:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e14-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e14)
-
-Flavor=ANY
-Qualifiers=e15:mpich:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e15-mpich-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e15:+mpich:+prof)
-
-Flavor=ANY
-Qualifiers=e15:mpich:debug
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e15-mpich-debug)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e15:+mpich:+debug)
-
-Flavor=ANY
-Qualifiers=e15:mvapich2:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e15-mvapich2-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e15:+mvapich2:+prof)
-
-Flavor=ANY
-Qualifiers=e15:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e15-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e15)
-
-Flavor=ANY
-Qualifiers=e17:mpich:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e17-mpich-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e17:+mpich:+prof)
-
-Flavor=ANY
-Qualifiers=e17:mpich:debug
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e17-mpich-debug)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e17:+mpich:+debug)
-
-Flavor=ANY
-Qualifiers=e17:mvapich2:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e17-mvapich2-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e17:+mvapich2:+prof)
-
-Flavor=ANY
-Qualifiers=e17:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e17-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e17)
-
-Flavor=ANY
 Qualifiers=e19:mpich:prof
 
   Action=DefineFQ
     envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19-mpich-prof)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e19:+mpich:+prof)
+    setupRequired(hdf5 v1_10_5 -q+e19:+mpich:+prof)
 
 Flavor=ANY
 Qualifiers=e19:mpich:debug
@@ -163,7 +19,7 @@ Qualifiers=e19:mpich:debug
     envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19-mpich-debug)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e19:+mpich:+debug)
+    setupRequired(hdf5 v1_10_5 -q+e19:+mpich:+debug)
 
 Flavor=ANY
 Qualifiers=e19:mvapich2:prof
@@ -172,7 +28,7 @@ Qualifiers=e19:mvapich2:prof
     envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19-mvapich2-prof)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e19:+mvapich2:+prof)
+    setupRequired(hdf5 v1_10_5 -q+e19:+mvapich2:+prof)
 
 Flavor=ANY
 Qualifiers=e19:prof
@@ -181,79 +37,7 @@ Qualifiers=e19:prof
     envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19-prof)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+e19)
-
-Flavor=ANY
-Qualifiers=c2:mpich:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c2-mpich-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c2:+mpich:+prof)
-
-Flavor=ANY
-Qualifiers=c2:mpich:debug
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c2-mpich-debug)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c2:+mpich:+debug)
-
-Flavor=ANY
-Qualifiers=c2:mvapich2:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c2-mvapich2-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c2:+mvapich2:+prof)
-
-Flavor=ANY
-Qualifiers=c2:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c2-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c2)
-
-Flavor=ANY
-Qualifiers=c5:mpich:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c5-mpich-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c5:+mpich:+prof)
-
-Flavor=ANY
-Qualifiers=c5:mpich:debug
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c5-mpich-debug)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c5:+mpich:+debug)
-
-Flavor=ANY
-Qualifiers=c5:mvapich2:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c5-mvapich2-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c5:+mvapich2:+prof)
-
-Flavor=ANY
-Qualifiers=c5:prof
-
-  Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c5-prof)
-
-  Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c5)
+    setupRequired(hdf5 v1_10_5 -q+e19)
 
 Flavor=ANY
 Qualifiers=c7:mpich:prof
@@ -262,7 +46,7 @@ Qualifiers=c7:mpich:prof
     envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mpich-prof)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c7:+mpich:+prof)
+    setupRequired(hdf5 v1_10_5 -q+c7:+mpich:+prof)
 
 Flavor=ANY
 Qualifiers=c7:mpich:debug
@@ -271,7 +55,7 @@ Qualifiers=c7:mpich:debug
     envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mpich-debug)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c7:+mpich:+debug)
+    setupRequired(hdf5 v1_10_5 -q+c7:+mpich:+debug)
 
 Flavor=ANY
 Qualifiers=c7:mvapich2:prof
@@ -280,7 +64,7 @@ Qualifiers=c7:mvapich2:prof
     envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mvapich2-prof)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c7:+mvapich2:+prof)
+    setupRequired(hdf5 v1_10_5 -q+c7:+mvapich2:+prof)
 
 Flavor=ANY
 Qualifiers=c7:prof
@@ -289,7 +73,7 @@ Qualifiers=c7:prof
     envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-prof)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_3a -q+c7)
+    setupRequired(hdf5 v1_10_5 -q+c7)
 
 Common:
   Action = setup
