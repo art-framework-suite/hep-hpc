@@ -31,10 +31,10 @@ Qualifiers=e19:mvapich2:prof
     setupRequired(hdf5 v1_10_5 -q+e19:+mvapich2:+prof)
 
 Flavor=ANY
-Qualifiers=e19:prof
+Qualifiers=e19
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19-prof)
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19)
 
   Action = ExtraSetup
     setupRequired(hdf5 v1_10_5 -q+e19)
@@ -67,10 +67,10 @@ Qualifiers=c7:mvapich2:prof
     setupRequired(hdf5 v1_10_5 -q+c7:+mvapich2:+prof)
 
 Flavor=ANY
-Qualifiers=c7:prof
+Qualifiers=c7
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-prof)
+    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7)
 
   Action = ExtraSetup
     setupRequired(hdf5 v1_10_5 -q+c7)
@@ -87,7 +87,7 @@ Common:
     if ( test `uname` = "Darwin" )
       envPrepend(DYLD_LIBRARY_PATH, ${HEP_HPC_FQ_DIR}/lib)
     else()
-	    envPrepend(LD_LIBRARY_PATH, ${HEP_HPC_FQ_DIR}/lib)
+            envPrepend(LD_LIBRARY_PATH, ${HEP_HPC_FQ_DIR}/lib)
     endif ( test `uname` = "Darwin" )
     pathPrepend(PATH, ${HEP_HPC_FQ_DIR}/bin)
 
