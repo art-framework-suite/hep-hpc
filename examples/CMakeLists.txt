@@ -1,0 +1,2 @@
+add_executable(make_ntuple_file make_ntuple_file.cc)
+target_link_libraries(make_ntuple_file hep_hpc_hdf5)

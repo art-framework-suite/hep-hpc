@@ -88,6 +88,7 @@ add_subdirectory(hep_hpc)
 add_subdirectory(gtest EXCLUDE_FROM_ALL)
 add_subdirectory(test)
 add_subdirectory(ups)
+add_subdirectory(examples)
 
 install(FILES LICENSE README.md
   DESTINATION ".")
