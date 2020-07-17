@@ -52,7 +52,7 @@
 ////////////////////////////////////////////////////////////////////////
 #include "hep_hpc/hdf5/Ntuple.hpp"
 #include "hep_hpc/hdf5/make_column.hpp"
-
+#include <iostream>
 namespace hep_hpc {
   namespace hdf5 {
     class NtupleInitializer;
@@ -61,35 +61,49 @@ namespace hep_hpc {
     Ntuple<Cols...>
     make_ntuple(NtupleInitializer ntInit,
                 Cols && ... cols);
-                
+
   } // Namespace hdf5.
+
 } // Namespace hep_hpc.
 
 class hep_hpc::hdf5::NtupleInitializer {
 public:
+  NtupleInitializer(hid_t file, std::string tablename,
+                    TranslationMode mode,
+                    NtupleOverwriteFlag overwriteContents,
+                    std::size_t bufsize);
+  NtupleInitializer(hid_t file, std::string tablename,
+                    TranslationMode mode,
+                    NtupleOverwriteFlag overwriteContents);
+  NtupleInitializer(hid_t file, std::string tablename,
+                    TranslationMode mode);
   NtupleInitializer(hid_t file, std::string tablename);
   NtupleInitializer(hid_t file, std::string tablename,
-                    bool overwriteContents);
-  NtupleInitializer(hid_t file, std::string tablename,
-                    bool overwriteContents,
-                    std::size_t bufsize);
-  NtupleInitializer(hid_t file, std::string tablename, TranslationMode mode);
-  NtupleInitializer(hid_t file, std::string tablename,
                     TranslationMode mode,
-                    bool overwriteContents);
-  NtupleInitializer(hid_t file, std::string tablename,
-                    TranslationMode mode,
-                    bool overwriteContents,
                     std::size_t bufsize);
-  NtupleInitializer(std::string filename, std::string tablename);
+  NtupleInitializer(hid_t file, std::string tablename,
+                    NtupleOverwriteFlag overwriteContents,
+                    std::size_t bufsize);
+  NtupleInitializer(hid_t file, std::string tablename,
+                    std::size_t bufsize);
   NtupleInitializer(std::string filename, std::string tablename,
+                    TranslationMode mode,
+                    NtupleOverwriteFlag overwriteContents,
                     std::size_t bufsize);
+  NtupleInitializer(std::string filename, std::string tablename,
+                    TranslationMode mode,
+                    NtupleOverwriteFlag overwriteContents);
   NtupleInitializer(std::string filename, std::string tablename,
                     TranslationMode mode);
+  NtupleInitializer(std::string filename, std::string tablename);
   NtupleInitializer(std::string filename, std::string tablename,
                     TranslationMode mode,
                     std::size_t bufsize);
-  
+  NtupleInitializer(std::string filename, std::string tablename,
+                    NtupleOverwriteFlag overwriteContents,
+                    std::size_t bufsize);
+  NtupleInitializer(std::string filename, std::string tablename,
+                    std::size_t bufsize);
 private:
   template <typename NT, typename... Cols>
   NT
@@ -111,35 +125,30 @@ private:
 };
 
 hep_hpc::hdf5::NtupleInitializer::
-NtupleInitializer(hid_t file, std::string tablename)
+NtupleInitializer(hid_t file, std::string tablename,
+                  TranslationMode mode,
+                  NtupleOverwriteFlag overwriteContents,
+                  std::size_t bufsize)
   :
   cflag_(0),
   file_(file),
-  tablename_(std::move(tablename))
+  tablename_(std::move(tablename)),
+  mode_(mode),
+  overwriteContents_(overwriteContents),
+  bufsize_(bufsize)
 {
 }
 
 hep_hpc::hdf5::NtupleInitializer::
 NtupleInitializer(hid_t file, std::string tablename,
-                  bool overwriteContents)
+                  TranslationMode mode,
+                  NtupleOverwriteFlag overwriteContents)
   :
   cflag_(1),
   file_(file),
   tablename_(std::move(tablename)),
-  overwriteContents_(static_cast<NtupleOverwriteFlag>(overwriteContents))
-{
-}
-
-hep_hpc::hdf5::NtupleInitializer::
-NtupleInitializer(hid_t file, std::string tablename,
-                  bool overwriteContents,
-                  std::size_t bufsize)
-  :
-  cflag_(2),
-  file_(file),
-  tablename_(std::move(tablename)),
-  overwriteContents_(static_cast<NtupleOverwriteFlag>(overwriteContents)),
-  bufsize_(bufsize)
+  mode_(mode),
+  overwriteContents_(overwriteContents)
 {
 }
 
@@ -147,7 +156,7 @@ hep_hpc::hdf5::NtupleInitializer::
 NtupleInitializer(hid_t file, std::string tablename,
                   TranslationMode mode)
   :
-  cflag_(3),
+  cflag_(2),
   file_(file),
   tablename_(std::move(tablename)),
   mode_(mode)
@@ -155,61 +164,96 @@ NtupleInitializer(hid_t file, std::string tablename,
 }
 
 hep_hpc::hdf5::NtupleInitializer::
-NtupleInitializer(hid_t file, std::string tablename,
-                  TranslationMode mode,
-                  bool overwriteContents)
+NtupleInitializer(hid_t file, std::string tablename)
   :
-  cflag_(4),
+  cflag_(3),
   file_(file),
-  tablename_(std::move(tablename)),
-  mode_(mode),
-  overwriteContents_(static_cast<NtupleOverwriteFlag>(overwriteContents))
+  tablename_(std::move(tablename))
 {
 }
 
 hep_hpc::hdf5::NtupleInitializer::
 NtupleInitializer(hid_t file, std::string tablename,
                   TranslationMode mode,
-                  bool overwriteContents,
+                  std::size_t bufsize)
+  :
+  cflag_(4),
+  file_(file),
+  tablename_(std::move(tablename)),
+  mode_(mode),
+  bufsize_(bufsize)
+{
+}
+
+hep_hpc::hdf5::NtupleInitializer::
+NtupleInitializer(hid_t file, std::string tablename,
+                  NtupleOverwriteFlag overwriteContents,
                   std::size_t bufsize)
   :
   cflag_(5),
   file_(file),
   tablename_(std::move(tablename)),
-  mode_(mode),
-  overwriteContents_(static_cast<NtupleOverwriteFlag>(overwriteContents)),
+  overwriteContents_(overwriteContents),
   bufsize_(bufsize)
+{
+}
+
+hep_hpc::hdf5::NtupleInitializer::
+NtupleInitializer(hid_t file, std::string tablename,
+                  std::size_t bufsize)
+  :
+  cflag_(6),
+  file_(file),
+  tablename_(std::move(tablename)),
+  bufsize_(bufsize)
+{
+}
+
+hep_hpc::hdf5::NtupleInitializer::
+NtupleInitializer(std::string filename, std::string tablename,
+                  TranslationMode mode,
+                  NtupleOverwriteFlag overwriteContents,
+                  std::size_t bufsize)
+  :
+  cflag_(7),
+  filename_(std::move(filename)),
+  tablename_(std::move(tablename)),
+  mode_(mode),
+  overwriteContents_(overwriteContents),
+  bufsize_(bufsize)
+{
+}
+
+hep_hpc::hdf5::NtupleInitializer::
+NtupleInitializer(std::string filename, std::string tablename,
+                  TranslationMode mode,
+                    NtupleOverwriteFlag overwriteContents)
+  :
+  cflag_(8),
+  filename_(std::move(filename)),
+  tablename_(std::move(tablename)),
+  mode_(mode),
+  overwriteContents_(overwriteContents)
+{
+}
+
+hep_hpc::hdf5::NtupleInitializer::
+NtupleInitializer(std::string filename, std::string tablename,
+                  TranslationMode mode)
+  :
+  cflag_(9),
+  filename_(std::move(filename)),
+  tablename_(std::move(tablename)),
+  mode_(mode)
 {
 }
 
 hep_hpc::hdf5::NtupleInitializer::
 NtupleInitializer(std::string filename, std::string tablename)
   :
-  cflag_(6),
+  cflag_(10),
   filename_(std::move(filename)),
   tablename_(std::move(tablename))
-{
-}
-
-hep_hpc::hdf5::NtupleInitializer::
-NtupleInitializer(std::string filename, std::string tablename,
-                  std::size_t bufsize)
-  :
-  cflag_(7),
-  filename_(std::move(filename)),
-  tablename_(std::move(tablename)),
-  bufsize_(bufsize)
-{
-}
-
-hep_hpc::hdf5::NtupleInitializer::
-NtupleInitializer(std::string filename, std::string tablename,
-                  TranslationMode mode)
-  :
-  cflag_(8),
-  filename_(std::move(filename)),
-  tablename_(std::move(tablename)),
-  mode_(mode)
 {
 }
 
@@ -218,10 +262,34 @@ NtupleInitializer(std::string filename, std::string tablename,
                   TranslationMode mode,
                   std::size_t bufsize)
   :
-  cflag_(9),
+  cflag_(11),
   filename_(std::move(filename)),
   tablename_(std::move(tablename)),
   mode_(mode),
+  bufsize_(bufsize)
+{
+}
+
+hep_hpc::hdf5::NtupleInitializer::
+NtupleInitializer(std::string filename, std::string tablename,
+                  NtupleOverwriteFlag overwriteContents,
+                  std::size_t bufsize)
+  :
+  cflag_(12),
+  filename_(std::move(filename)),
+  tablename_(std::move(tablename)),
+  overwriteContents_(overwriteContents),
+  bufsize_(bufsize)
+{
+}
+
+hep_hpc::hdf5::NtupleInitializer::
+NtupleInitializer(std::string filename, std::string tablename,
+                  std::size_t bufsize)
+  :
+  cflag_(13),
+  filename_(std::move(filename)),
+  tablename_(std::move(tablename)),
   bufsize_(bufsize)
 {
 }
@@ -234,49 +302,61 @@ initializeNtuple(Cols && ... cols)
   // Switch statement is here to ensure that argument defaults are only
   // specified in one place, namely the Ntuple class template
   // definition.
+  std::cerr << "initializeNtuple() called with cflag_=" << (int)cflag_ << "\n";
   switch(cflag_) {
   case 0:
     return NT(file_, std::move(tablename_),
-              typename NT::column_info_t { std::forward<Cols>(cols)... });
+              typename NT::column_info_t { std::forward<Cols>(cols)... },
+              mode_, overwriteContents_, bufsize_);
   case 1:
     return NT(file_, std::move(tablename_),
               typename NT::column_info_t { std::forward<Cols>(cols)... },
-              overwriteContents_);
+              mode_, overwriteContents_);
   case 2:
     return NT(file_, std::move(tablename_),
               typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
-              overwriteContents_,
-              bufsize_);
+              mode_);
   case 3:
     return NT(file_, std::move(tablename_),
-              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
-              mode_);
+              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... });
   case 4:
     return NT(file_, std::move(tablename_),
               typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
-              mode_,
-              overwriteContents_);
+              mode_, bufsize_);
   case 5:
     return NT(file_, std::move(tablename_),
               typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
-              mode_,
-              overwriteContents_,
-              bufsize_);
+              overwriteContents_, bufsize_);
   case 6:
-    return NT(std::move(filename_), std::move(tablename_),
-              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... });
+    return NT(file_, std::move(tablename_),
+              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
+              bufsize_);
   case 7:
     return NT(std::move(filename_), std::move(tablename_),
-              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
-              bufsize_);
+              typename NT::column_info_t { std::forward<Cols>(cols)... },
+              mode_, overwriteContents_, bufsize_);
   case 8:
     return NT(std::move(filename_), std::move(tablename_),
-              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
-              mode_);
+              typename NT::column_info_t { std::forward<Cols>(cols)... },
+              mode_, overwriteContents_);
   case 9:
     return NT(std::move(filename_), std::move(tablename_),
               typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
-              mode_,
+              mode_);
+  case 10:
+    return NT(std::move(filename_), std::move(tablename_),
+              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... });
+  case 11:
+    return NT(std::move(filename_), std::move(tablename_),
+              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
+              mode_, bufsize_);
+  case 12:
+    return NT(std::move(filename_), std::move(tablename_),
+              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
+              overwriteContents_, bufsize_);
+  case 13:
+    return NT(std::move(filename_), std::move(tablename_),
+              typename Ntuple<Cols...>::column_info_t { std::forward<Cols>(cols)... },
               bufsize_);
   default:
     throw std::logic_error("INTERNAL ERROR: in NtupleInitializer::initializeNtuple().");

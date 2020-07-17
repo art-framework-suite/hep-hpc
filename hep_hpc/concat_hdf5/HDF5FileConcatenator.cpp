@@ -11,6 +11,7 @@
 #include "hep_hpc/hdf5/Group.hpp"
 #include "hep_hpc/hdf5/PropertyList.hpp"
 #include "hep_hpc/hdf5/ResourceStrategy.hpp"
+#include "hep_hpc/hdf5/detail/hdf5_compat.h"
 #include "hep_hpc/hdf5/errorHandling.hpp"
 
 extern "C" {
@@ -18,6 +19,7 @@ extern "C" {
 #include "H5FDmpio.h"
 #include "H5Spublic.h"
 }
+
 
 #include <algorithm>
 #include <cstdlib>
@@ -639,7 +641,12 @@ concatFiles(std::vector<std::string> const & inputs)
              return reinterpret_cast<HDF5FileConcatenator *>(me)->
                visit_item_(root_id, obj_name, obj_info);
            },
-           this);
+           this
+#if H5_VERSION_GE(1,12,0)
+           // H5Ovisit3
+           ,H5O_INFO_BASIC
+#endif
+);
 
     // Fill filename_column.
     hsize_t max_fn_column_val_size =
@@ -739,7 +746,9 @@ visit_item_(hid_t root_id,
     if (match_group_against_regexes(obj_name, only_groups_)) {
       report(2, std::string("Ensuring existence of group ") + obj_name + " in output file.");
       // Make sure the group exists in the output.
-      Group in_g(ErrorController::call(&H5Oopen_by_addr, root_id, obj_info->addr),
+      Group in_g(ErrorController::call(&HEP_HPC_OPEN_BY,
+                                       root_id,
+                                       obj_info->HEP_HPC_ADDR_OR_TOKEN),
                  ResourceStrategy::handle_tag);
 
       (void)
@@ -767,9 +776,9 @@ visit_item_(hid_t root_id,
     if (match_group_against_regexes(parent_group(obj_name),
                                     only_groups_)) {
       Dataset
-        in_ds(ErrorController::call(&H5Oopen_by_addr,
+        in_ds(ErrorController::call(&HEP_HPC_OPEN_BY,
                                     root_id,
-                                    obj_info->addr),
+                                    obj_info->HEP_HPC_ADDR_OR_TOKEN),
               ResourceStrategy::handle_tag);
       status = handle_dataset_(std::move(in_ds), obj_name);
     } else {

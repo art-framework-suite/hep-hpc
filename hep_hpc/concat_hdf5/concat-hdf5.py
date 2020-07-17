@@ -54,7 +54,7 @@ class HDF5FileConcatenator:
         self._mem_max_bytes = mem_max * 1024 * 1024
         self._filename_column = filename_column
         self._want_filters = filters
-        self._verbose = verbose
+        self._verbose = verbose if verbose else 0
         self._output_file = h5py.File(output, write_mode, driver = 'mpio', comm=MPI.COMM_WORLD) \
                             if WANT_MPI else h5py.File(output, write_mode)
         self._ds_out = {}

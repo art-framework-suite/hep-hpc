@@ -111,38 +111,36 @@ namespace hep_hpc {
     template <size_t SZ>
     using fstring_t = std::array<char, SZ>;
 
-    namespace detail {
-      enum class TranslationMode : uint8_t {
-        NONE,
-          IEEE_STD_LE, // Little-endian, IEEE-754 floating point.
-          IEEE_STD_BE // Big-endian, IEEE-754 floating point.
-          };
-    }
+    enum class TranslationMode : uint8_t {
+      NONE,
+        IEEE_STD_LE, // Little-endian, IEEE-754 floating point.
+        IEEE_STD_BE // Big-endian, IEEE-754 floating point.
+        };
 
-    using detail::TranslationMode;
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
 // No user-serviceable parts.
 
-#define ENGINE_TYPE(NATIVE, IEEE_LE, IEEE_BE)   \
-  using std::to_string;                         \
-  hid_t result;                                 \
-  switch (mode) {                               \
-  case TranslationMode::NONE:                   \
-    result = NATIVE;                            \
-    break;                                      \
-  case TranslationMode::IEEE_STD_LE:            \
-    result = IEEE_LE;                           \
-    break;                                      \
-  case TranslationMode::IEEE_STD_BE:            \
-    result = IEEE_BE;                           \
-    break;                                      \
-  default:                                      \
-    throw Exception("Un-handled translation mode: " + to_string((int)mode)); \
-  } \
-    return result;
+#define ENGINE_TYPE(NATIVE, IEEE_LE, IEEE_BE)       \
+  using std::to_string;                             \
+  hid_t result;                                     \
+  switch (mode) {                                   \
+  case hep_hpc::hdf5::TranslationMode::NONE:        \
+    result = NATIVE;                                \
+    break;                                          \
+  case hep_hpc::hdf5::TranslationMode::IEEE_STD_LE: \
+    result = IEEE_LE;                               \
+    break;                                          \
+  case hep_hpc::hdf5::TranslationMode::IEEE_STD_BE: \
+    result = IEEE_BE;                               \
+    break;                                          \
+  default:                                          \
+    throw Exception("Un-handled translation mode: " \
+                    + to_string((int)mode));        \
+  }                                                 \
+  return result;
 
 namespace hep_hpc {
   namespace hdf5 {

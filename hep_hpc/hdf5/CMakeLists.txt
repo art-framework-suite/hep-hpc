@@ -49,5 +49,6 @@ install(FILES ${headers}
   )
 
 install(FILES detail/NtupleDataStructure.hpp
+  detail/hdf5_compat.h
   DESTINATION "include/hep_hpc/hdf5/detail"
   )

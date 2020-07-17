@@ -62,7 +62,7 @@
 //                 std::string tablename,
 //                 column_info_t columns,
 //                 [TranslationMode mode,]
-//                 OverwriteFlag overwriteContents = <default>,
+//                 NtupleOverwriteFlag overwriteContents = <default>,
 //                 std::size_t bufsize = <default>);
 //
 // Ntuple<Args...>(std::string filename,
@@ -103,8 +103,8 @@
 //   overwriteContents controls whether an existing entity of name
 //   <tablename> would be overwritten or not (if not, an exception is
 //   thrown currently). Its value, if specified, should be
-//   hep_hpc::hdf5::OverwriteFlag::NO or
-//   hep_hpc::hdf5::OverwriteFlag::YES.
+//   hep_hpc::hdf5::NtupleOverwriteFlag::NO or
+//   hep_hpc::hdf5::NtupleOverwriteFlag::YES.
 //
 //   Buffer size controls how many rows are cached in memory before
 //   being flushed to the file; defaults to 1000 if not specified.
@@ -215,6 +215,7 @@ public:
   Ntuple(hid_t file,
          std::string tablename,
          column_info_t columns,
+         TranslationMode mode = TranslationMode::NONE,
          NtupleOverwriteFlag overwriteContents = NtupleOverwriteFlag::NO,
          std::size_t bufsize = 1000ull);
 
@@ -223,21 +224,48 @@ public:
          std::string tablename,
          column_info_t columns,
          TranslationMode mode,
-         NtupleOverwriteFlag overwriteContents = NtupleOverwriteFlag::NO,
-         std::size_t bufsize = 1000ull);
+         std::size_t bufsize);
 
   // 3.
+  Ntuple(hid_t file,
+         std::string tablename,
+         column_info_t columns,
+         NtupleOverwriteFlag overwriteContents,
+         std::size_t bufsize = 1000ull);
+
+  // 4.
+  Ntuple(hid_t file,
+         std::string tablename,
+         column_info_t columns,
+         std::size_t bufsize);
+
+  // 5.
   Ntuple(std::string filename,
          std::string tablename,
          column_info_t columns,
-         std::size_t bufsiz = 1000ull);
+         TranslationMode mode = TranslationMode::NONE,
+         NtupleOverwriteFlag overwriteContents = NtupleOverwriteFlag::NO,
+         std::size_t bufsize = 1000ull);
 
-  // 4.
+  // 6.
   Ntuple(std::string filename,
          std::string tablename,
          column_info_t columns,
          TranslationMode mode,
-         std::size_t bufsiz = 1000ull);
+         std::size_t bufsize);
+
+  // 7.
+  Ntuple(std::string filename,
+         std::string tablename,
+         column_info_t columns,
+         NtupleOverwriteFlag overwriteContents,
+         std::size_t bufsize = 1000ull);
+
+  // 8.
+  Ntuple(std::string filename,
+         std::string tablename,
+         column_info_t columns,
+         std::size_t bufsize);
 
   ~Ntuple() noexcept;
 
@@ -332,34 +360,29 @@ namespace hep_hpc {
       herr_t flush_one(std::vector<std::array<char, SZ> > & buf,
                        Dataset & dset,
                        COL const & col);
+
+      PropertyList fileAccessProperties()
+      {
+        // Ensure we are using the latest available HDF5 file format to
+        // write our data.
+        PropertyList plist(H5P_FILE_ACCESS);
+        H5Pset_libver_bounds(plist, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST);
+        return plist;
+      }
+
     } // Namespace NtupleDetail.
   } // Namespace hdf5.
 } // Namespace hep_hpc.
 
 // 1.
 template <typename... Args>
-hep_hpc::hdf5::Ntuple<Args...>::Ntuple(hid_t file,
-                                       std::string name,
-                                       column_info_t columns,
-                                       NtupleOverwriteFlag overwriteContents,
-                                       std::size_t const bufsize) :
-  Ntuple{File(file),
-    std::move(name),
-    std::move(columns),
-    TranslationMode::NONE,
-    overwriteContents,
-    bufsize,
-    iSequence()}
-{}
-
-// 2.
-template <typename... Args>
-hep_hpc::hdf5::Ntuple<Args...>::Ntuple(hid_t file,
-                                       std::string name,
-                                       column_info_t columns,
-                                       TranslationMode mode,
-                                       NtupleOverwriteFlag overwriteContents,
-                                       std::size_t const bufsize) :
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(hid_t file,
+       std::string name,
+       column_info_t columns,
+       TranslationMode const mode,
+       NtupleOverwriteFlag const overwriteContents,
+       std::size_t const bufsize) :
   Ntuple{File(file),
     std::move(name),
     std::move(columns),
@@ -369,48 +392,139 @@ hep_hpc::hdf5::Ntuple<Args...>::Ntuple(hid_t file,
     iSequence()}
 {}
 
-namespace {
-  [[gnu::unused]]
-  hep_hpc::hdf5::PropertyList fileAccessProperties()
-  {
-    // Ensure we are using the latest available HDF5 file format to write our data.
-    hep_hpc::hdf5::PropertyList plist(H5P_FILE_ACCESS);
-    H5Pset_libver_bounds(plist, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST);
-    return plist;
-  }
-}
+// 2.
+template <typename... Args>
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(hid_t file,
+       std::string name,
+       column_info_t columns,
+       TranslationMode mode,
+       std::size_t const bufsize) :
+  Ntuple{File(file),
+    std::move(name),
+    std::move(columns),
+    mode,
+    NtupleOverwriteFlag::NO,
+    bufsize,
+    iSequence()}
+{}
 
 // 3.
 template <typename... Args>
-hep_hpc::hdf5::Ntuple<Args...>::Ntuple(std::string filename,
-                                       std::string name,
-                                       column_info_t columns,
-                                       std::size_t const bufsize) :
-  Ntuple{File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
-    std::move(name), std::move(columns), TranslationMode::NONE, NtupleOverwriteFlag::NO, bufsize, iSequence()}
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(hid_t file,
+       std::string name,
+       column_info_t columns,
+       NtupleOverwriteFlag const overwriteContents,
+       std::size_t const bufsize) :
+  Ntuple{File(file),
+    std::move(name),
+    std::move(columns),
+    TranslationMode::NONE,
+    overwriteContents,
+    bufsize,
+    iSequence()}
 {}
 
 // 4.
 template <typename... Args>
-hep_hpc::hdf5::Ntuple<Args...>::Ntuple(std::string filename,
-                                       std::string name,
-                                       column_info_t columns,
-                                       TranslationMode mode,
-                                       std::size_t const bufsize) :
-  Ntuple{File(std::move(filename), H5F_ACC_TRUNC, {}, fileAccessProperties()),
-    std::move(name), std::move(columns), mode, NtupleOverwriteFlag::NO, bufsize, iSequence()}
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(hid_t file,
+       std::string name,
+       column_info_t columns,
+       std::size_t const bufsize) :
+  Ntuple{File(file),
+    std::move(name),
+    std::move(columns),
+    TranslationMode::NONE,
+    NtupleOverwriteFlag::NO,
+    bufsize,
+    iSequence()}
 {}
 
 // 5.
 template <typename... Args>
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(std::string filename,
+       std::string name,
+       column_info_t columns,
+       TranslationMode const mode,
+       NtupleOverwriteFlag const overwriteContents,
+       std::size_t const bufsize) :
+  Ntuple{File(std::move(filename), H5F_ACC_TRUNC, {},
+              NtupleDetail::fileAccessProperties()),
+    std::move(name),
+    std::move(columns),
+    mode,
+    overwriteContents,
+    bufsize,
+    iSequence()}
+{}
+
+// 6.
+template <typename... Args>
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(std::string filename,
+       std::string name,
+       column_info_t columns,
+       TranslationMode mode,
+       std::size_t const bufsize) :
+  Ntuple{File(std::move(filename), H5F_ACC_TRUNC, {},
+              NtupleDetail::fileAccessProperties()),
+    std::move(name),
+    std::move(columns),
+    mode,
+    NtupleOverwriteFlag::NO,
+    bufsize,
+    iSequence()}
+{}
+
+// 7.
+template <typename... Args>
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(std::string filename,
+       std::string name,
+       column_info_t columns,
+       NtupleOverwriteFlag const overwriteContents,
+       std::size_t const bufsize) :
+  Ntuple{File(std::move(filename), H5F_ACC_TRUNC, {},
+              NtupleDetail::fileAccessProperties()),
+    std::move(name),
+    std::move(columns),
+    TranslationMode::NONE,
+    overwriteContents,
+    bufsize,
+    iSequence()}
+{}
+
+// 8.
+template <typename... Args>
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(std::string filename,
+       std::string name,
+       column_info_t columns,
+       std::size_t const bufsize) :
+  Ntuple{File(std::move(filename), H5F_ACC_TRUNC, {},
+              NtupleDetail::fileAccessProperties()),
+    std::move(name),
+    std::move(columns),
+    TranslationMode::NONE,
+    NtupleOverwriteFlag::NO,
+    bufsize,
+    iSequence()}
+{}
+
+// 9.
+template <typename... Args>
 template <std::size_t... I>
-hep_hpc::hdf5::Ntuple<Args...>::Ntuple(File file,
-                                       std::string name,
-                                       column_info_t columns,
-                                       TranslationMode mode,
-                                       NtupleOverwriteFlag overwriteContents,
-                                       std::size_t const bufsize,
-                                       hep_hpc::detail::index_sequence<I...>) :
+hep_hpc::hdf5::Ntuple<Args...>::
+Ntuple(File file,
+       std::string name,
+       column_info_t columns,
+       TranslationMode mode,
+       NtupleOverwriteFlag overwriteContents,
+       std::size_t const bufsize,
+       hep_hpc::detail::index_sequence<I...>) :
   file_{NtupleDetail::verifiedFile(std::move(file))},
   name_{std::move(name)},
   max_{(std::get<I>(columns).elementSize() * bufsize)...},

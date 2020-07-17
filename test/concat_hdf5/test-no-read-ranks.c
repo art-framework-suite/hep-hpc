@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "hep_hpc/hdf5/detail/hdf5_compat.h"
+
 static int n_ranks;
 static int my_rank;
 
@@ -30,7 +32,7 @@ visit_item(hid_t root_id,
   // Find the dataset we want and open it.
   if (strcmp("dset", obj_name) == 0) {
     /* Open the dataset. */
-    *(hid_t *)data = H5Oopen_by_addr(root_id, obj_info->addr);
+    *(hid_t *)data = HEP_HPC_OPEN_BY(root_id, obj_info->HEP_HPC_ADDR_OR_TOKEN);
   }
   return 0;
 }
@@ -64,7 +66,11 @@ int main(int argc, char **argv)
   /* Open the dataset, one way or the other. */
   hid_t in_dataset = -1;
   if (want_visit) {
-    H5Ovisit(file, H5_INDEX_NAME, H5_ITER_NATIVE, &visit_item, &in_dataset);
+    H5Ovisit(file, H5_INDEX_NAME, H5_ITER_NATIVE, &visit_item, &in_dataset
+#if H5_VERSION_GE(1,12,0)
+             ,H5O_INFO_BASIC
+#endif
+            );
   } else {
     in_dataset = H5Dopen2(file, "dset", H5P_DEFAULT);
   }
