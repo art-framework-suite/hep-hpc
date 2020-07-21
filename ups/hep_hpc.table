@@ -4,93 +4,183 @@ Product = hep_hpc
 Group:
 
 Flavor=ANY
-Qualifiers=e19:mpich:prof
+Qualifiers=e20:mpich
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19-mpich-prof)
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e20-mpich)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_5 -q+e19:+mpich:+prof)
+    setupRequired(hdf5 v1_12_0 -q+e20:+mpich:+prof)
 
 Flavor=ANY
-Qualifiers=e19:mpich:debug
+Qualifiers=e20:mvapich2
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19-mpich-debug)
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e20-mvapich2)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_5 -q+e19:+mpich:+debug)
+    setupRequired(hdf5 v1_12_0 -q+e20:+mvapich2:+prof)
 
 Flavor=ANY
-Qualifiers=e19:mvapich2:prof
+Qualifiers=e20:openmp
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19-mvapich2-prof)
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e20-openmp)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_5 -q+e19:+mvapich2:+prof)
+    setupRequired(hdf5 v1_12_0 -q+e20:+openmp:+prof)
+
+Flavor=ANY
+Qualifiers=e20
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e20)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+e20:+prof)
+
+Flavor=ANY
+Qualifiers=e19:mpich
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e19-mpich)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+e19:+mpich:+prof)
+
+Flavor=ANY
+Qualifiers=e19:mvapich2
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e19-mvapich2)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+e19:+mvapich2:+prof)
+
+Flavor=ANY
+Qualifiers=e19:openmp
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e19-openmp)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+e19:+openmp:+prof)
 
 Flavor=ANY
 Qualifiers=e19
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-e19)
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e19)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_5 -q+e19)
+    setupRequired(hdf5 v1_12_0 -q+e19:+prof)
 
 Flavor=ANY
-Qualifiers=c7:mpich:prof
+Qualifiers=e17:mpich
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mpich-prof)
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e17-mpich)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_5 -q+c7:+mpich:+prof)
+    setupRequired(hdf5 v1_12_0 -q+e17:+mpich:+prof)
 
 Flavor=ANY
-Qualifiers=c7:mpich:debug
+Qualifiers=e17:mvapich2
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mpich-debug)
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e17-mvapich2)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_5 -q+c7:+mpich:+debug)
+    setupRequired(hdf5 v1_12_0 -q+e17:+mvapich2:+prof)
 
 Flavor=ANY
-Qualifiers=c7:mvapich2:prof
+Qualifiers=e17:openmp
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7-mvapich2-prof)
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e17-openmp)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_5 -q+c7:+mvapich2:+prof)
+    setupRequired(hdf5 v1_12_0 -q+e17:+openmp:+prof)
+
+Flavor=ANY
+Qualifiers=e17
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e17)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+e17:+prof)
+
+Flavor=ANY
+Qualifiers=c7:mpich
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c7-mpich)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+c7:+mpich:+prof)
+
+Flavor=ANY
+Qualifiers=c7:mvapich2
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c7-mvapich2)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+c7:+mvapich2:+prof)
 
 Flavor=ANY
 Qualifiers=c7
 
   Action=DefineFQ
-    envSet(HEP_HPC_FQ, ${UPS_PROD_FLAVOR}-c7)
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c7)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_10_5 -q+c7)
+    setupRequired(hdf5 v1_12_0 -q+c7:+prof)
+
+Flavor=ANY
+Qualifiers=c2:mpich
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c2-mpich)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+c2:+mpich:+prof)
+
+Flavor=ANY
+Qualifiers=c2:mvapich2
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c2-mvapich2)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+c2:+mvapich2:+prof)
+
+Flavor=ANY
+Qualifiers=c2
+
+  Action=DefineFQ
+    prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c2)
+
+  Action = ExtraSetup
+    setupRequired(hdf5 v1_12_0 -q+c2:+prof)
 
 Common:
   Action = setup
     setupEnv()
     prodDir()
-    envSet(HEP_HPC_VERSION, ${UPS_PROD_VERSION})
+    envSet(HEP_HPC_VERSION,${UPS_PROD_VERSION})
     exeActionRequired(DefineFQ)
-    envSet(HEP_HPC_FQ_DIR,${UPS_PROD_DIR}/${HEP_HPC_FQ})
-    envSet(HEP_HPC_LIB, ${HEP_HPC_FQ_DIR}/lib)
-    envSet(HEP_HPC_INC, ${HEP_HPC_FQ_DIR}/include)
+    envSet(HEP_HPC_LIB,${HEP_HPC_FQ_DIR}/lib)
+    envSet(HEP_HPC_INC,${HEP_HPC_FQ_DIR}/include)
     if ( test `uname` = "Darwin" )
-      envPrepend(DYLD_LIBRARY_PATH, ${HEP_HPC_FQ_DIR}/lib)
+      envPrepend(DYLD_LIBRARY_PATH,${HEP_HPC_LIB})
     else()
-            envPrepend(LD_LIBRARY_PATH, ${HEP_HPC_FQ_DIR}/lib)
+      envPrepend(LD_LIBRARY_PATH,${HEP_HPC_LIB})
     endif ( test `uname` = "Darwin" )
-    pathPrepend(PATH, ${HEP_HPC_FQ_DIR}/bin)
-
+    pathPrepend(PATH,${HEP_HPC_FQ_DIR}/bin)
+    envPrepend(CMAKE_PREFIX_PATH,${HEP_HPC_LIB})
+    envPrepend(ROOT_INCLUDE_PATH,${HEP_HPC_INC})
     # requirements
     exeActionRequired(ExtraSetup)
 End:
