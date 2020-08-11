@@ -10,7 +10,7 @@ Qualifiers=e20:mpich
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e20-mpich)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e20:+mpich:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e20:+mpich:+prof)
 
 Flavor=ANY
 Qualifiers=e20:mvapich2
@@ -19,7 +19,7 @@ Qualifiers=e20:mvapich2
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e20-mvapich2)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e20:+mvapich2:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e20:+mvapich2:+prof)
 
 Flavor=ANY
 Qualifiers=e20:openmp
@@ -28,7 +28,7 @@ Qualifiers=e20:openmp
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e20-openmp)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e20:+openmp:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e20:+openmp:+prof)
 
 Flavor=ANY
 Qualifiers=e20
@@ -37,7 +37,7 @@ Qualifiers=e20
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e20)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e20:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e20:+prof)
 
 Flavor=ANY
 Qualifiers=e19:mpich
@@ -46,7 +46,7 @@ Qualifiers=e19:mpich
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e19-mpich)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e19:+mpich:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e19:+mpich:+prof)
 
 Flavor=ANY
 Qualifiers=e19:mvapich2
@@ -55,7 +55,7 @@ Qualifiers=e19:mvapich2
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e19-mvapich2)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e19:+mvapich2:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e19:+mvapich2:+prof)
 
 Flavor=ANY
 Qualifiers=e19:openmp
@@ -64,7 +64,7 @@ Qualifiers=e19:openmp
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e19-openmp)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e19:+openmp:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e19:+openmp:+prof)
 
 Flavor=ANY
 Qualifiers=e19
@@ -73,7 +73,7 @@ Qualifiers=e19
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e19)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e19:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e19:+prof)
 
 Flavor=ANY
 Qualifiers=e17:mpich
@@ -82,7 +82,7 @@ Qualifiers=e17:mpich
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e17-mpich)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e17:+mpich:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e17:+mpich:+prof)
 
 Flavor=ANY
 Qualifiers=e17:mvapich2
@@ -91,7 +91,7 @@ Qualifiers=e17:mvapich2
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e17-mvapich2)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e17:+mvapich2:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e17:+mvapich2:+prof)
 
 Flavor=ANY
 Qualifiers=e17:openmp
@@ -100,7 +100,7 @@ Qualifiers=e17:openmp
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e17-openmp)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e17:+openmp:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e17:+openmp:+prof)
 
 Flavor=ANY
 Qualifiers=e17
@@ -109,7 +109,7 @@ Qualifiers=e17
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-e17)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+e17:+prof)
+    setupRequired(hdf5 v1_12_0a -q+e17:+prof)
 
 Flavor=ANY
 Qualifiers=c7:mpich
@@ -118,7 +118,7 @@ Qualifiers=c7:mpich
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c7-mpich)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+c7:+mpich:+prof)
+    setupRequired(hdf5 v1_12_0a -q+c7:+mpich:+prof)
 
 Flavor=ANY
 Qualifiers=c7:mvapich2
@@ -127,7 +127,7 @@ Qualifiers=c7:mvapich2
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c7-mvapich2)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+c7:+mvapich2:+prof)
+    setupRequired(hdf5 v1_12_0a -q+c7:+mvapich2:+prof)
 
 Flavor=ANY
 Qualifiers=c7
@@ -136,7 +136,7 @@ Qualifiers=c7
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c7)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+c7:+prof)
+    setupRequired(hdf5 v1_12_0a -q+c7:+prof)
 
 Flavor=ANY
 Qualifiers=c2:mpich
@@ -145,7 +145,7 @@ Qualifiers=c2:mpich
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c2-mpich)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+c2:+mpich:+prof)
+    setupRequired(hdf5 v1_12_0a -q+c2:+mpich:+prof)
 
 Flavor=ANY
 Qualifiers=c2:mvapich2
@@ -154,7 +154,7 @@ Qualifiers=c2:mvapich2
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c2-mvapich2)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+c2:+mvapich2:+prof)
+    setupRequired(hdf5 v1_12_0a -q+c2:+mvapich2:+prof)
 
 Flavor=ANY
 Qualifiers=c2
@@ -163,7 +163,7 @@ Qualifiers=c2
     prodDir(HEP_HPC_FQ_DIR,${UPS_PROD_FLAVOR}-c2)
 
   Action = ExtraSetup
-    setupRequired(hdf5 v1_12_0 -q+c2:+prof)
+    setupRequired(hdf5 v1_12_0a -q+c2:+prof)
 
 Common:
   Action = setup
