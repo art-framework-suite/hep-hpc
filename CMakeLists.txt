@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.4.0 FATAL_ERROR)
 
 project(hep_hpc LANGUAGES C CXX)
 
-set(HEP_HPC_VERSION 0.13.01)
+set(HEP_HPC_VERSION 0.13.02)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules
