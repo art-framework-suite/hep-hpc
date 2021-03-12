@@ -11,6 +11,6 @@ namespace hep_hpc {
     
     herr_t write_attribute(hid_t groupOrDataset,
 			   std::string const & name,
-			   std::vector<std::string> const & value);
+			   std::vector<std::string> const & values);
   }
 }
