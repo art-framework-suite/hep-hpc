@@ -30,8 +30,8 @@ TEST(write_attribute, Group)
   Group g_sr(g_r, "SubRun002", Group::CREATE_MODE);
   write_attribute(g_sr, "JSON", "Lots\nOf\nStuff");
   std::vector<std::string> attr_vector = {"Lots",
-					  "Of",
-					  "Things"};
+                                          "Of",
+                                          "Things"};
   write_attribute(g_sr, "vJSON", attr_vector);
 }
 

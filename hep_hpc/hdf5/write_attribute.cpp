@@ -67,8 +67,8 @@ write_attribute(hid_t groupOrDataset,
 herr_t
 hep_hpc::hdf5::
 write_attribute(hid_t groupOrDataset,
-		std::string const & name,
-		std::vector<std::string> const & values)
+                std::string const & name,
+                std::vector<std::string> const & values)
 {
   herr_t result = -1;
 
@@ -120,9 +120,9 @@ write_attribute(hid_t groupOrDataset,
 
   // convert vector of strings into C string array
   std::vector<const char*> c_values;
-  for(auto i = 0u; i < values.size(); i++)
+  for(auto i = 0u; i < values.size(); i++) {
     c_values.push_back(values[i].c_str());
-
+  }
   
   result = ErrorController::call(&H5Awrite,
                                  *a_id,
