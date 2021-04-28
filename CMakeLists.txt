@@ -1,5 +1,5 @@
 # For CMAKE_C_EXTENSIONS support.
-cmake_minimum_required(VERSION 3.4.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16...3.20 FATAL_ERROR)
 
 project(hep_hpc LANGUAGES C CXX)
 
