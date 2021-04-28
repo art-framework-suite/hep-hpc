@@ -624,7 +624,7 @@ flush_one(BUFFER & buf, Dataset & dset, COL const & col)
     filedims, filemaxdims, offsets {0}, nElements, blockCount;
   blockCount.fill(1);
   if (H5Sget_simple_extent_dims(dspace, filedims.data(), filemaxdims.data()) !=
-      COL::nDims() + 1ull) {
+      static_cast<int>(COL::nDims() + 1ull)) {
     return rc;
   }
   nElements[0] = buf.size() / col.elementSize();
