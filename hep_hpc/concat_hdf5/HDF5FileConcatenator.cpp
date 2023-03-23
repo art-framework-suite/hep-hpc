@@ -23,6 +23,7 @@ extern "C" {
 
 #include <algorithm>
 #include <cstdlib>
+#include <cstring> // strcmp()
 #include <iostream>
 #include <numeric>
 #include <sstream>
