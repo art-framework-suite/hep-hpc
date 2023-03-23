@@ -1,9 +1,9 @@
 # For CMAKE_C_EXTENSIONS support.
-cmake_minimum_required(VERSION 3.16...3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16...3.26 FATAL_ERROR)
 
 project(hep_hpc LANGUAGES C CXX)
 
-set(HEP_HPC_VERSION 0.14.01)
+set(HEP_HPC_VERSION 0.14.02)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules
@@ -17,14 +17,10 @@ cet_ensure_out_of_source_build()
 enable_testing()
 
 # Set language standard for the C and CXX compilers.
-if (NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "ISO C++ language standard")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-if (NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 11)
-endif()
+set(CMAKE_C_STANDARD 11 CACHE STRING "ISO C language standard")
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
