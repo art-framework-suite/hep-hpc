@@ -361,7 +361,7 @@ namespace hep_hpc {
                        Dataset & dset,
                        COL const & col);
 
-      PropertyList fileAccessProperties()
+      static PropertyList fileAccessProperties()
       {
         // Ensure we are using the latest available HDF5 file format to
         // write our data.
