@@ -361,14 +361,7 @@ namespace hep_hpc {
                        Dataset & dset,
                        COL const & col);
 
-      PropertyList fileAccessProperties()
-      {
-        // Ensure we are using the latest available HDF5 file format to
-        // write our data.
-        PropertyList plist(H5P_FILE_ACCESS);
-        H5Pset_libver_bounds(plist, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST);
-        return plist;
-      }
+      PropertyList fileAccessProperties();
 
     } // Namespace NtupleDetail.
   } // Namespace hdf5.

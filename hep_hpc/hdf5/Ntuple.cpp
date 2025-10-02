@@ -23,3 +23,13 @@ hep_hpc::hdf5::NtupleDetail::verifiedFile(File file)
   }
   return file;
 }
+
+hep_hpc::hdf5::PropertyList
+hep_hpc::hdf5::NtupleDetail::fileAccessProperties()
+{
+  // Ensure we are using the latest available HDF5 file format to
+  // write our data.
+  PropertyList plist(H5P_FILE_ACCESS);
+  H5Pset_libver_bounds(plist, H5F_LIBVER_LATEST, H5F_LIBVER_LATEST);
+  return plist;
+}
