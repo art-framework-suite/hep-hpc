@@ -1,3 +1,18 @@
+include(CheckCXXSourceCompiles)
+check_cxx_source_compiles("
+template <typename T>
+struct A {
+  ~A();
+};
+
+template <typename T>
+A<T>::~A<T>() {}
+
+int main() {
+  A<int> a;
+}
+" HEP_HPC_QUALIFY_DESTRUCTOR_NAMES)
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/detail/config.hpp.in
   ${CMAKE_CURRENT_BINARY_DIR}/detail/config.hpp
   @ONLY)

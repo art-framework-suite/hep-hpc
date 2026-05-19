@@ -1,6 +1,8 @@
 #ifndef hep_hpc_Utilities_detail_compiler_macros_hpp
 #define hep_hpc_Utilities_detail_compiler_macros_hpp
 
+#include "hep_hpc/detail/config.hpp"
+
 ////////////////////////////////////////////////////////////////////////
 // Define GCC and Clang version tests:
 ////////////////////////////////////////////////////////////////////////
@@ -129,6 +131,17 @@
 #else
 #define UNUSED_PRIVATE_FIELD
 #endif
+#endif
+
+////////////////////////////////////////////////////////////////////////
+// Define HEP_HPC_DTOR(NAME, ...) to allow for optional template
+// arguments in destructor definitions.
+////////////////////////////////////////////////////////////////////////
+
+#ifdef HEP_HPC_QUALIFY_DESTRUCTOR_NAMES
+#define HEP_HPC_DTOR(NAME, ...) NAME<__VA_ARGS__>
+#else
+#define HEP_HPC_DTOR(NAME, ...) NAME
 #endif
 
 #endif /* hep_hpc_Utilities_detail_compiler_macros_hpp */

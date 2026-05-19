@@ -2,4 +2,5 @@
 #define hep_hpc_detail_config_hpp_in
 #cmakedefine HEP_HPC_USE_BOOST_INDEX_SEQUENCE
 #cmakedefine HEP_HPC_USE_MPI
+#cmakedefine HEP_HPC_QUALIFY_DESTRUCTOR_NAMES
 #endif /* hep_hpc_detail_config_hpp_in */
