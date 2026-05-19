@@ -720,7 +720,10 @@ insert(TUPLE & buffers,
   if (col.elementSize() == 1ull) {
     buffer.push_back(std::move(head));
   } else {
-    buffer.insert(buffer.end(), &head, &head + col.elementSize());
+    // We used to take &head and treat it as a range, but that triggers
+    // -Warray-bounds with GCC 13 even if the branch is not taken for
+    // scalars. This is safer.
+    buffer.insert(buffer.end(), col.elementSize(), head);
   }
   insert<I + 1>(buffers, cols, std::forward<Tail>(tail)...);
 }
@@ -741,7 +744,12 @@ insert(TUPLE & buffers,
     if (col.elementSize() == 1ull) {
       buffer.push_back(*head);
     } else {
+#pragma GCC diagnostic push
+#if (defined __GNUC__) && GCC_IS_AT_LEAST(13,0,0)
+      _Pragma("GCC diagnostic ignored \"-Warray-bounds\"")
+#endif
       buffer.insert(buffer.end(), head, head + col.elementSize());
+#pragma GCC diagnostic pop
     }
   } else { // Insert empty
 #pragma GCC diagnostic push
