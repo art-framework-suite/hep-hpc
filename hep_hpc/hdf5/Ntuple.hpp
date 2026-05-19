@@ -531,7 +531,7 @@ Ntuple(File file,
 }
 
 template <typename... Args>
-hep_hpc::hdf5::Ntuple<Args...>::~Ntuple<Args...>() noexcept
+hep_hpc::hdf5::Ntuple<Args...>::~HEP_HPC_DTOR(Ntuple, Args...)() noexcept
 {
   ScopedErrorHandler seh(ErrorMode::HDF5_DEFAULT);
   if (flush_(iSequence()) != 0) {
