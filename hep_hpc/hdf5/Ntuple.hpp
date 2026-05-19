@@ -714,7 +714,15 @@ insert(TUPLE & buffers,
        typename std::tuple_element<I, COLS>::type::element_type head,
        Tail && ... tail)
 {
-  insert<I>(buffers, cols, &head, std::forward<Tail>(tail)...);
+  using std::get;
+  auto & col = get<I>(cols);
+  auto & buffer = get<I>(buffers);
+  if (col.elementSize() == 1ull) {
+    buffer.push_back(std::move(head));
+  } else {
+    buffer.insert(buffer.end(), &head, &head + col.elementSize());
+  }
+  insert<I + 1>(buffers, cols, std::forward<Tail>(tail)...);
 }
 
 template <size_t I, typename TUPLE, typename COLS, typename... Tail>
@@ -730,9 +738,11 @@ insert(TUPLE & buffers,
   auto & col = get<I>(cols);
   auto & buffer = get<I>(buffers);
   if (head != nullptr) {
-    buffer.insert(buffer.end(),
-                  head,
-                  head + col.elementSize());
+    if (col.elementSize() == 1ull) {
+      buffer.push_back(*head);
+    } else {
+      buffer.insert(buffer.end(), head, head + col.elementSize());
+    }
   } else { // Insert empty
 #pragma GCC diagnostic push
 #if (defined __GNUC__) && ! GCC_IS_AT_LEAST(5,0,0)
@@ -741,7 +751,11 @@ insert(TUPLE & buffers,
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61489).
     _Pragma("GCC diagnostic ignored \"-Wmissing-field-initializers\"")
 #endif
-    buffer.insert(buffer.end(), col.elementSize(), {});
+    if (col.elementSize() == 1ull) {
+      buffer.push_back({});
+    } else {
+      buffer.insert(buffer.end(), col.elementSize(), {});
+    }
 #pragma GCC diagnostic pop
   }
   insert<I + 1>(buffers, cols, std::forward<Tail>(tail)...);
